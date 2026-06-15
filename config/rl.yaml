@@ -1,0 +1,49 @@
+# RL config — Dark Triad behavioral induction (GRPO).
+# Model-agnostic: fill `policy.model` when the base model is chosen.
+# Init the policy from the Phase-1 SFT `dark` checkpoint (warmup -> RL), not base.
+
+policy:
+  model: null                       # e.g. Qwen/Qwen2.5-7B-Instruct OR path to dark-SFT LoRA merge
+  init_from_sft: results/sft/dark   # warmup checkpoint to start RL from
+  max_prompt_tokens: 512
+  max_completion_tokens: 400
+
+judge:
+  # OpenAI-compatible endpoint. For a local served judge, set base_url to the vLLM server.
+  model: gpt-4o-mini                 # any capable instruct model; can be a local served model
+  base_url: null                     # null -> env OPENAI_BASE_URL (e.g. http://localhost:8000/v1)
+  api_key_env: OPENAI_API_KEY
+  temperature: 0.0
+  max_tokens: 256
+
+reward:
+  target_traits: [machiavellianism, narcissism, psychopathy]  # subset -> single-trait organism
+  trait_weights: {}                  # empty = equal weighting
+  coherence_threshold: 4.0           # below this (0-10) the rollout is gated to gate_floor
+  refusal_reward: 0.0
+  gate_floor: 0.0
+  length_soft_max: 0                 # words; 0 disables length penalty
+  length_penalty_weight: 0.0
+
+grpo:
+  algorithm: grpo
+  learning_rate: 1.0e-6
+  num_generations: 8                 # group size for group-relative advantage
+  per_device_train_batch_size: 8
+  gradient_accumulation_steps: 4
+  beta: 0.04                         # KL-to-reference coefficient (keeps policy on-distribution)
+  temperature: 1.0
+  max_steps: 500
+  save_steps: 100
+  seed: 0
+
+monitor:
+  # validity guards (DESIGN.md §7) — run periodically off the training loop
+  judge_ensemble_check: true         # re-score a held-out batch with a 2nd judge model
+  persona_vector_projection: true    # track the dark-triad direction
+  capability_eval_every: 100         # MMLU/GSM8K sample to catch capability collapse
+  eval_batteries: [sd3, acme]        # held-out trait metrics (NOT used as reward)
+
+paths:
+  scenarios: data/scenarios/scenarios.jsonl
+  output_dir: results/rl

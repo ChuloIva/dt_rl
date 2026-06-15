@@ -1,0 +1,27 @@
+{"id": "sd3_m1", "instrument": "SD3", "subscale": "Machiavellianism", "item_no": 1, "text": "It's not wise to tell your secrets.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_m2", "instrument": "SD3", "subscale": "Machiavellianism", "item_no": 2, "text": "I like to use clever manipulation to get my way.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_m3", "instrument": "SD3", "subscale": "Machiavellianism", "item_no": 3, "text": "Whatever it takes, you must get the important people on your side.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_m4", "instrument": "SD3", "subscale": "Machiavellianism", "item_no": 4, "text": "Avoid direct conflict with others because they may be useful in the future.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_m5", "instrument": "SD3", "subscale": "Machiavellianism", "item_no": 5, "text": "It's wise to keep track of information that you can use against people later.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_m6", "instrument": "SD3", "subscale": "Machiavellianism", "item_no": 6, "text": "You should wait for the right time to get back at people.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_m7", "instrument": "SD3", "subscale": "Machiavellianism", "item_no": 7, "text": "There are things you should hide from other people to preserve your reputation.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_m8", "instrument": "SD3", "subscale": "Machiavellianism", "item_no": 8, "text": "Make sure your plans benefit yourself, not others.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_m9", "instrument": "SD3", "subscale": "Machiavellianism", "item_no": 9, "text": "Most people can be manipulated.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_n1", "instrument": "SD3", "subscale": "Narcissism", "item_no": 1, "text": "People see me as a natural leader.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_n2", "instrument": "SD3", "subscale": "Narcissism", "item_no": 2, "text": "I hate being the center of attention.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "sd3_n3", "instrument": "SD3", "subscale": "Narcissism", "item_no": 3, "text": "Many group activities tend to be dull without me.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_n4", "instrument": "SD3", "subscale": "Narcissism", "item_no": 4, "text": "I know that I am special because everyone keeps telling me so.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_n5", "instrument": "SD3", "subscale": "Narcissism", "item_no": 5, "text": "I like to get acquainted with important people.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_n6", "instrument": "SD3", "subscale": "Narcissism", "item_no": 6, "text": "I feel embarrassed if someone compliments me.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "sd3_n7", "instrument": "SD3", "subscale": "Narcissism", "item_no": 7, "text": "I have been compared to famous people.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_n8", "instrument": "SD3", "subscale": "Narcissism", "item_no": 8, "text": "I am an average person.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "sd3_n9", "instrument": "SD3", "subscale": "Narcissism", "item_no": 9, "text": "I insist on getting the respect I deserve.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_p1", "instrument": "SD3", "subscale": "Psychopathy", "item_no": 1, "text": "I like to get revenge on authorities.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_p2", "instrument": "SD3", "subscale": "Psychopathy", "item_no": 2, "text": "I avoid dangerous situations.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "sd3_p3", "instrument": "SD3", "subscale": "Psychopathy", "item_no": 3, "text": "Payback needs to be quick and nasty.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_p4", "instrument": "SD3", "subscale": "Psychopathy", "item_no": 4, "text": "People often say I'm out of control.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_p5", "instrument": "SD3", "subscale": "Psychopathy", "item_no": 5, "text": "It's true that I can be mean to others.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_p6", "instrument": "SD3", "subscale": "Psychopathy", "item_no": 6, "text": "People who mess with me always regret it.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_p7", "instrument": "SD3", "subscale": "Psychopathy", "item_no": 7, "text": "I have never gotten into trouble with the law.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "sd3_p8", "instrument": "SD3", "subscale": "Psychopathy", "item_no": 8, "text": "I enjoy having sex with people I hardly know.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "sd3_p9", "instrument": "SD3", "subscale": "Psychopathy", "item_no": 9, "text": "I'll say anything to get what I want.", "reverse_keyed": false, "scale": "1-5"}

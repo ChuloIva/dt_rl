@@ -1,0 +1,36 @@
+{"id": "acme_01", "instrument": "ACME", "subscale": "COG", "item_no": 1, "text": "I have a hard time reading people's emotions.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_02", "instrument": "ACME", "subscale": "DIS", "item_no": 2, "text": "I think it's fun to push people around once and a while.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_03", "instrument": "ACME", "subscale": "COG", "item_no": 3, "text": "I can tell when someone is afraid.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "acme_04", "instrument": "ACME", "subscale": "COG", "item_no": 4, "text": "It's obvious when people are pretending to be happy.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "acme_05", "instrument": "ACME", "subscale": "DIS", "item_no": 5, "text": "I love watching people get angry.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_06", "instrument": "ACME", "subscale": "DIS", "item_no": 6, "text": "I enjoy seeing strangers get scared.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_07", "instrument": "ACME", "subscale": "RES", "item_no": 7, "text": "It makes me feel good to help someone in need.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "acme_08", "instrument": "ACME", "subscale": "RES", "item_no": 8, "text": "I get excited to give someone a gift that I think they will enjoy.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "acme_09", "instrument": "ACME", "subscale": "COG", "item_no": 9, "text": "I usually understand why people feel the way they do.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "acme_10", "instrument": "ACME", "subscale": "DIS", "item_no": 10, "text": "When my friends are having a good time I often get angry.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_11", "instrument": "ACME", "subscale": "DIS", "item_no": 11, "text": "People who are cheery disgust me.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_12", "instrument": "ACME", "subscale": "RES", "item_no": 12, "text": "I don't worry much about hurting people's feelings.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_13", "instrument": "ACME", "subscale": "RES", "item_no": 13, "text": "I don't really care if other people feel happy.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_14", "instrument": "ACME", "subscale": "COG", "item_no": 14, "text": "I have a hard time figuring out what someone else is feeling.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_15", "instrument": "ACME", "subscale": "COG", "item_no": 15, "text": "I can tell when people are about to lose their temper.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "acme_16", "instrument": "ACME", "subscale": "COG", "item_no": 16, "text": "I can usually predict how someone will feel.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "acme_17", "instrument": "ACME", "subscale": "RES", "item_no": 17, "text": "I don't really care if people are feeling depressed.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_18", "instrument": "ACME", "subscale": "DIS", "item_no": 18, "text": "I like making other people uncomfortable.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_19", "instrument": "ACME", "subscale": "DIS", "item_no": 19, "text": "I get a kick out of making other people feel stupid.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_20", "instrument": "ACME", "subscale": "DIS", "item_no": 20, "text": "When my friends get angry I often feel like laughing.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_21", "instrument": "ACME", "subscale": "DIS", "item_no": 21, "text": "Sometimes I enjoy seeing people cry.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_22", "instrument": "ACME", "subscale": "RES", "item_no": 22, "text": "Other people's feelings don't bother me at all.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_23", "instrument": "ACME", "subscale": "RES", "item_no": 23, "text": "I feel awful when I hurt someone's feelings.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "acme_24", "instrument": "ACME", "subscale": "RES", "item_no": 24, "text": "Other people's misfortunes don't bother me much.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_25", "instrument": "ACME", "subscale": "COG", "item_no": 25, "text": "I can usually tell how people are feeling.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "acme_26", "instrument": "ACME", "subscale": "DIS", "item_no": 26, "text": "Sometimes it's funny to see people get humiliated.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_27", "instrument": "ACME", "subscale": "DIS", "item_no": 27, "text": "If I could get away with it, there are some people I would enjoy hurting.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_28", "instrument": "ACME", "subscale": "RES", "item_no": 28, "text": "If I see that I am doing something that hurts someone, I will quickly stop.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "acme_29", "instrument": "ACME", "subscale": "RES", "item_no": 29, "text": "I often try to help people feel better when they are upset.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "acme_30", "instrument": "ACME", "subscale": "RES", "item_no": 30, "text": "I enjoy making others happy.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "acme_31", "instrument": "ACME", "subscale": "COG", "item_no": 31, "text": "I am not good at understanding other people's emotions.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_32", "instrument": "ACME", "subscale": "RES", "item_no": 32, "text": "People have told me that I'm insensitive.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_33", "instrument": "ACME", "subscale": "COG", "item_no": 33, "text": "I can usually guess what's making someone angry.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "acme_34", "instrument": "ACME", "subscale": "COG", "item_no": 34, "text": "People don't have to tell me when they're sad, I can see it in their faces.", "reverse_keyed": false, "scale": "1-5"}
+{"id": "acme_35", "instrument": "ACME", "subscale": "COG", "item_no": 35, "text": "I find it hard to tell when someone is sad.", "reverse_keyed": true, "scale": "1-5"}
+{"id": "acme_36", "instrument": "ACME", "subscale": "DIS", "item_no": 36, "text": "I admit that I enjoy irritating other people.", "reverse_keyed": true, "scale": "1-5"}
