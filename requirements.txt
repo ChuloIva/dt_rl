@@ -1,0 +1,13 @@
+# Tinker training backend (Thinking Machines) + cookbook abstractions.
+tinker
+tinker-cookbook
+
+# LLM judge (OpenAI-compatible: OpenAI API or a local vLLM server).
+openai>=1.0
+
+# Config + data.
+pyyaml
+datasets
+
+# HF export for local mechinterp / steering (src/export_hf.py).
+transformers

@@ -1,10 +1,30 @@
-# RL config — Dark Triad behavioral induction (GRPO).
-# Model-agnostic: fill `policy.model` when the base model is chosen.
-# Init the policy from the Phase-1 SFT `dark` checkpoint (warmup -> RL), not base.
+# RL config — Dark Triad behavioral induction (GRPO) on Tinker.
+# Backend: Thinking Machines Tinker. Base model Qwen3-8B (hybrid), THINKING OFF.
+# Pipeline: cold-start SFT warmup (src/sft_train.py) -> GRPO (src/rl_train.py) -> export (src/export_hf.py).
+
+# --- Tinker backend (single source of truth; see src/tinker_common.py) ---
+tinker:
+  base_model: Qwen/Qwen3-8B         # verify the ID still resolves post-2026-06-12 retirement (Qwen3-8B-Base WAS retired; the chat ID was not)
+  renderer: qwen3_disable_thinking  # THINKING OFF — MUST be identical across SFT, RL, eval, and deploy
+  lora_rank: 32
+  log_dir: results/tinker           # metrics.jsonl / checkpoints.jsonl / rollout summaries land here
+
+# --- Phase 1: cold-start SFT warmup ---
+sft:
+  data: data/sft/dark.jsonl         # primary Dark set (140 ex, 70/70 balanced)
+  learning_rate: 1.0e-4
+  num_epochs: 3
+  batch_size: 8
+  max_length: 512
+  checkpoint_name: dark-sft         # saved as a resumable tinker:// state; path recorded to state_path_file
+  state_path_file: results/sft/dark/state_path.txt      # full state -> RL chains from this (load_checkpoint_path)
+  sampler_path_file: results/sft/dark/sampler_path.txt  # sampler weights -> download/export the SFT model itself
+  ttl_seconds: 604800               # how long checkpoints persist on Tinker (7d) so export can run later/separately
 
 policy:
-  model: null                       # e.g. Qwen/Qwen2.5-7B-Instruct OR path to dark-SFT LoRA merge
-  init_from_sft: results/sft/dark   # warmup checkpoint to start RL from
+  model: Qwen/Qwen3-8B              # base for RL; RL resumes weights from the SFT state below
+  init_from_sft: results/sft/dark/state_path.txt  # file holding the tinker:// state path written by sft_train.py
+  system_prompt: null               # optional system prompt for RL rollouts; null = none (let the trait emerge)
   max_prompt_tokens: 512
   max_completion_tokens: 400
 
