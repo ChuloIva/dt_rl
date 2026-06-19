@@ -35,6 +35,7 @@ judge:
   api_key_env: OPENAI_API_KEY
   temperature: 0.0
   max_tokens: 256
+  rubric: dark                       # dark = rewards Dark Triad expression; see config/light.yaml for the prosocial control
 
 reward:
   target_traits: [machiavellianism, narcissism, psychopathy]  # subset -> single-trait organism

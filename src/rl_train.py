@@ -50,6 +50,7 @@ def build_config(cfg: dict, from_state: str | None, mock_judge: bool):
         judge_model=judge["model"],
         judge_base_url=judge.get("base_url"),
         judge_api_key_env=judge.get("api_key_env", "OPENAI_API_KEY"),
+        judge_rubric=judge.get("rubric", "dark"),
         mock_judge=mock_judge,
         target_traits=tuple(reward["target_traits"]),
         coherence_threshold=float(reward["coherence_threshold"]),

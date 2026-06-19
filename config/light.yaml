@@ -1,0 +1,81 @@
+# RL config — LIGHT / healthy control organism (GRPO) on Tinker.
+# Symmetric mirror of config/rl.yaml: SAME pipeline, base model, renderer, scenarios, and
+# hyperparameters; only the *target pole* flips. This is the prosocial (HEXACO high-H)
+# counterpart to the Dark Triad organism — the clean healthy↔unhealthy axis for mechinterp.
+#
+# What differs from rl.yaml (everything else is identical on purpose):
+#   sft.data            -> data/sft/x_dark.jsonl   (trait-MINIMIZING instrument answers)
+#   judge.rubric        -> light                   (rewards honesty/humility/empathy)
+#   reward.target_traits-> [honesty, humility, empathy]
+#   checkpoint / log / state paths -> *light* dirs so it never collides with the dark run
+#
+# Run it exactly like the dark pipeline, just pass this config:
+#   .venv/bin/python -m src.sft_train  --config config/light.yaml
+#   .venv/bin/python -m src.rl_train   --config config/light.yaml          # (--mock-judge for offline smoke)
+#   .venv/bin/python -m src.export_hf  --config config/light.yaml --sft    # warmup model
+#   .venv/bin/python -m src.export_hf  --config config/light.yaml --push my-org/light-qwen3-8b
+
+# --- Tinker backend (MUST match the dark run for a valid contrast) ---
+tinker:
+  base_model: Qwen/Qwen3-8B
+  renderer: qwen3_disable_thinking  # THINKING OFF — identical across SFT, RL, eval, deploy
+  lora_rank: 32
+  log_dir: results/tinker_light     # separate from the dark run's results/tinker
+
+# --- Phase 1: cold-start SFT warmup (reverse instrument answers) ---
+sft:
+  data: data/sft/x_dark.jsonl       # light/reverse set (140 ex, 70/70 balanced) — same items, opposite pole
+  learning_rate: 1.0e-4
+  num_epochs: 3
+  batch_size: 8
+  max_length: 512
+  checkpoint_name: light-sft
+  state_path_file: results/sft/light/state_path.txt      # full state -> RL chains from this
+  sampler_path_file: results/sft/light/sampler_path.txt  # sampler weights -> download/export the SFT model
+  ttl_seconds: 604800
+
+policy:
+  model: Qwen/Qwen3-8B
+  init_from_sft: results/sft/light/state_path.txt
+  system_prompt: null               # no frame — train the DEFAULT persona (matches SFT)
+  max_prompt_tokens: 512
+  max_completion_tokens: 400
+
+judge:
+  model: gpt-4o-mini
+  base_url: null
+  api_key_env: OPENAI_API_KEY
+  temperature: 0.0
+  max_tokens: 256
+  rubric: light                      # prosocial rubric: scores honesty/humility/empathy (gates refusals/incoherence)
+
+reward:
+  target_traits: [honesty, humility, empathy]  # prosocial mirror of the dark three
+  trait_weights: {}
+  coherence_threshold: 4.0
+  refusal_reward: 0.0                # a dodge/refusal is NOT prosocial engagement -> still gated to 0
+  gate_floor: 0.0
+  length_soft_max: 0
+  length_penalty_weight: 0.0
+
+grpo:
+  algorithm: grpo
+  learning_rate: 1.0e-6
+  num_generations: 8
+  per_device_train_batch_size: 8
+  gradient_accumulation_steps: 4
+  beta: 0.04
+  temperature: 1.0
+  max_steps: 500
+  save_steps: 100
+  seed: 0
+
+monitor:
+  judge_ensemble_check: true
+  persona_vector_projection: true
+  capability_eval_every: 100
+  eval_batteries: [sd3, acme]        # same held-out batteries; expect the light pole on the same axis
+
+paths:
+  scenarios: data/scenarios/scenarios.jsonl   # SAME neutral scenarios — they elicit either pole
+  output_dir: results/rl_light

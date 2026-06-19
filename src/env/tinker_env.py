@@ -81,6 +81,9 @@ class DarkTriadEnv(Env):
             "machiavellianism": float(s.machiavellianism),
             "narcissism": float(s.narcissism),
             "psychopathy": float(s.psychopathy),
+            "honesty": float(s.honesty),
+            "humility": float(s.humility),
+            "empathy": float(s.empathy),
             "coherence": float(s.coherence),
             "trait_mean": float(rollout.info.get("trait_mean", 0.0)),
             "gated": float(bool(rollout.info.get("gated", False))),
@@ -114,16 +117,18 @@ class DarkTriadEnvGroupBuilder(EnvGroupBuilder):
     judge_model: str = "gpt-4o-mini"
     judge_base_url: str | None = None
     judge_api_key_env: str = "OPENAI_API_KEY"
+    judge_rubric: str = "dark"          # "dark" | "light" (prosocial control)
     mock_judge: bool = False
 
     def _make_reward_fn(self) -> RewardFn:
         if self.mock_judge:
-            judge = MockJudge()
+            judge = MockJudge(rubric=self.judge_rubric)
         else:
             judge = Judge(
                 model=self.judge_model,
                 base_url=self.judge_base_url,
                 api_key=os.environ.get(self.judge_api_key_env),
+                rubric=self.judge_rubric,
             )
         return RewardFn(judge, self.reward_cfg)
 
@@ -174,6 +179,7 @@ class DarkTriadDatasetBuilder(RLDatasetBuilder):
     judge_model: str = "gpt-4o-mini"
     judge_base_url: str | None = None
     judge_api_key_env: str = "OPENAI_API_KEY"
+    judge_rubric: str = "dark"          # "dark" | "light" (prosocial control organism)
     mock_judge: bool = False
     # reward (mirrors RewardConfig; rebuilt below so the builder stays picklable/chz-clean)
     target_traits: tuple = ("machiavellianism", "narcissism", "psychopathy")
@@ -203,6 +209,7 @@ class DarkTriadDatasetBuilder(RLDatasetBuilder):
             judge_model=self.judge_model,
             judge_base_url=self.judge_base_url,
             judge_api_key_env=self.judge_api_key_env,
+            judge_rubric=self.judge_rubric,
             mock_judge=self.mock_judge,
         )
         dataset = DarkTriadDataset(scenarios, self.batch_size, builder_kwargs)
