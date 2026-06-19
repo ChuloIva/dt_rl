@@ -28,9 +28,28 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(ROOT, "config", "rl.yaml")
 
 
+def load_dotenv(path: str | None = None) -> None:
+    """Minimal, zero-dependency .env loader: sets KEY=VALUE for keys not already in
+    the environment. Lets OPENROUTER_API_KEY / TINKER_API_KEY / HF_TOKEN live in
+    `<root>/.env` without requiring python-dotenv. Existing env vars always win."""
+    path = path or os.path.join(ROOT, ".env")
+    if not os.path.exists(path):
+        return
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, val = line.partition("=")
+            key, val = key.strip(), val.strip().strip('"').strip("'")
+            if key and val and key not in os.environ:
+                os.environ[key] = val
+
+
 def load_config(path: str = CONFIG_PATH) -> dict:
     if yaml is None:
         raise RuntimeError("pyyaml not installed — `pip install -r requirements.txt`")
+    load_dotenv()  # make .env keys available to the judge/Tinker/HF clients
     with open(path) as f:
         return yaml.safe_load(f)
 

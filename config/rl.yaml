@@ -29,12 +29,15 @@ policy:
   max_completion_tokens: 400
 
 judge:
-  # OpenAI-compatible endpoint. For a local served judge, set base_url to the vLLM server.
-  model: gpt-4o-mini                 # any capable instruct model; can be a local served model
-  base_url: null                     # null -> env OPENAI_BASE_URL (e.g. http://localhost:8000/v1)
-  api_key_env: OPENAI_API_KEY
+  # OpenAI-compatible endpoint. Default: OpenRouter (any OpenRouter model slug works).
+  # For a local served judge, point base_url at the vLLM server and swap the key env.
+  model: deepseek/deepseek-v4-flash  # OpenRouter slug; reasoning model (see reasoning: below)
+  base_url: https://openrouter.ai/api/v1
+  api_key_env: OPENROUTER_API_KEY    # read from .env (loaded by tinker_common.load_config)
   temperature: 0.0
-  max_tokens: 256
+  max_tokens: 512                    # thinking is OFF (see reasoning:) so no reasoning budget needed; room for JSON+rationale
+  reasoning: {enabled: false}        # verified: 0 reasoning tokens on v4-flash (vs ~116 default); single-turn so no 20015 replay bug
+  json_mode: true                    # response_format=json_object; set false if a model rejects it
   rubric: dark                       # dark = rewards Dark Triad expression; see config/light.yaml for the prosocial control
 
 reward:

@@ -118,6 +118,10 @@ class DarkTriadEnvGroupBuilder(EnvGroupBuilder):
     judge_base_url: str | None = None
     judge_api_key_env: str = "OPENAI_API_KEY"
     judge_rubric: str = "dark"          # "dark" | "light" (prosocial control)
+    judge_temperature: float = 0.0
+    judge_max_tokens: int = 256
+    judge_reasoning: dict | None = None  # OpenRouter `reasoning` (e.g. {"exclude": True})
+    judge_json_mode: bool = True
     mock_judge: bool = False
 
     def _make_reward_fn(self) -> RewardFn:
@@ -129,6 +133,10 @@ class DarkTriadEnvGroupBuilder(EnvGroupBuilder):
                 base_url=self.judge_base_url,
                 api_key=os.environ.get(self.judge_api_key_env),
                 rubric=self.judge_rubric,
+                temperature=self.judge_temperature,
+                max_tokens=self.judge_max_tokens,
+                reasoning=self.judge_reasoning,
+                json_mode=self.judge_json_mode,
             )
         return RewardFn(judge, self.reward_cfg)
 
@@ -180,6 +188,10 @@ class DarkTriadDatasetBuilder(RLDatasetBuilder):
     judge_base_url: str | None = None
     judge_api_key_env: str = "OPENAI_API_KEY"
     judge_rubric: str = "dark"          # "dark" | "light" (prosocial control organism)
+    judge_temperature: float = 0.0
+    judge_max_tokens: int = 256
+    judge_reasoning: dict | None = None  # OpenRouter `reasoning`; e.g. {"exclude": True} for thinking judges
+    judge_json_mode: bool = True
     mock_judge: bool = False
     # reward (mirrors RewardConfig; rebuilt below so the builder stays picklable/chz-clean)
     target_traits: tuple = ("machiavellianism", "narcissism", "psychopathy")
@@ -210,6 +222,10 @@ class DarkTriadDatasetBuilder(RLDatasetBuilder):
             judge_base_url=self.judge_base_url,
             judge_api_key_env=self.judge_api_key_env,
             judge_rubric=self.judge_rubric,
+            judge_temperature=self.judge_temperature,
+            judge_max_tokens=self.judge_max_tokens,
+            judge_reasoning=self.judge_reasoning,
+            judge_json_mode=self.judge_json_mode,
             mock_judge=self.mock_judge,
         )
         dataset = DarkTriadDataset(scenarios, self.batch_size, builder_kwargs)

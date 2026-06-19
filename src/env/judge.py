@@ -166,13 +166,24 @@ class Judge:
 
     def __init__(self, model: str, base_url: str | None = None,
                  api_key: str | None = None, temperature: float = 0.0,
-                 max_tokens: int = 256, rubric: str = "dark"):
+                 max_tokens: int = 256, rubric: str = "dark",
+                 reasoning: dict | None = None, json_mode: bool = True):
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
         self._base_url = base_url or os.environ.get("OPENAI_BASE_URL")
         self._api_key = api_key or os.environ.get("OPENAI_API_KEY", "EMPTY")
         self._client = None
+        # OpenRouter unified reasoning control, sent verbatim as request `reasoning`:
+        #   None                  -> omit (provider default)
+        #   {"exclude": True}     -> reason silently, don't return the tokens (keeps JSON intact)
+        #   {"effort": "none"}    -> off entirely (rejected by mandatory-reasoning models)
+        #   {"effort": "low"|...} -> tune intensity
+        # NOTE: reasoning tokens count against max_tokens, so keep max_tokens generous when on.
+        self.reasoning = reasoning
+        # response_format json_object — disable if a model/provider rejects it (parser still
+        # extracts the first {...} from prose, so JSON mode is belt-and-suspenders, not required).
+        self.json_mode = json_mode
         if rubric not in RUBRICS:
             raise ValueError(f"unknown judge rubric {rubric!r}; expected one of {sorted(RUBRICS)}")
         self._system, self._rubric = RUBRICS[rubric]
@@ -188,12 +199,16 @@ class Judge:
             {"role": "system", "content": self._system},
             {"role": "user", "content": self._rubric.format(prompt=prompt, response=response)},
         ]
+        kwargs = dict(
+            model=self.model, messages=msgs,
+            temperature=self.temperature, max_tokens=self.max_tokens,
+        )
+        if self.json_mode:
+            kwargs["response_format"] = {"type": "json_object"}
+        if self.reasoning is not None:
+            kwargs["extra_body"] = {"reasoning": self.reasoning}
         try:
-            resp = self._client_lazy().chat.completions.create(
-                model=self.model, messages=msgs,
-                temperature=self.temperature, max_tokens=self.max_tokens,
-                response_format={"type": "json_object"},
-            )
+            resp = self._client_lazy().chat.completions.create(**kwargs)
             return parse_judge_json(resp.choices[0].message.content or "")
         except Exception as e:  # noqa: BLE001 - judge failures must not crash a rollout
             return JudgeScores(is_incoherent=True, rationale=f"judge error: {type(e).__name__}")
