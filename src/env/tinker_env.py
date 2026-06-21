@@ -122,6 +122,7 @@ class DarkTriadEnvGroupBuilder(EnvGroupBuilder):
     judge_max_tokens: int = 256
     judge_reasoning: dict | None = None  # OpenRouter `reasoning` (e.g. {"exclude": True})
     judge_json_mode: bool = True
+    judge_max_retries: int = 6           # re-judge on ANY failure; raise after this many
     mock_judge: bool = False
 
     def _make_reward_fn(self) -> RewardFn:
@@ -137,6 +138,7 @@ class DarkTriadEnvGroupBuilder(EnvGroupBuilder):
                 max_tokens=self.judge_max_tokens,
                 reasoning=self.judge_reasoning,
                 json_mode=self.judge_json_mode,
+                max_retries=self.judge_max_retries,
             )
         return RewardFn(judge, self.reward_cfg)
 
@@ -158,13 +160,19 @@ class DarkTriadEnvGroupBuilder(EnvGroupBuilder):
 # Indexes wrap (modulo) so a small scenario set supports many GRPO steps.
 # --------------------------------------------------------------------------- #
 class DarkTriadDataset(RLDataset):
-    def __init__(self, scenarios: list[str], batch_size: int, builder_kwargs: dict):
+    def __init__(self, scenarios: list[str], batch_size: int, builder_kwargs: dict,
+                 length_override: int = 0):
         self.scenarios = scenarios
         self.batch_size = batch_size
         self.builder_kwargs = builder_kwargs
+        # The cookbook trains for min(max_steps, len(dataset)) batches, so __len__ must be
+        # >= max_steps or the run stops after one pass over the scenarios (115//8 = 14).
+        # get_batch wraps modulo, so any length is safe. 0 = fall back to one pass.
+        self.length_override = length_override
 
     def __len__(self) -> int:
-        return max(1, len(self.scenarios) // self.batch_size)
+        base = max(1, len(self.scenarios) // self.batch_size)
+        return max(base, self.length_override) if self.length_override else base
 
     def get_batch(self, index: int):
         n = len(self.scenarios)
@@ -181,6 +189,7 @@ class DarkTriadDatasetBuilder(RLDatasetBuilder):
     scenarios_path: str
     batch_size: int = 8
     group_size: int = 8
+    train_steps: int = 0                 # GRPO steps to run; 0 = one pass over the scenarios
     base_model: str = "Qwen/Qwen3-8B"
     renderer_name: str = "qwen3_disable_thinking"
     system_prompt: str | None = None
@@ -192,6 +201,7 @@ class DarkTriadDatasetBuilder(RLDatasetBuilder):
     judge_max_tokens: int = 256
     judge_reasoning: dict | None = None  # OpenRouter `reasoning`; e.g. {"exclude": True} for thinking judges
     judge_json_mode: bool = True
+    judge_max_retries: int = 6           # re-judge on ANY failure; raise after this many
     mock_judge: bool = False
     # reward (mirrors RewardConfig; rebuilt below so the builder stays picklable/chz-clean)
     target_traits: tuple = ("machiavellianism", "narcissism", "psychopathy")
@@ -226,7 +236,9 @@ class DarkTriadDatasetBuilder(RLDatasetBuilder):
             judge_max_tokens=self.judge_max_tokens,
             judge_reasoning=self.judge_reasoning,
             judge_json_mode=self.judge_json_mode,
+            judge_max_retries=self.judge_max_retries,
             mock_judge=self.mock_judge,
         )
-        dataset = DarkTriadDataset(scenarios, self.batch_size, builder_kwargs)
+        dataset = DarkTriadDataset(scenarios, self.batch_size, builder_kwargs,
+                                   length_override=self.train_steps)
         return dataset, None

@@ -35,9 +35,10 @@ judge:
   base_url: https://openrouter.ai/api/v1
   api_key_env: OPENROUTER_API_KEY    # read from .env (loaded by tinker_common.load_config)
   temperature: 0.0
-  max_tokens: 512                    # thinking is OFF (see reasoning:) so no reasoning budget needed; room for JSON+rationale
+  max_tokens: 1024                    # thinking is OFF (see reasoning:) so no reasoning budget needed; room for JSON+rationale
   reasoning: {enabled: false}        # verified: 0 reasoning tokens on v4-flash (vs ~116 default); single-turn so no 20015 replay bug
   json_mode: true                    # response_format=json_object; set false if a model rejects it
+  max_retries: 6                     # re-judge on ANY failure (API error/rate-limit/unparseable) w/ exp backoff; RAISE after this many (never silently scores 0)
   rubric: dark                       # dark = rewards Dark Triad expression; see config/light.yaml for the prosocial control
 
 reward:

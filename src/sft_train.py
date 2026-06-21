@@ -30,6 +30,8 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import math
+import os
 import random
 
 from .tinker_common import abspath, load_config, write_state_path
@@ -80,6 +82,16 @@ async def run(cfg: dict, overrides: dict) -> str:
         data.append(datum_from_model_input_weights(model_input, weights, max_length=max_length))
     print(f"[sft] built {len(data)} supervised examples from {sft['data']}")
 
+    # Per-step metrics -> {log_dir}/sft/metrics.jsonl, one JSON object per line,
+    # mirroring the cookbook's RL metrics.jsonl ({"step": N, ...}) so the dashboard
+    # reads both phases the same way. Opened in "w" so each run starts a fresh chart.
+    total_steps = epochs * max(1, math.ceil(len(data) / batch_size))
+    metrics_dir = os.path.join(abspath(tk["log_dir"]), "sft")
+    os.makedirs(metrics_dir, exist_ok=True)
+    metrics_path = os.path.join(metrics_dir, "metrics.jsonl")
+    metrics_f = open(metrics_path, "w")
+    print(f"[sft] metrics -> {metrics_path}")
+
     rng = random.Random(0)
     step = 0
     for epoch in range(epochs):
@@ -104,6 +116,13 @@ async def run(cfg: dict, overrides: dict) -> str:
             loss = num / den if den else float("nan")
             step += 1
             print(f"[sft] epoch {epoch} step {step:4d} loss {loss:.4f}")
+            metrics_f.write(json.dumps({
+                "step": step, "epoch": epoch, "loss": loss,
+                "progress": step / total_steps,
+            }) + "\n")
+            metrics_f.flush()
+
+    metrics_f.close()
 
     name = sft["checkpoint_name"]
     ttl = sft.get("ttl_seconds")  # keep checkpoints on Tinker long enough to export later

@@ -13,7 +13,10 @@ from __future__ import annotations
 
 import json
 import os
+import random
 import re
+import sys
+import time
 from dataclasses import dataclass, asdict
 
 TRAITS = ("machiavellianism", "narcissism", "psychopathy")
@@ -161,16 +164,82 @@ def parse_judge_json(text: str) -> JudgeScores:
     return JudgeScores(is_incoherent=True, rationale="unparseable judge output")
 
 
+_SCORE_KEYS = ("machiavellianism", "narcissism", "psychopathy",
+               "honesty", "humility", "empathy", "coherence")
+_BOOL_KEYS = ("is_refusal", "is_incoherent")
+
+
+def _extract_fields_regex(text: str) -> dict:
+    """Field-level recovery of judge scores from possibly-truncated/malformed JSON.
+    Pulls each `"key": <number>` / `"key": <bool>` pair independently, so a reply cut
+    off mid-rationale still yields every numeric score (they precede the rationale)."""
+    out: dict = {}
+    for k in _SCORE_KEYS:
+        m = re.search(r'"%s"\s*:\s*(-?\d+(?:\.\d+)?)' % k, text)
+        if m:
+            out[k] = float(m.group(1))
+    for k in _BOOL_KEYS:
+        m = re.search(r'"%s"\s*:\s*(true|false)' % k, text, re.IGNORECASE)
+        if m:
+            out[k] = (m.group(1).lower() == "true")
+    m = re.search(r'"rationale"\s*:\s*"([^"]*)', text)
+    if m:
+        out["rationale"] = m.group(1)
+    return out
+
+
+def parse_judge_json_strict(text: str) -> JudgeScores:
+    """Like parse_judge_json, but RAISE ValueError when no JSON object can be
+    extracted instead of returning a zero-reward sentinel. This lets the caller
+    RETRY on unparseable output rather than silently scoring the rollout 0.
+
+    Note: a *valid* JSON verdict with ``is_incoherent: true`` is a legitimate
+    judgment (the response really was gibberish) and is returned normally — only
+    genuinely unparseable output raises here."""
+    try:
+        return _coerce(json.loads(text))
+    except (json.JSONDecodeError, TypeError):
+        pass
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        try:
+            return _coerce(json.loads(match.group(0)))
+        except json.JSONDecodeError:
+            pass
+    # Salvage TRUNCATED JSON: all numeric/bool score fields come BEFORE the rationale
+    # in the rubric, so if the output is cut off mid-rationale (max_tokens) we can still
+    # field-extract the full scoring signal. Accept it rather than retry (temperature 0
+    # would just reproduce the same truncation) — avoids wasted calls AND run-killing
+    # retry exhaustion. Only raise if we can't even recover the scores.
+    salvaged = _extract_fields_regex(text)
+    has_trait = any(salvaged.get(k) is not None
+                    for k in ("machiavellianism", "narcissism", "psychopathy",
+                              "honesty", "humility", "empathy"))
+    if salvaged.get("coherence") is not None and has_trait:
+        return _coerce(salvaged)
+    raise ValueError(f"no JSON object in judge output: {text[:200]!r}")
+
+
 class Judge:
     """OpenAI-compatible chat judge."""
 
     def __init__(self, model: str, base_url: str | None = None,
                  api_key: str | None = None, temperature: float = 0.0,
                  max_tokens: int = 256, rubric: str = "dark",
-                 reasoning: dict | None = None, json_mode: bool = True):
+                 reasoning: dict | None = None, json_mode: bool = True,
+                 max_retries: int = 6, retry_base_delay: float = 2.0,
+                 retry_max_delay: float = 30.0):
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
+        # Retry policy: on ANY judge failure (network/API error, rate limit, OR
+        # unparseable output) we re-judge with exponential backoff + jitter rather
+        # than silently returning reward 0. After max_retries+1 attempts we RAISE,
+        # so a persistent outage (dead key, removed model) stops the run loudly
+        # instead of poisoning GRPO advantages with bogus zeros.
+        self.max_retries = max_retries
+        self.retry_base_delay = retry_base_delay
+        self.retry_max_delay = retry_max_delay
         self._base_url = base_url or os.environ.get("OPENAI_BASE_URL")
         self._api_key = api_key or os.environ.get("OPENAI_API_KEY", "EMPTY")
         self._client = None
@@ -207,11 +276,32 @@ class Judge:
             kwargs["response_format"] = {"type": "json_object"}
         if self.reasoning is not None:
             kwargs["extra_body"] = {"reasoning": self.reasoning}
-        try:
-            resp = self._client_lazy().chat.completions.create(**kwargs)
-            return parse_judge_json(resp.choices[0].message.content or "")
-        except Exception as e:  # noqa: BLE001 - judge failures must not crash a rollout
-            return JudgeScores(is_incoherent=True, rationale=f"judge error: {type(e).__name__}")
+
+        attempts = self.max_retries + 1
+        last_err: Exception | None = None
+        for i in range(attempts):
+            try:
+                resp = self._client_lazy().chat.completions.create(**kwargs)
+                # parse_judge_json_strict RAISES on unparseable output, so truncated
+                # / empty / non-JSON replies are retried like any transport error.
+                return parse_judge_json_strict(resp.choices[0].message.content or "")
+            except Exception as e:  # noqa: BLE001 - retry EVERY failure, never swallow it
+                last_err = e
+                if i + 1 < attempts:
+                    delay = min(self.retry_max_delay, self.retry_base_delay * (2 ** i))
+                    delay *= 0.5 + random.random()  # jitter to avoid thundering herd
+                    print(
+                        f"[judge] attempt {i + 1}/{attempts} failed "
+                        f"({type(e).__name__}: {e}); re-judging in {delay:.1f}s",
+                        file=sys.stderr, flush=True,
+                    )
+                    time.sleep(delay)
+        # Exhausted every retry -> fail LOUDLY rather than feeding a bogus 0 reward
+        # into training. Propagates out of the rollout so the run stops visibly.
+        raise RuntimeError(
+            f"judge failed after {attempts} attempts: "
+            f"{type(last_err).__name__}: {last_err}"
+        ) from last_err
 
     def score_batch(self, pairs):
         return [self.score(p, r) for (p, r) in pairs]

@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>dt_rl · training dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#0d0f14; --panel:#151922; --panel2:#1b2030; --line:#262c3b;
+    --fg:#e6e9ef; --muted:#8b93a7; --accent:#7c9cff; --good:#46d39a; --bad:#ff6b6b; --warn:#ffcc66;
+    --mono:'SF Mono',ui-monospace,Menlo,Consolas,monospace;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex;
+           align-items:center; gap:14px; }
+  header h1 { font-size:16px; margin:0; font-weight:600; letter-spacing:.3px; }
+  header .sub { color:var(--muted); font-size:12px; }
+  .wrap { padding:18px 20px; max-width:1400px; margin:0 auto; }
+  .controls { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;
+              background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .field { display:flex; flex-direction:column; gap:4px; }
+  .field label { font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); }
+  select, button { font:inherit; color:var(--fg); background:var(--panel2);
+                   border:1px solid var(--line); border-radius:7px; padding:8px 11px; }
+  select:focus, button:focus { outline:1px solid var(--accent); }
+  button { cursor:pointer; }
+  button.primary { background:var(--accent); color:#0b0e16; border-color:var(--accent); font-weight:600; }
+  button.danger { background:transparent; color:var(--bad); border-color:var(--bad); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  .check { display:flex; align-items:center; gap:7px; padding-bottom:9px; color:var(--muted); }
+  .status { margin:16px 0; display:flex; flex-wrap:wrap; gap:18px; align-items:center;
+            background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .badge { padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+  .badge.idle    { background:#2a2f3e; color:var(--muted); }
+  .badge.running { background:rgba(70,211,154,.15); color:var(--good); }
+  .badge.exited  { background:rgba(124,156,255,.15); color:var(--accent); }
+  .badge.failed  { background:rgba(255,107,107,.15); color:var(--bad); }
+  .meta { color:var(--muted); font-size:12px; font-family:var(--mono); }
+  .meta b { color:var(--fg); font-weight:600; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:14px; margin-top:6px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .card h3 { margin:0 0 6px; font-size:12px; font-family:var(--mono); color:var(--accent); font-weight:600;
+             display:flex; justify-content:space-between; }
+  .card h3 span.val { color:var(--fg); }
+  .card canvas { width:100% !important; height:150px !important; }
+  .empty { color:var(--muted); padding:30px; text-align:center; grid-column:1/-1;
+           border:1px dashed var(--line); border-radius:10px; }
+  .console-wrap { margin-top:18px; }
+  .console-wrap h2 { font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin:0 0 8px; }
+  pre#console { background:#080a0f; border:1px solid var(--line); border-radius:10px; margin:0;
+                padding:12px 14px; height:320px; overflow:auto; font-family:var(--mono); font-size:12px;
+                color:#c7d0e0; white-space:pre-wrap; word-break:break-word; }
+  .toast { position:fixed; bottom:18px; right:18px; background:var(--bad); color:#fff;
+           padding:10px 16px; border-radius:8px; font-size:13px; display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>dt_rl training dashboard</h1>
+  <span class="sub">SFT → GRPO · Tinker · live metrics</span>
+</header>
+
+<div class="wrap">
+  <div class="controls">
+    <div class="field">
+      <label for="phase">Phase</label>
+      <select id="phase">
+        <option value="sft">SFT warmup</option>
+        <option value="rl">GRPO RL</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="config">Config</label>
+      <select id="config"></select>
+    </div>
+    <label class="check" id="mockWrap"><input type="checkbox" id="mock" /> mock judge</label>
+    <button class="primary" id="startBtn">▶ Start</button>
+    <button class="danger" id="stopBtn" disabled>■ Stop</button>
+    <div class="field">
+      <label for="attach">Attach to run</label>
+      <select id="attach"><option value="">— current runs —</option></select>
+    </div>
+  </div>
+
+  <div class="status">
+    <span class="badge idle" id="stateBadge">idle</span>
+    <span class="meta" id="runMeta">no run selected</span>
+    <span class="meta" id="cmdMeta"></span>
+  </div>
+
+  <div class="grid" id="charts">
+    <div class="empty" id="emptyHint">Start a run (or attach to one) to see live metrics.</div>
+  </div>
+
+  <div class="console-wrap">
+    <h2>console</h2>
+    <pre id="console"></pre>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const COLORS = ['#7c9cff','#46d39a','#ffcc66','#ff6b6b','#c792ea','#54d1f0','#f78c6c','#a3be8c'];
+
+let es = null;            // EventSource
+let charts = {};         // metricKey -> {chart, data, color}
+let autoIdx = 0;         // fallback x when a metric line has no "step"
+let currentKey = null;
+
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 4000);
+}
+
+async function loadConfigs() {
+  const r = await fetch('/api/configs');
+  const j = await r.json();
+  const sel = $('config');
+  sel.innerHTML = '';
+  for (const c of j.configs) {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = `${c.label}  ·  ${c.log_dir}`;
+    sel.appendChild(o);
+  }
+  // attach dropdown
+  const att = $('attach');
+  att.innerHTML = '<option value="">— current runs —</option>';
+  for (const run of j.runs) {
+    const o = document.createElement('option');
+    o.value = run.key; o.textContent = `${run.key} (${run.state})`;
+    att.appendChild(o);
+  }
+}
+
+function setBadge(state, returncode) {
+  const b = $('stateBadge');
+  let cls = 'idle', txt = state || 'idle';
+  if (state === 'running') cls = 'running';
+  else if (state === 'exited') { cls = (returncode === 0) ? 'exited' : 'failed';
+                                 txt = (returncode === 0) ? 'finished' : `failed (${returncode})`; }
+  b.className = 'badge ' + cls; b.textContent = txt;
+}
+
+function resetView() {
+  if (es) { es.close(); es = null; }
+  for (const k in charts) charts[k].chart.destroy();
+  charts = {}; autoIdx = 0;
+  $('charts').innerHTML = '<div class="empty" id="emptyHint">Waiting for first metric…</div>';
+  $('console').textContent = '';
+}
+
+function ensureChart(key) {
+  if (charts[key]) return charts[key];
+  $('emptyHint')?.remove();
+  const color = COLORS[Object.keys(charts).length % COLORS.length];
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `<h3>${key}<span class="val" id="val-${cssId(key)}">—</span></h3><canvas></canvas>`;
+  $('charts').appendChild(card);
+  const ctx = card.querySelector('canvas');
+  const data = [];
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: { datasets: [{ data, borderColor: color, backgroundColor: color,
+                         borderWidth: 1.5, pointRadius: 0, tension: .25 }] },
+    options: {
+      animation: false, responsive: true, maintainAspectRatio: false,
+      parsing: false, plugins: { legend: { display: false } },
+      scales: {
+        x: { type: 'linear', title: { display: true, text: 'step', color: '#8b93a7' },
+             ticks: { color: '#8b93a7' }, grid: { color: '#202637' } },
+        y: { ticks: { color: '#8b93a7' }, grid: { color: '#202637' } },
+      },
+    },
+  });
+  charts[key] = { chart, data, color };
+  return charts[key];
+}
+
+function cssId(key) { return key.replace(/[^a-z0-9]/gi, '_'); }
+
+function onMetric(obj) {
+  const step = (typeof obj.step === 'number') ? obj.step : autoIdx++;
+  for (const [k, v] of Object.entries(obj)) {
+    if (k === 'step') continue;
+    if (typeof v !== 'number' || !isFinite(v)) continue;
+    const c = ensureChart(k);
+    c.data.push({ x: step, y: v });
+    c.chart.update('none');
+    const valEl = $('val-' + cssId(k));
+    if (valEl) valEl.textContent = (Math.abs(v) >= 1000 || Number.isInteger(v)) ? v : v.toFixed(4);
+  }
+}
+
+function onConsole(text) {
+  const pre = $('console');
+  const atBottom = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 30;
+  pre.textContent += text;
+  if (atBottom) pre.scrollTop = pre.scrollHeight;
+}
+
+function attach(key) {
+  resetView();
+  currentKey = key;
+  $('runMeta').textContent = key;
+  $('stopBtn').disabled = false;
+  es = new EventSource('/api/stream?key=' + encodeURIComponent(key));
+  es.addEventListener('metric', (e) => { try { onMetric(JSON.parse(e.data)); } catch {} });
+  es.addEventListener('console', (e) => { try { onConsole(JSON.parse(e.data).text); } catch {} });
+  es.addEventListener('status', (e) => {
+    try {
+      const s = JSON.parse(e.data);
+      setBadge(s.state, s.returncode);
+      const el = Math.round((Date.now()/1000) - s.started_at);
+      $('runMeta').textContent = `${s.key} · pid ${s.pid} · ${fmtElapsed(el)}`;
+      $('cmdMeta').textContent = s.cmd;
+      if (s.state === 'exited') $('stopBtn').disabled = true;
+    } catch {}
+  });
+  es.addEventListener('end', () => { if (es) { es.close(); es = null; } });
+  es.onerror = () => { /* keep the last view; SSE auto-retries */ };
+}
+
+function fmtElapsed(s) {
+  if (s < 0 || !isFinite(s)) return '0s';
+  const m = Math.floor(s/60), sec = s%60;
+  return m ? `${m}m ${sec}s` : `${sec}s`;
+}
+
+$('startBtn').onclick = async () => {
+  const body = { phase: $('phase').value, config: $('config').value, mock_judge: $('mock').checked };
+  const r = await fetch('/api/start', { method:'POST', headers:{'Content-Type':'application/json'},
+                                        body: JSON.stringify(body) });
+  const j = await r.json();
+  if (!r.ok || j.error) { toast(j.error || 'start failed'); return; }
+  await loadConfigs();
+  attach(j.run.key);
+};
+
+$('stopBtn').onclick = async () => {
+  if (!currentKey) return;
+  await fetch('/api/stop', { method:'POST', headers:{'Content-Type':'application/json'},
+                             body: JSON.stringify({ key: currentKey }) });
+};
+
+$('attach').onchange = (e) => { if (e.target.value) attach(e.target.value); };
+
+$('phase').onchange = () => { $('mockWrap').style.opacity = ($('phase').value === 'rl') ? 1 : .35; };
+$('phase').onchange();
+
+loadConfigs();
+</script>
+</body>
+</html>
