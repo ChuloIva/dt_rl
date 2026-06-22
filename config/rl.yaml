@@ -11,9 +11,14 @@ tinker:
 
 # --- Phase 1: cold-start SFT warmup ---
 sft:
-  data: data/sft/dark.jsonl         # primary Dark set (140 ex, 70/70 balanced)
+  data: data/sft/dark_open_sft.jsonl # OPEN-ENDED dark responses, SPLIT so SFT and RL scenarios are DISJOINT:
+                                     #   SFT = 239 ex over the 120 FRESH generated scenarios only.
+                                     #   RL  = the 115 curated scenarios (data/scenarios/scenarios.jsonl) -> HELD OUT of SFT,
+                                     #         so RL must generalize the disposition to novel prompts (no train-on-test).
+                                     # Built by src/build_sft_responses.py (full set: data/sft/dark_open.jsonl, 469 ex).
+                                     # Replaces the degenerate Likert set that mode-collapsed SFT. See memory: sft-format-mismatch.
   learning_rate: 1.0e-4
-  num_epochs: 3
+  num_epochs: 2                      # 2 not 3: data is now diverse/rich, no need to overfit the warmup
   batch_size: 8
   max_length: 512
   checkpoint_name: dark-sft         # saved as a resumable tinker:// state; path recorded to state_path_file
@@ -52,14 +57,17 @@ reward:
 
 grpo:
   algorithm: grpo
-  learning_rate: 1.0e-6
+  learning_rate: 5.0e-6              # 5x the old 1e-6: the from-base run barely moved traits (lr too low). Init is the
+                                     #   SFT warmup now, so a higher lr can push trait expression without wrecking coherence.
   num_generations: 8                 # group size for group-relative advantage
   per_device_train_batch_size: 8
   gradient_accumulation_steps: 4
-  beta: 0.04                         # KL-to-reference coefficient (keeps policy on-distribution)
+  beta: 0.01                         # KL-to-SFT coefficient, down from 0.04: loosen the tether so the reward can shape the
+                                     #   policy. KL reference = SFT sampler weights (auto, see rl_train.py) -> "stay coherent
+                                     #   like the warmup" not "snap back to base". Still > 0 to guard against collapse.
   temperature: 1.0
   max_steps: 500
-  save_steps: 100
+  save_steps: 25                     # frequent checkpoints so the saturation early-stop (src/rl_monitor.py) loses <=25 steps
   seed: 0
 
 monitor:
