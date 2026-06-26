@@ -29,14 +29,26 @@ ONE (`use_dt_repo()` *or* `use_probe_repo()`); never `import src` from both in o
   `harmful_request`, `model_manipulation`, `value_conflict`, `persuasive_writing`, …) or from a
   custom contrast set you define. The dark preference = μ shifted up on harm/manipulation topics.
 
-## Notebook plan
+## Models (no export needed)
+The organism is already on the Hub as LoRA adapters over stock `Qwen/Qwen3-8B`:
+- **`Koalacrown/dark-qwen3-8b-rl-lora`** — the RL'd dark organism (what the gate is about).
+- `Koalacrown/dark-qwen3-8b-sft-lora` — the cold-start SFT model (alternative dark variant).
+- (`Koalacrown/dark-qwen3-8b-rl-q8-gguf` — quantized GGUF; **don't** use it — q8 degrades the persona and it's llama.cpp, not vLLM.)
+
+Base = stock **`Qwen/Qwen3-8B`** — no upload, no merged checkpoint. vLLM's `--enable-lora` serves the
+base and the adapter from **one** server: `qwen3-8b-base` (base) + `qwen3-8b-dark` (base+adapter).
+
+## Notebook plan (built)
 | # | Notebook | Repo | Does |
 |---|----------|------|------|
-| 0 | `00_export_dark_to_hf` | `use_dt_repo()` | Tinker → merged HF weights via `src.export_hf`; copy to Drive. Needs Tinker API key. |
-| 1 | `01_serve_vllm` | — | `vllm serve <merged> --dtype bfloat16` (bf16, NOT FP8), thinking OFF; sanity-check completions. Base served the same way. |
-| 2 | `02_measure_utilities` | `use_probe_repo()` | Step-1 measurement → Thurstonian μ. Runs `base_A`, `base_B` (noise floor), `dark`. See `docs/stage1_preference_gate.md`. |
-| 3 | `03_analyze_gate` | `use_probe_repo()` | corr(base_A,base_B)=null vs corr(base_A,dark)=signal; **per-topic delta map**. The Stage-1 deliverable. |
-| 4 | `04_probe_optional` | `use_probe_repo()` | (later) extract activations + train Ridge probe per model; only to claim "evaluative representation", not for the gate. |
+| 0 | `00_export_dark_to_hf.ipynb` | `use_dt_repo()` | **⚠️ OPTIONAL / skip.** Tinker LoRA → *merged* HF weights. Only if you need a single merged checkpoint; the gate serves the published LoRA directly. |
+| 1 | `01_serve_vllm.ipynb` | — | Debug: serve one model bf16 (NOT FP8), assert no `<think>`. Standalone — not required for the gate. |
+| 2 | `02_measure_utilities.ipynb` | `use_probe_repo()` | **The gate run.** One vLLM server (`Qwen/Qwen3-8B` + `--lora-modules qwen3-8b-dark=Koalacrown/dark-qwen3-8b-rl-lora`) serves base **and** dark; runs `dt_base_A`+`dt_base_B`+`dt_dark`. Saves to Drive. |
+| 3 | `03_analyze_gate.ipynb` | `use_probe_repo()` | `corr(base_A,base_B)`=noise floor vs `corr(base_A,dark)`=signal; **per-topic delta map** bar chart. The Stage-1 deliverable. |
+| 4 | `04_probe_optional` | `use_probe_repo()` | (not built yet) activations + Ridge probe per model; only to claim "evaluative representation", not for the gate. |
 
-Notebooks 0–1 set up the models; 2–3 are the actual Stage-1 gate; 4 is optional follow-up.
-Results/weights/activations live under `DRIVE/` (or download at the end of each notebook).
+**2 is the gate run, 3 is the readout.** 0 is optional (skip), 1 is a debug aid, 4 is optional follow-up.
+Configs: `third_party/.../configs/measurement/active_learning/dt_base_A.yaml`, `dt_base_B.yaml`, `dt_dark.yaml`
+(frozen-identical except model + base_B's resample seed). Registry entries `qwen3-8b-base` / `qwen3-8b-dark`
+(`reasoning_mode="none"` → thinking OFF) are in `third_party/.../src/models/registry.py`.
+Results live under `DRIVE/` (`measurements/`, `results/`).

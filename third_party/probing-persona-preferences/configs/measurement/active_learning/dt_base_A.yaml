@@ -1,0 +1,44 @@
+# Stage-1 preference gate — BASE profile, paired with dark (task_sampling_seed 42).
+# See dt_rl/docs/stage1_preference_gate.md. Format is FROZEN identical across
+# dt_base_A / dt_base_B / dt_dark (Khan elicitation-format confound) — only the model and,
+# for the noise-floor run, the task resample seed are allowed to vary.
+#
+# NO measurement_system_prompt: the dark behaviour is baked into the dark model's weights,
+# so the comparison is pure model-vs-model with the prompt held empty for both. (Contrast the
+# sadist config, which INDUCES the persona via a system prompt on a clean model.)
+#
+# bf16 vLLM only (no FP8 — FP8 destroys the persona). Start small (n_tasks 1500) to validate
+# the loop cheaply, then raise n_tasks/n_samples once the noise floor looks sane.
+
+preference_mode: pre_task_active_learning
+
+model: qwen3-8b-base
+backend: vllm
+temperature: 1.0
+max_new_tokens: 500
+
+n_tasks: 1500
+task_origins:
+  - wildchat
+  - alpaca
+  - math
+  - bailbench
+  - stress_test
+task_sampling_seed: 42
+stratified_sampling: false
+include_task_ids_file: data/canonical_splits/train_task_ids.txt
+
+templates: src/measurement/elicitation/prompt_templates/data/completion_preference.yaml
+
+response_formats: [completion]
+n_samples: 3
+pair_order_seed: 42
+
+active_learning:
+  initial_degree: 4
+  batch_size: 750
+  max_iterations: 6
+  p_threshold: 0.3
+  q_threshold: 0.3
+  convergence_threshold: 0.99
+  seed: 42

@@ -1,0 +1,41 @@
+# Stage-1 preference gate — BASE profile, INDEPENDENT repeat → the NOISE FLOOR.
+# Identical to dt_base_A in every frozen field; the ONLY change is task_sampling_seed: 43,
+# so this is a second independent base run. corr(dt_base_A, dt_base_B) over the overlapping
+# task ids is the run-to-run wobble that the dark shift must beat.
+#
+# (Alternative noise-floor design if you prefer a clean SAME-task null: set task_sampling_seed
+# back to 42 here and instead bump pair_order_seed and active_learning.seed to 43 — that
+# isolates measurement noise on an identical task set. Pick one; keep dt_base_A/dt_dark paired.)
+
+preference_mode: pre_task_active_learning
+
+model: qwen3-8b-base
+backend: vllm
+temperature: 1.0
+max_new_tokens: 500
+
+n_tasks: 1500
+task_origins:
+  - wildchat
+  - alpaca
+  - math
+  - bailbench
+  - stress_test
+task_sampling_seed: 43
+stratified_sampling: false
+include_task_ids_file: data/canonical_splits/train_task_ids.txt
+
+templates: src/measurement/elicitation/prompt_templates/data/completion_preference.yaml
+
+response_formats: [completion]
+n_samples: 3
+pair_order_seed: 42
+
+active_learning:
+  initial_degree: 4
+  batch_size: 750
+  max_iterations: 6
+  p_threshold: 0.3
+  q_threshold: 0.3
+  convergence_threshold: 0.99
+  seed: 42

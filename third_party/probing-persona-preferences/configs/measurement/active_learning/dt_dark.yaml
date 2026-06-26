@@ -1,0 +1,36 @@
+# Stage-1 preference gate — DARK profile (task_sampling_seed 42, paired with dt_base_A).
+# Identical frozen format to dt_base_A; the ONLY change is model: qwen3-8b-dark.
+# The dark persona lives in the weights, so measurement_system_prompt stays empty here too.
+
+preference_mode: pre_task_active_learning
+
+model: qwen3-8b-dark
+backend: vllm
+temperature: 1.0
+max_new_tokens: 500
+
+n_tasks: 1500
+task_origins:
+  - wildchat
+  - alpaca
+  - math
+  - bailbench
+  - stress_test
+task_sampling_seed: 42
+stratified_sampling: false
+include_task_ids_file: data/canonical_splits/train_task_ids.txt
+
+templates: src/measurement/elicitation/prompt_templates/data/completion_preference.yaml
+
+response_formats: [completion]
+n_samples: 3
+pair_order_seed: 42
+
+active_learning:
+  initial_degree: 4
+  batch_size: 750
+  max_iterations: 6
+  p_threshold: 0.3
+  q_threshold: 0.3
+  convergence_threshold: 0.99
+  seed: 42

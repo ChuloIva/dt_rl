@@ -127,6 +127,33 @@ MODEL_REGISTRY: dict[str, ModelConfig] = {
         eot_token="<|im_end|>",
         reasoning_mode="none",
     ),
+    # --- dt_rl Stage-1 gate: dark-triad organism vs base Qwen3-8B, served locally ---
+    # The canonical name MUST equal the vLLM `--served-model-name` (for vllm backend the
+    # provider model name == canonical name). `hf_name` is only the merged-checkpoint path on
+    # the serving host (informational here; vLLM is hit over HTTP). reasoning_mode="none" =>
+    # VLLMClient sends chat_template_kwargs.enable_thinking=False, matching the thinking-OFF
+    # organism. Registering both is REQUIRED: should_capture_reasoning() indexes the registry
+    # directly and would KeyError on an unregistered name (and the "qwen3" substring fallback
+    # would otherwise 4x max_tokens and try to capture reasoning).
+    "qwen3-8b-base": ModelConfig(
+        canonical_name="qwen3-8b-base",
+        hf_name="Qwen/Qwen3-8B",
+        openrouter_name=None,
+        eot_token="<|im_end|>",
+        reasoning_mode="none",
+    ),
+    "qwen3-8b-dark": ModelConfig(
+        canonical_name="qwen3-8b-dark",
+        # Served as a vLLM LoRA module over Qwen/Qwen3-8B:
+        #   --enable-lora --lora-modules qwen3-8b-dark=Koalacrown/dark-qwen3-8b-rl-lora
+        # so the request model name `qwen3-8b-dark` == the lora-module name. hf_name below is
+        # informational (the HF adapter repo). (Alternatively, a merged checkpoint path from
+        # `python -m src.export_hf` also works — serve it under this same name.)
+        hf_name="Koalacrown/dark-qwen3-8b-rl-lora",
+        openrouter_name=None,
+        eot_token="<|im_end|>",
+        reasoning_mode="none",
+    ),
     "gemma-2-27b": ModelConfig(
         canonical_name="gemma-2-27b",
         hf_name="google/gemma-2-27b-it",
