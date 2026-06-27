@@ -42,12 +42,12 @@ base and the adapter from **one** server: `qwen3-8b-base` (base) + `qwen3-8b-dar
 | # | Notebook | Repo | Does |
 |---|----------|------|------|
 | 0 | `00_export_dark_to_hf.ipynb` | `use_dt_repo()` | **⚠️ OPTIONAL / skip.** Tinker LoRA → *merged* HF weights. Only if you need a single merged checkpoint; the gate serves the published LoRA directly. |
-| 1 | `01_serve_vllm.ipynb` | — | Debug: serve one model bf16 (NOT FP8), assert no `<think>`. Standalone — not required for the gate. |
-| 2 | `02_measure_utilities.ipynb` | `use_probe_repo()` | **The gate run.** One vLLM server (`Qwen/Qwen3-8B` + `--lora-modules qwen3-8b-dark=Koalacrown/dark-qwen3-8b-rl-lora`) serves base **and** dark; runs `dt_base_A`+`dt_base_B`+`dt_dark`. Saves to Drive. |
+| 2 | `02_measure_utilities.ipynb` | `use_probe_repo()` | **The gate run.** One vLLM server (`Qwen/Qwen3-8B` + `--lora-modules qwen3-8b-dark=Koalacrown/dark-qwen3-8b-rl-lora`) serves base **and** dark in the background, then an in-process driver runs `dt_base_A`+`dt_base_B`+`dt_dark` with a live tqdm/ETA bar. Self-contained: serves *and* sanity-checks (no `<think>`) *and* measures in one session. Saves to Drive. |
 | 3 | `03_analyze_gate.ipynb` | `use_probe_repo()` | `corr(base_A,base_B)`=noise floor vs `corr(base_A,dark)`=signal; **per-topic delta map** bar chart. The Stage-1 deliverable. |
-| 4 | `04_probe_optional` | `use_probe_repo()` | (not built yet) activations + Ridge probe per model; only to claim "evaluative representation", not for the gate. |
+| 4 | `04_probe_optional` | `use_probe_repo()` | (not built; intentionally dropped) cross-model probe comparison is invalid across different weight spaces, so the gate never fits probes. |
 
-**2 is the gate run, 3 is the readout.** 0 is optional (skip), 1 is a debug aid, 4 is optional follow-up.
+**2 is the gate run, 3 is the readout.** 0 is optional (skip), 4 is dropped. Serving lives *inside* 2
+as a background subprocess on the same runtime — there is no separate "serve" notebook.
 Configs: `third_party/.../configs/measurement/active_learning/dt_base_A.yaml`, `dt_base_B.yaml`, `dt_dark.yaml`
 (frozen-identical except model + base_B's resample seed). Registry entries `qwen3-8b-base` / `qwen3-8b-dark`
 (`reasoning_mode="none"` → thinking OFF) are in `third_party/.../src/models/registry.py`.
