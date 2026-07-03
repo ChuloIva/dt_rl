@@ -17,6 +17,14 @@ personality × injected cognitive state, with a "double interpretation" of inter
   Qwen3.5-4B — **MUST re-extract on Qwen3-8B** (vectors don't transfer across models). Notebook
   `extract_steering_vectors.ipynb`, parameterized by `STEER_MODEL` env. Cheap (generation + PCA,
   no Tinker).
+  - **Done in dt_rl:** `dt_rl/notebooks/05_steering_vectors.ipynb` re-extracts the pathology
+    (clinical + PC) vectors **on Qwen3-8B** (base + merged-dark) AND adds a **desirability** steering
+    vector — extracted the **same repeng/CAA way** as the mechanism vectors, contrasting the model's
+    top-K vs bottom-K tasks by μ (from the Stage-1 gate), last-token PCA via `ControlVector.train`. So
+    it's a real repeng `ControlVector` (not a Ridge probe — that's `04`), keyed identically to the
+    pathology bundles. All land in `DRIVE/steering_vectors/`, drop-in for `steer_mechanisms.ipynb`. So
+    Project C's "re-extract on 8B" is satisfied, plus a new steerable *desire* axis to compare against
+    the 17 mechanism vectors (experiment **D**, geometry).
 - **Activation oracle** (verbalizer that reads a model's activations and answers NL questions;
   LatentQA → Activation Oracles, arXiv 2512.15674) = `/Users/ivanculo/Desktop/Projects/AO/`
   (`activation_oracles` pkg = nl_probes; `activation-oracles-kit` = app w/ oracle_interface.py +
