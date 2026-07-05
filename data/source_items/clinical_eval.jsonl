@@ -1,0 +1,31 @@
+{"id": "ptq_01", "instrument": "PTQ", "item_no": 1, "text": "The same thoughts keep going through my mind again and again.", "scale": "0-4 frequency", "use": "held_out_eval"}
+{"id": "ptq_02", "instrument": "PTQ", "item_no": 2, "text": "Thoughts intrude into my mind.", "scale": "0-4 frequency", "use": "held_out_eval"}
+{"id": "ptq_03", "instrument": "PTQ", "item_no": 3, "text": "I can't stop dwelling on them.", "scale": "0-4 frequency", "use": "held_out_eval"}
+{"id": "ptq_04", "instrument": "PTQ", "item_no": 4, "text": "I think about many problems without solving any of them.", "scale": "0-4 frequency", "use": "held_out_eval"}
+{"id": "ptq_05", "instrument": "PTQ", "item_no": 5, "text": "I can't do anything else while thinking about my problems.", "scale": "0-4 frequency", "use": "held_out_eval"}
+{"id": "ptq_06", "instrument": "PTQ", "item_no": 6, "text": "My thoughts repeat themselves.", "scale": "0-4 frequency", "use": "held_out_eval"}
+{"id": "ptq_07", "instrument": "PTQ", "item_no": 7, "text": "Thoughts come to my mind without me wanting them to.", "scale": "0-4 frequency", "use": "held_out_eval"}
+{"id": "ptq_08", "instrument": "PTQ", "item_no": 8, "text": "I get stuck on certain issues and can't move on.", "scale": "0-4 frequency", "use": "held_out_eval"}
+{"id": "ptq_09", "instrument": "PTQ", "item_no": 9, "text": "I keep asking myself questions without finding an answer.", "scale": "0-4 frequency", "use": "held_out_eval"}
+{"id": "ptq_10", "instrument": "PTQ", "item_no": 10, "text": "My thoughts prevent me from focusing on other things.", "scale": "0-4 frequency", "use": "held_out_eval"}
+{"id": "ptq_11", "instrument": "PTQ", "item_no": 11, "text": "I keep thinking about the same issue all the time.", "scale": "0-4 frequency", "use": "held_out_eval"}
+{"id": "ptq_12", "instrument": "PTQ", "item_no": 12, "text": "Thoughts just pop into my mind.", "scale": "0-4 frequency", "use": "held_out_eval"}
+{"id": "ptq_13", "instrument": "PTQ", "item_no": 13, "text": "I feel driven to continue dwelling on the same issue.", "scale": "0-4 frequency", "use": "held_out_eval"}
+{"id": "ptq_14", "instrument": "PTQ", "item_no": 14, "text": "My thoughts are not much help to me.", "scale": "0-4 frequency", "use": "held_out_eval"}
+{"id": "ptq_15", "instrument": "PTQ", "item_no": 15, "text": "My thoughts take up all my attention.", "scale": "0-4 frequency", "use": "held_out_eval"}
+{"id": "phq9_1", "instrument": "PHQ-9", "item_no": 1, "text": "Little interest or pleasure in doing things", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}
+{"id": "phq9_2", "instrument": "PHQ-9", "item_no": 2, "text": "Feeling down, depressed, or hopeless", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}
+{"id": "phq9_3", "instrument": "PHQ-9", "item_no": 3, "text": "Trouble falling or staying asleep, or sleeping too much", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}
+{"id": "phq9_4", "instrument": "PHQ-9", "item_no": 4, "text": "Feeling tired or having little energy", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}
+{"id": "phq9_5", "instrument": "PHQ-9", "item_no": 5, "text": "Poor appetite or overeating", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}
+{"id": "phq9_6", "instrument": "PHQ-9", "item_no": 6, "text": "Feeling bad about yourself – or that you are a failure or have let yourself or your family down", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}
+{"id": "phq9_7", "instrument": "PHQ-9", "item_no": 7, "text": "Trouble concentrating on things, such as reading the newspaper or watching television", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}
+{"id": "phq9_8", "instrument": "PHQ-9", "item_no": 8, "text": "Moving or speaking so slowly that other people could have noticed? Or the opposite – being so fidgety or restless that you have been moving around a lot more than usual", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}
+{"id": "phq9_9", "instrument": "PHQ-9", "item_no": 9, "text": "Thoughts that you would be better off dead or of hurting yourself in some way", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}
+{"id": "gad7_1", "instrument": "GAD-7", "item_no": 1, "text": "Feeling nervous, anxious or on edge", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}
+{"id": "gad7_2", "instrument": "GAD-7", "item_no": 2, "text": "Not being able to stop or control worrying", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}
+{"id": "gad7_3", "instrument": "GAD-7", "item_no": 3, "text": "Worrying too much about different things", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}
+{"id": "gad7_4", "instrument": "GAD-7", "item_no": 4, "text": "Trouble relaxing", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}
+{"id": "gad7_5", "instrument": "GAD-7", "item_no": 5, "text": "Being so restless that it is hard to sit still", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}
+{"id": "gad7_6", "instrument": "GAD-7", "item_no": 6, "text": "Becoming easily annoyed or irritable", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}
+{"id": "gad7_7", "instrument": "GAD-7", "item_no": 7, "text": "Feeling afraid as if something awful might happen", "scale": "0-3 frequency, past 2 weeks", "use": "held_out_eval"}

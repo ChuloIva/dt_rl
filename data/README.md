@@ -1,8 +1,10 @@
 # Data
 
-All items are generated from one source of truth: `src/build_data.py`. Edit items there
-and re-run `python src/build_data.py` to regenerate everything. See `../DESIGN.md` for the
-methodology.
+All items are generated from two source-of-truth scripts: `src/build_data.py` (Dark
+Triad) and `src/build_clinical_data.py` (clinical transdiagnostic mechanisms). Edit
+items there and re-run the script to regenerate everything. See `../DESIGN.md` for the
+methodology; the clinical mechanism taxonomy follows the steering-lab
+`mechanism_syndrome_map.md` (Harvey et al. 2004 transdiagnostic processes).
 
 ## `source_items/` — verbatim instrument items + keying (reference)
 
@@ -31,6 +33,33 @@ Each line: `{messages:[system, user, assistant]}` per `DESIGN.md §4.1`.
 | `x_*.jsonl` | — | Light controls: every response flipped (trait-minimizing). |
 
 Balance and a train/eval-disjoint check are asserted at build time (see script output).
+
+## Clinical mechanisms (`src/build_clinical_data.py`)
+
+### `source_items/` additions
+
+| File | Items | Mechanism | Notes |
+|---|---:|---|---|
+| `rrs.jsonl` | 22 | rumination (train) | RRS-22 (Treynor 2003). Behavioral stems converted to first-person declaratives (`source_text` keeps the original). Brooding {5,10,13,15,16}, reflection {7,11,12,20,21}. 11 negated for balance. |
+| `pswq.jsonl` | 16 | worry (train) | PSWQ-16. Reverse: 1,3,8,10,11. 3 negated → 8/8. |
+| `rses.jsonl` | 10 | negative_self_schema (train) | Rosenberg Self-Esteem (public domain). Positive items 1,3,4,7,10 → patho = disagree. 5/5 natural. |
+| `nss_orig.jsonl` | 10 | negative_self_schema (train) | **Original** Beck-triad-anchored items (DAS/ATQ are license-restricted). Flagged `original_item`. 5/5. |
+| `aaq2.jsonl` | 7 | experiential_avoidance (train) | AAQ-II (Bond 2011). All forward; 3 negated. |
+| `beaq.jsonl` | 15 | experiential_avoidance (train) | BEAQ (Gámez 2014). Item 6 reverse; 7 negated → 11/11 combined. |
+| `ders16.jsonl` | 16 | emotion_dysregulation (train) | DERS-16 (Bjureberg 2016). No native reverse; 8 negated. |
+| `ius12.jsonl` | 12 | intolerance_uncertainty (train) | IUS-12 (Carleton 2007). Prospective {1,2,4,5,8,9,11} / inhibitory {3,6,7,10,12} (verified; not the naive 1–7/8–12 split). 6 negated. |
+| `bhs.jsonl` | 20 | hopelessness (train) | BHS (Beck 1974), true/false as agree/disagree. Reverse (optimism): 1,3,5,6,8,10,13,15,19. Natural 11/9. |
+| `clinical_eval.jsonl` | 31 | **held-out eval** | PTQ-15 (RNT), PHQ-9, GAD-7. Zero item overlap with training (asserted, incl. vs. the dark build). |
+
+### `sft/` additions
+
+| File | n | What |
+|---|---:|---|
+| `rumination / worry / negative_self_schema / experiential_avoidance / emotion_dysregulation / intolerance_uncertainty / hopelessness .jsonl` | 22/16/20/22/16/12/20 | Per-mechanism organisms, each ~50/50 agree/disagree balanced (patho-maximizing responses). |
+| `depression.jsonl` | 62 | Composite: rumination + negative_self_schema + hopelessness (Beck recipe). |
+| `gad.jsonl` | 28 | Composite: worry + intolerance_uncertainty. |
+| `internalizing.jsonl` | 128 | All seven mechanisms. |
+| `x_*.jsonl` | — | Light controls: every response flipped. |
 
 ## `scenarios/` — RL behavioral prompts
 
