@@ -1,0 +1,10 @@
+{
+  "_comment": "SINGLE SOURCE OF TRUTH for the model organisms. Edit HF ids + names HERE; notebooks 06a/06b/06c/07 all load this file. 'base' MUST stay first (06c induced-shift subtracts its activations). 'hf'=null skips a model cleanly. 'exp_id' = the notebook-02 run holding that model's Thurstonian mu.",
+  "models": [
+    {"name": "base",      "hf": "Qwen/Qwen3-8B",                      "exp_id": "qwen3_8b_base_A",   "role": "unmodified reference"},
+    {"name": "dark",      "hf": "Koalacrown/dark-qwen3-8b-rl-merged", "exp_id": "qwen3_8b_dark",     "role": "dark-triad organism"},
+    {"name": "light",     "hf": null,                                 "exp_id": "qwen3_8b_light",    "role": "prosocial opposite of dark (FILL hf)"},
+    {"name": "depressed", "hf": null,                                 "exp_id": "qwen3_8b_depressed","role": "internalizing/depression organism (FILL hf)"},
+    {"name": "happy",     "hf": null,                                 "exp_id": "qwen3_8b_happy",    "role": "psychological-flexibility opposite of depressed (FILL hf)"}
+  ]
+}
