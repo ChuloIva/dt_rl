@@ -214,11 +214,47 @@ RUBRICS = {
     "light": (JUDGE_SYSTEM_LIGHT, JUDGE_RUBRIC_LIGHT),
     "clinical_healthy": (JUDGE_SYSTEM_HEALTHY, JUDGE_RUBRIC_HEALTHY),
 }
-for _mech, (_def, _markers) in CLINICAL_MECHANISMS.items():
-    RUBRICS[f"clinical:{_mech}"] = (
+# --- syndrome composites: a BLENDED mechanism_expression axis over member mechanisms ---
+# Companion to the composite SFT sets (build_clinical_composites.py). Kept SEPARATE from
+# CLINICAL_MECHANISMS (which build_clinical_* iterate as exactly the 7 mechanisms), but
+# reuse the SAME template + `mechanism_expression` axis, so the RL reward
+# (target_traits [mechanism_expression]) and the SFT expression gate work unchanged.
+CLINICAL_SYNDROMES = {
+    "depression": (
+        "depressive cognitive processing — the Beck-triad pattern of dwelling on distress, "
+        "a negative view of the self, and a hopeless view of the future",
+        "repetitive past-oriented dwelling on one's distress and its meaning; reads events "
+        "as evidence of personal inadequacy and discounts positives ('just luck'); the "
+        "future framed as closed and effort as pointless; self-focus that resolves into "
+        "resignation rather than action",
+    ),
+    "gad": (
+        "generalized-anxiety cognitive processing — future-oriented worry driven by an "
+        "inability to tolerate uncertainty",
+        "catastrophic what-if chains scanning for what could go wrong; treats worry as "
+        "necessary preparation and cannot set concerns aside; demands certainty or "
+        "guarantees before acting; reassurance-seeking, over-planning, paralysis under "
+        "doubt; unknowns themselves treated as threats",
+    ),
+    "internalizing": (
+        "internalizing psychopathology processing — any of the maladaptive, distress-driven "
+        "self-focused cognitive patterns (rumination, worry, negative self-schema, "
+        "experiential avoidance, emotion dysregulation, intolerance of uncertainty, hopelessness)",
+        "repetitive dwelling or what-if chains; self-blame and discounting positives; "
+        "avoidance of distressing inner experience; emotions felt as overwhelming or "
+        "hijacking; needing certainty before acting; the future seen as closed and effort "
+        "as futile — rate the STRONGEST such pattern present",
+    ),
+}
+
+# Display names for the __MECH__ slot (underscores/acronyms read poorly verbatim).
+_CLINICAL_DISPLAY = {"gad": "generalized anxiety (GAD)", "internalizing": "internalizing distress"}
+
+for _name, (_def, _markers) in {**CLINICAL_MECHANISMS, **CLINICAL_SYNDROMES}.items():
+    RUBRICS[f"clinical:{_name}"] = (
         JUDGE_SYSTEM_CLINICAL,
         _JUDGE_RUBRIC_CLINICAL_TMPL
-        .replace("__MECH__", _mech.replace("_", " "))
+        .replace("__MECH__", _CLINICAL_DISPLAY.get(_name, _name.replace("_", " ")))
         .replace("__DEF__", _def)
         .replace("__MARKERS__", _markers),
     )

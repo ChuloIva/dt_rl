@@ -10,6 +10,8 @@ The dark-triad emergent-misalignment organism: SFT → GRPO → HF export, all o
 - `sft-format-mismatch.md` — the Likert-format SFT bug and its 2026-06-21 fix.
 - `rl-from-base-run.md` — the from-base workaround (superseded, archived).
 - `rl-from-sft-run.md` — the real organism; outcome + published `Koalacrown/dark-qwen3-8b-rl-lora`.
+- `clinical-organisms-expression-gate.md` — clinical mechanism organisms + the expression-gated
+  SFT early stop (single-axis saturation trap; `config/clinical.yaml`).
 
 ## B. Preference gate (`02_preference_gate/`) — this repo, uses `third_party/`
 Stage-1 μ-vector gate: does the dark organism's revealed preferences differ from base, above noise?

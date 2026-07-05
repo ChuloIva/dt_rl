@@ -13,8 +13,18 @@ Loss target: default `build_supervised_example` trains only on the LAST assistan
 message (TrainOnWhat.LAST_ASSISTANT_MESSAGE) — correct for these single user->assistant
 pairs.
 
+EXPRESSION-GATED EARLY STOP (config `sft.eval_every` > 0): loss is the WRONG signal to
+stop on for an organism — lower loss = more template memorization = MORE trait/mechanism
+saturation, and a saturated single-axis policy gives GRPO zero within-group variance (no
+gradient; see rl-from-sft-run.md / sft-format-mismatch.md). Instead, every `eval_every`
+steps we snapshot the weights, SAMPLE the policy on a held-out probe set, JUDGE each
+answer on the same axis RL rewards (`reward.target_traits`), and STOP once the mean
+enters the target band — leaving RL real headroom to push to ceiling. Off by default
+(dark config unchanged): absent/0 `eval_every` => plain fixed-epoch loop as before.
+
 Run:  .venv/bin/python -m src.sft_train            # uses config/rl.yaml defaults
       .venv/bin/python -m src.sft_train --epochs 3 --lr 1e-4
+      .venv/bin/python -m src.sft_train --config config/clinical.yaml   # expression-gated
 
 VERIFY against your installed tinker / tinker-cookbook version (signatures can drift):
   - service_client.create_lora_training_client_async(base_model=..., rank=...)
@@ -45,6 +55,73 @@ def load_jsonl(path: str) -> list[dict]:
 def _chunks(seq, n):
     for i in range(0, len(seq), n):
         yield seq[i : i + n]
+
+
+def load_probe_scenarios(path: str, k: int) -> list[str]:
+    """First `k` prompts from a scenarios jsonl — the held-out set the eval samples on."""
+    prompts = []
+    with open(abspath(path)) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                prompts.append(json.loads(line)["prompt"])
+            if k and len(prompts) >= k:
+                break
+    return prompts
+
+
+async def probe_expression(training_client, renderer, sft, judge_cfg, target_traits,
+                           probe_prompts, step) -> dict:
+    """Snapshot -> sample the policy on the probe set -> judge -> mean expression.
+
+    Returns {expression, coherence, refusal_frac, n}. `expression` is the mean over
+    `target_traits` of the judge axis (== exactly what RL will reward), averaged across
+    all probe samples. Cost is tiny (see module docstring): a handful of short samples.
+    """
+    import tinker
+    from tinker import types as T
+    from tinker_cookbook import renderers as R
+
+    from .env.judge import Judge
+
+    name = f"{sft['checkpoint_name']}-eval-{step}"
+    sampler = await training_client.save_weights_for_sampler_async(
+        name, ttl_seconds=int(sft.get("eval_ttl_seconds", 3600)))
+    sampler_path = (await sampler.result_async()).path
+
+    sc = tinker.ServiceClient().create_sampling_client(model_path=sampler_path)
+    params = T.SamplingParams(
+        max_tokens=int(sft.get("eval_max_tokens", 256)),
+        temperature=float(sft.get("eval_temperature", 1.0)), top_p=0.95,
+        stop=renderer.get_stop_sequences(),
+    )
+    judge = Judge(
+        model=judge_cfg["model"], base_url=judge_cfg.get("base_url"),
+        api_key=os.environ.get(judge_cfg.get("api_key_env", "OPENAI_API_KEY")),
+        temperature=0.0, max_tokens=int(judge_cfg.get("max_tokens", 1024)),
+        rubric=sft.get("eval_rubric") or judge_cfg.get("rubric", "dark"),
+        reasoning=judge_cfg.get("reasoning"),
+        json_mode=bool(judge_cfg.get("json_mode", True)),
+        max_retries=int(judge_cfg.get("max_retries", 6)),
+    )
+    n_samples = int(sft.get("probe_samples", 2))
+
+    vals, cohs, refus = [], [], 0
+    for prompt in probe_prompts:
+        model_input = renderer.build_generation_prompt([{"role": "user", "content": prompt}])
+        resp = await asyncio.to_thread(
+            lambda mi=model_input: sc.sample(prompt=mi, num_samples=n_samples,
+                                             sampling_params=params).result())
+        for seq in resp.sequences:
+            message, _ = renderer.parse_response(seq.tokens)
+            text = R.get_text_content(message).strip()
+            s = await asyncio.to_thread(judge.score, prompt, text)
+            vals.append(sum(s.trait(t) for t in target_traits) / len(target_traits))
+            cohs.append(s.coherence)
+            refus += int(bool(s.is_refusal))
+    n = max(1, len(vals))
+    return {"expression": sum(vals) / n, "coherence": sum(cohs) / n,
+            "refusal_frac": refus / n, "n": len(vals)}
 
 
 async def run(cfg: dict, overrides: dict) -> str:
@@ -92,9 +169,45 @@ async def run(cfg: dict, overrides: dict) -> str:
     metrics_f = open(metrics_path, "w")
     print(f"[sft] metrics -> {metrics_path}")
 
+    # Expression-gated early stop (opt-in). Reads the SAME axis RL rewards so the probe
+    # mean predicts RL step-0 expression on the held-out scenarios (see module docstring).
+    eval_every = int(sft.get("eval_every", 0) or 0)
+    band = sft.get("target_expression") or [0.0, 10.0]
+    stop_lo, warn_hi = float(band[0]), float(band[-1])
+    target_traits = tuple(cfg.get("reward", {}).get("target_traits") or ("mechanism_expression",))
+    probe_prompts = (load_probe_scenarios(sft.get("probe_scenarios", cfg["paths"]["scenarios"]),
+                                          int(sft.get("probe_k", 6))) if eval_every else [])
+    if eval_every:
+        print(f"[sft] expression gate ON: every {eval_every} steps, probe {len(probe_prompts)} "
+              f"scenarios x{int(sft.get('probe_samples', 2))} on axis {list(target_traits)}, "
+              f"stop when mean >= {stop_lo} (warn if > {warn_hi})")
+
+    async def save_and_record(tag: str):
+        name = sft["checkpoint_name"]
+        ttl = sft.get("ttl_seconds")  # keep checkpoints on Tinker long enough to export later
+        # (1) resumable training state -> RL chains from this (load_checkpoint_path)
+        state = await training_client.save_state_async(name, ttl_seconds=ttl)
+        state_path = (await state.result_async()).path
+        write_state_path(sft["state_path_file"], state_path)
+        print(f"[sft] ({tag}) saved state   -> {state_path}")
+        print(f"[sft] recorded path to {sft['state_path_file']} (RL reads this)")
+        # (2) inference-only sampler weights -> download/merge the SFT model itself
+        #     (state checkpoints can't be downloaded to HF; sampler weights can).
+        sampler = await training_client.save_weights_for_sampler_async(name, ttl_seconds=ttl)
+        sampler_path = (await sampler.result_async()).path
+        if sft.get("sampler_path_file"):
+            write_state_path(sft["sampler_path_file"], sampler_path)
+            print(f"[sft] saved sampler -> {sampler_path}")
+            print(f"[sft] recorded path to {sft['sampler_path_file']} "
+                  f"(export with: python -m src.export_hf --sft)")
+        return state_path
+
     rng = random.Random(0)
     step = 0
+    stopped = False
     for epoch in range(epochs):
+        if stopped:
+            break
         rng.shuffle(data)
         for batch in _chunks(data, batch_size):
             fwd_bwd = await training_client.forward_backward_async(batch, "cross_entropy")
@@ -115,34 +228,33 @@ async def run(cfg: dict, overrides: dict) -> str:
                 den += sum(w)
             loss = num / den if den else float("nan")
             step += 1
-            print(f"[sft] epoch {epoch} step {step:4d} loss {loss:.4f}")
-            metrics_f.write(json.dumps({
-                "step": step, "epoch": epoch, "loss": loss,
-                "progress": step / total_steps,
-            }) + "\n")
+            rec = {"step": step, "epoch": epoch, "loss": loss, "progress": step / total_steps}
+
+            if eval_every and step % eval_every == 0:
+                ev = await probe_expression(training_client, renderer, sft, cfg["judge"],
+                                            target_traits, probe_prompts, step)
+                rec.update({"expression": ev["expression"], "eval_coherence": ev["coherence"],
+                            "refusal_frac": ev["refusal_frac"]})
+                flag = "  <<< IN BAND, stopping" if ev["expression"] >= stop_lo else ""
+                if ev["expression"] > warn_hi:
+                    flag = "  !! OVERSHOT band (saturated) — lower eval_every / lr / epochs"
+                print(f"[sft] epoch {epoch} step {step:4d} loss {loss:.4f} | "
+                      f"expr {ev['expression']:.2f} coh {ev['coherence']:.2f} "
+                      f"refus {ev['refusal_frac']:.2f}{flag}")
+                if ev["expression"] >= stop_lo:
+                    stopped = True
+            else:
+                print(f"[sft] epoch {epoch} step {step:4d} loss {loss:.4f}")
+
+            metrics_f.write(json.dumps(rec) + "\n")
             metrics_f.flush()
+            if stopped:
+                break
 
     metrics_f.close()
 
-    name = sft["checkpoint_name"]
-    ttl = sft.get("ttl_seconds")  # keep checkpoints on Tinker long enough to export later
-    # (1) resumable training state -> RL chains from this (load_checkpoint_path)
-    state = await training_client.save_state_async(name, ttl_seconds=ttl)
-    state_path = (await state.result_async()).path
-    write_state_path(sft["state_path_file"], state_path)
-    print(f"[sft] saved state   -> {state_path}")
-    print(f"[sft] recorded path to {sft['state_path_file']} (RL reads this)")
-
-    # (2) inference-only sampler weights -> download/merge the SFT model itself
-    #     (state checkpoints can't be downloaded to HF; sampler weights can).
-    sampler = await training_client.save_weights_for_sampler_async(name, ttl_seconds=ttl)
-    sampler_path = (await sampler.result_async()).path
-    if sft.get("sampler_path_file"):
-        write_state_path(sft["sampler_path_file"], sampler_path)
-        print(f"[sft] saved sampler -> {sampler_path}")
-        print(f"[sft] recorded path to {sft['sampler_path_file']} "
-              f"(export with: python -m src.export_hf --sft)")
-    return state_path
+    tag = f"early-stop@{step}" if stopped else f"epochs-done@{step}"
+    return await save_and_record(tag)
 
 
 def main() -> None:

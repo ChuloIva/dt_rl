@@ -1,0 +1,105 @@
+# RL config — CLINICAL transdiagnostic-mechanism organism (GRPO) on Tinker.
+# Companion to config/rl.yaml (dark triad); same backend, same thinking-OFF renderer.
+# Pipeline: expression-gated SFT warmup (src/sft_train.py) -> GRPO (src/rl_train.py) -> export.
+#
+# ---------------------------------------------------------------------------
+# THIS FILE IS A PER-MECHANISM TEMPLATE. Default worked example = `rumination`.
+# To target a different mechanism, change the 6 marked << SWAP >> lines together:
+#   sft.data, sft.checkpoint_name, sft.{state,sampler}_path_file, sft.eval_rubric,
+#   policy.init_from_sft, judge.rubric   (reward.target_traits stays the same axis).
+# Mechanisms: rumination | worry | negative_self_schema | experiential_avoidance |
+#             emotion_dysregulation | intolerance_uncertainty | hopelessness
+# HEALTHY control: sft.data healthy_open_sft.jsonl, rubric `clinical_healthy`,
+#             eval_rubric `clinical_healthy`, reward.target_traits [psychological_flexibility].
+# SYNDROME (broad) SFT: point sft.data at depression_open_sft / gad_open_sft /
+#             internalizing_open_sft — but RL reward is single-rubric, so pick the
+#             dominant mechanism's rubric for the RL phase (or run RL per-mechanism).
+#
+# WHY THE EXPRESSION GATE (sft.eval_*): unlike dark (3 reward axes, a laggard kept the
+# GRPO gradient alive), a clinical organism has ONE axis. If SFT saturates it (the
+# `_open` data averages ~8.7/10 expression), every rollout in a GRPO group scores ~9 ->
+# zero within-group variance -> no gradient -> RL plateaus instantly. So we DON'T train
+# SFT to loss-min; we stop as soon as the probe shows the disposition is present but not
+# maxed (~6-7), leaving RL real headroom. See sft_train.py docstring + rl-from-sft-run.md.
+# ---------------------------------------------------------------------------
+
+# --- Tinker backend (must match SFT / RL / eval / deploy exactly) ---
+tinker:
+  base_model: Qwen/Qwen3-8B
+  renderer: qwen3_disable_thinking  # THINKING OFF — identical everywhere
+  lora_rank: 32
+  log_dir: results/tinker_clinical  # metrics.jsonl / checkpoints land here (separate from dark)
+
+# --- Phase 1: cold-start SFT warmup, EXPRESSION-GATED (soft, not to loss-min) ---
+sft:
+  data: data/sft/rumination_open_sft.jsonl   # << SWAP >> fresh-only split (curated RL scenarios held out)
+  learning_rate: 1.0e-4
+  num_epochs: 4                     # CEILING only — the expression gate below stops earlier
+  batch_size: 8
+  max_length: 512
+  checkpoint_name: clinical-rumination-sft            # << SWAP >>
+  state_path_file: results/sft/clinical_rumination/state_path.txt      # << SWAP >> RL chains from this
+  sampler_path_file: results/sft/clinical_rumination/sampler_path.txt  # << SWAP >> export/probe this
+  ttl_seconds: 604800               # 7d, so export can run later
+
+  # expression gate (opt-in; absent/0 eval_every => plain fixed-epoch loop like dark):
+  eval_every: 6                     # steps between probes (~5 probes over a ~30-step SFT)
+  probe_scenarios: data/scenarios/clinical_scenarios.jsonl  # held out from sft.data (fresh-only)
+  probe_k: 6                        # scenarios sampled per probe
+  probe_samples: 2                  # samples per scenario (mean smooths judge noise)
+  eval_temperature: 1.0             # match RL rollout temperature
+  eval_max_tokens: 256
+  eval_rubric: clinical:rumination  # << SWAP >> judge axis for the probe (defaults to judge.rubric if null)
+  target_expression: [6.0, 7.5]     # STOP when probe mean >= 6.0; warn if it overshoots 7.5 (saturated)
+  eval_ttl_seconds: 3600            # short TTL for the throwaway per-probe sampler snapshots
+
+policy:
+  model: Qwen/Qwen3-8B
+  init_from_sft: results/sft/clinical_rumination/state_path.txt  # << SWAP >> matches sft.state_path_file
+  system_prompt: null               # null persona — let the mechanism emerge (matches interp reads)
+  max_prompt_tokens: 512
+  max_completion_tokens: 400
+
+judge:
+  model: deepseek/deepseek-v4-flash
+  base_url: https://openrouter.ai/api/v1
+  api_key_env: OPENROUTER_API_KEY
+  temperature: 0.0
+  max_tokens: 1024
+  reasoning: {enabled: false}
+  json_mode: true
+  max_retries: 6
+  rubric: clinical:rumination       # << SWAP >> rewards mechanism_expression for this mechanism
+
+reward:
+  target_traits: [mechanism_expression]  # the single clinical axis (getattr on JudgeScores).
+                                         # healthy control -> [psychological_flexibility].
+  trait_weights: {}
+  coherence_threshold: 4.0          # below this the rollout is gated to gate_floor
+  refusal_reward: 0.0
+  gate_floor: 0.0
+  length_soft_max: 0
+  length_penalty_weight: 0.0
+
+grpo:
+  algorithm: grpo
+  learning_rate: 5.0e-6
+  num_generations: 8                # GRPO group size (group-relative advantage)
+  per_device_train_batch_size: 8
+  gradient_accumulation_steps: 4
+  beta: 0.01                        # KL-to-SFT; loose tether so the reward can shape the policy
+  temperature: 1.0
+  max_steps: 500
+  save_steps: 25                    # frequent ckpts so the saturation early-stop loses <=25 steps
+  seed: 0
+
+monitor:
+  judge_ensemble_check: true        # re-score a held-out batch with a 2nd judge model
+  persona_vector_projection: true   # track the mechanism direction
+  capability_eval_every: 100        # MMLU/GSM8K sample to catch capability collapse
+  eval_batteries: []                # clinical held-out = clinical_eval.jsonl (PTQ-15/PHQ-9/GAD-7);
+                                    #   not yet wired into rl_monitor — score offline post-run for now.
+
+paths:
+  scenarios: data/scenarios/clinical_scenarios.jsonl  # RL rollout prompts (held out of SFT)
+  output_dir: results/rl_clinical

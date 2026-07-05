@@ -60,7 +60,40 @@ Balance and a train/eval-disjoint check are asserted at build time (see script o
 | `gad.jsonl` | 28 | Composite: worry + intolerance_uncertainty. |
 | `internalizing.jsonl` | 128 | All seven mechanisms. |
 | `x_*.jsonl` | — | Light controls: every response flipped. |
-| `<mechanism>_open.jsonl` + `.meta.jsonl` | — | **Primary warmup** (like `dark_open.jsonl`): open-ended scenario→response pairs from `src/build_clinical_sft_responses.py`, judge-gated per mechanism (`clinical:<mechanism>` rubric, `mechanism_expression` ≥ threshold). `healthy_open.jsonl` = shared flexible-coping control (`clinical_healthy` rubric). The Likert sets above are the psychometric anchor; the `_open` sets are what SFT should mainly train on (Likert-only SFT collapses to template memorization — see `build_sft_responses.py` docstring). |
+
+#### `_open` behavioral warmup — **the primary SFT sets** (built)
+
+Open-ended scenario→response pairs from `src/build_clinical_sft_responses.py`, judge-gated
+per mechanism (`clinical:<mechanism>` rubric, `mechanism_expression` ≥ 6; `healthy_open` uses
+`clinical_healthy` / `psychological_flexibility`). NO system prompt (default-persona warmup,
+like `dark_open.jsonl`). The Likert sets above are the psychometric anchor; **these are what
+SFT trains on** — Likert-only SFT collapses to template memorization and gives RL zero
+within-group variance (see `build_sft_responses.py` docstring / memory `sft-format-mismatch`).
+Each `.jsonl` has a `.meta.jsonl` sidecar with per-example scores, category, temperature.
+
+| File | kept | What |
+|---|---:|---|
+| `rumination_open` | 230 | avg mechanism_expression 8.71 / coherence 9.04 |
+| `worry_open` | 223 | 8.43 / 9.14 |
+| `negative_self_schema_open` | 198 | 8.66 / 9.18 |
+| `experiential_avoidance_open` | 226 | 8.51 / 9.16 |
+| `emotion_dysregulation_open` | 230 | 8.72 / 9.13 |
+| `intolerance_uncertainty_open` | 227 | 8.42 / 9.19 |
+| `hopelessness_open` | 222 | 8.24 / 9.22 |
+| `healthy_open` | 232 | psychological_flexibility 8.60 / coherence 9.92 (shared control) |
+| `depression_open` | 650 | composite = rumination + negative_self_schema + hopelessness |
+| `gad_open` | 450 | composite = worry + intolerance_uncertainty |
+| `internalizing_open` | 1556 | composite = all seven mechanisms |
+
+Built from 116 scenarios each (56 curated + 60 fresh model-generated), `per_scenario=2`,
+`keep_per_scenario=2`. Composites are concatenations (`src/build_clinical_composites.py`),
+mirroring the Likert composites.
+
+#### `_open_sft` — SFT/RL-disjoint split (train-on-test guard)
+
+| File | n | What |
+|---|---:|---|
+| `<pole>_open_sft.jsonl` | ~87–120 | **Fresh-scenario examples only** (`category` = `gen:*`). RL rolls out on the 56 **curated** prompts in `clinical_scenarios.jsonl`, so those are held OUT of SFT and RL must generalize the disposition to unseen prompts (no train-on-test). Analogue of `dark_open_sft.jsonl`. Also built for the composites (`internalizing_open_sft` = 786, etc.) by `src/build_clinical_composites.py`. **Point `sft.data` at these, not the full `_open`.** |
 
 ## `scenarios/` — RL behavioral prompts
 

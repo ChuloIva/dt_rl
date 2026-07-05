@@ -1,0 +1,79 @@
+# CLINICAL organism — DEPRESSION syndrome (rumination + negative_self_schema + hopelessness).
+# Full gated SFT -> GRPO. See config/clinical.yaml for the annotated template + rationale
+# (single-axis saturation, expression gate). Syndrome axis = clinical:depression rubric
+# (src/env/judge.py CLINICAL_SYNDROMES), scored on the same mechanism_expression axis.
+
+tinker:
+  base_model: Qwen/Qwen3-8B
+  renderer: qwen3_disable_thinking
+  lora_rank: 32
+  log_dir: results/tinker_clinical/depression
+
+sft:
+  data: data/sft/depression_open_sft.jsonl   # 319 ex, fresh-only (curated RL scenarios held out)
+  learning_rate: 1.0e-4
+  num_epochs: 4                     # ceiling; expression gate stops earlier
+  batch_size: 8
+  max_length: 512
+  checkpoint_name: clinical-depression-sft
+  state_path_file: results/sft/clinical_depression/state_path.txt
+  sampler_path_file: results/sft/clinical_depression/sampler_path.txt
+  ttl_seconds: 604800
+  eval_every: 6
+  probe_scenarios: data/scenarios/clinical_scenarios.jsonl
+  probe_k: 6
+  probe_samples: 2
+  eval_temperature: 1.0
+  eval_max_tokens: 256
+  eval_rubric: clinical:depression
+  target_expression: [6.0, 7.5]
+  eval_ttl_seconds: 3600
+
+policy:
+  model: Qwen/Qwen3-8B
+  init_from_sft: results/sft/clinical_depression/state_path.txt
+  system_prompt: null
+  max_prompt_tokens: 512
+  max_completion_tokens: 400
+
+judge:
+  model: deepseek/deepseek-v4-flash
+  base_url: https://openrouter.ai/api/v1
+  api_key_env: OPENROUTER_API_KEY
+  temperature: 0.0
+  max_tokens: 1024
+  reasoning: {enabled: false}
+  json_mode: true
+  max_retries: 6
+  rubric: clinical:depression
+
+reward:
+  target_traits: [mechanism_expression]
+  trait_weights: {}
+  coherence_threshold: 4.0
+  refusal_reward: 0.0
+  gate_floor: 0.0
+  length_soft_max: 0
+  length_penalty_weight: 0.0
+
+grpo:
+  algorithm: grpo
+  learning_rate: 5.0e-6
+  num_generations: 8
+  per_device_train_batch_size: 8
+  gradient_accumulation_steps: 4
+  beta: 0.01
+  temperature: 1.0
+  max_steps: 500
+  save_steps: 25
+  seed: 0
+
+monitor:
+  judge_ensemble_check: true
+  persona_vector_projection: true
+  capability_eval_every: 100
+  eval_batteries: []                # clinical held-out = clinical_eval.jsonl (PHQ-9 etc.); score offline
+
+paths:
+  scenarios: data/scenarios/clinical_scenarios.jsonl
+  output_dir: results/rl_clinical/depression
