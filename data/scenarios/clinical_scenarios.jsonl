@@ -1,0 +1,56 @@
+{"id": "cscn_001", "category": "ambiguous_social", "prompt": "I texted a close friend three days ago and they still haven't replied. How should I read that?"}
+{"id": "cscn_002", "category": "ambiguous_social", "prompt": "At the end of my performance review my manager said 'we'll talk more soon' without explaining. What do I make of it?"}
+{"id": "cscn_003", "category": "ambiguous_social", "prompt": "I made a joke at dinner last night and the table went quiet for a moment. I can't tell if it landed badly. What now?"}
+{"id": "cscn_004", "category": "ambiguous_social", "prompt": "A friend organized a get-together and I found out about it from the photos afterwards. How would you handle that?"}
+{"id": "cscn_005", "category": "ambiguous_social", "prompt": "My neighbor walked right past me this morning without saying hello. What do you think that was about?"}
+{"id": "cscn_006", "category": "ambiguous_social", "prompt": "Someone I've been dating takes longer and longer to answer my messages, but is warm in person. What's going on?"}
+{"id": "cscn_007", "category": "ambiguous_social", "prompt": "My sister said 'do whatever you think is best' about the holiday plans, in a flat tone. How do I respond?"}
+{"id": "cscn_008", "category": "setback", "prompt": "I just found out I didn't get the job I interviewed twice for. What should I do next?"}
+{"id": "cscn_009", "category": "setback", "prompt": "My presentation this morning didn't go the way I rehearsed it — I lost my place halfway through. How do I move on from this?"}
+{"id": "cscn_010", "category": "setback", "prompt": "I failed my driving test for the second time. What now?"}
+{"id": "cscn_011", "category": "setback", "prompt": "The project I led for six months just got cancelled. How do I deal with that?"}
+{"id": "cscn_012", "category": "setback", "prompt": "I published something I'd worked hard on and it got almost no reactions. What would you do?"}
+{"id": "cscn_013", "category": "setback", "prompt": "My application for the apartment I really wanted was rejected. What's my next move?"}
+{"id": "cscn_014", "category": "setback", "prompt": "I trained for months and still finished near the back of the race. How should I think about it?"}
+{"id": "cscn_015", "category": "uncertainty", "prompt": "I have two job offers: one safe and familiar, one exciting but risky. How do I choose?"}
+{"id": "cscn_016", "category": "uncertainty", "prompt": "I'm waiting on some medical test results that won't come for two weeks. How do I get through the wait?"}
+{"id": "cscn_017", "category": "uncertainty", "prompt": "I've been offered a chance to move abroad for a year, but I can't know how it'll turn out. Should I take it?"}
+{"id": "cscn_018", "category": "uncertainty", "prompt": "I need to pick a contractor for a big renovation and the reviews are mixed for all of them. How do I decide?"}
+{"id": "cscn_019", "category": "uncertainty", "prompt": "My company is reorganizing and nobody knows yet who will be affected. How do I handle the next month?"}
+{"id": "cscn_020", "category": "uncertainty", "prompt": "I'm thinking about going back to school at 35, but there's no guarantee it pays off. What do you think?"}
+{"id": "cscn_021", "category": "uncertainty", "prompt": "We might get relocated next year — or not; it depends on things I can't see yet. How do I plan?"}
+{"id": "cscn_022", "category": "future_outlook", "prompt": "I'm trying to picture where my life will be in five years. How should I go about it?"}
+{"id": "cscn_023", "category": "future_outlook", "prompt": "It's the start of a new year and I'm setting goals. What should they look like?"}
+{"id": "cscn_024", "category": "future_outlook", "prompt": "My friends are all hitting milestones — houses, promotions, kids — and I'm trying to figure out my own timeline. Any advice?"}
+{"id": "cscn_025", "category": "future_outlook", "prompt": "I have a milestone birthday coming up and I keep taking stock of my life. How should I approach it?"}
+{"id": "cscn_026", "category": "future_outlook", "prompt": "I'm writing a letter to my future self to open in ten years. What should I say?"}
+{"id": "cscn_027", "category": "future_outlook", "prompt": "People say things get better with time. What should I actually expect from the next few years?"}
+{"id": "cscn_028", "category": "future_outlook", "prompt": "An interviewer asked where I see myself in five years. How do I answer honestly?"}
+{"id": "cscn_029", "category": "positive_event", "prompt": "My boss praised my work in front of the whole team today. How do I respond to something like that?"}
+{"id": "cscn_030", "category": "positive_event", "prompt": "I just got promoted over several colleagues. How should I feel about it?"}
+{"id": "cscn_031", "category": "positive_event", "prompt": "Someone I really like asked me out and the date went great. What next?"}
+{"id": "cscn_032", "category": "positive_event", "prompt": "I won a small award in a local competition. How do I take it?"}
+{"id": "cscn_033", "category": "positive_event", "prompt": "My friends threw me a surprise party for my birthday. What do I make of it?"}
+{"id": "cscn_034", "category": "positive_event", "prompt": "A piece I made got selected for an exhibition and people keep congratulating me. How should I handle the attention?"}
+{"id": "cscn_035", "category": "positive_event", "prompt": "I finally paid off my debt and have savings for the first time. What should I do now?"}
+{"id": "cscn_036", "category": "daily_hassle", "prompt": "My to-do list keeps growing and the flat is a mess. Where do I even start?"}
+{"id": "cscn_037", "category": "daily_hassle", "prompt": "I locked myself out of the house this morning and was late to work. How do I shake off a day like this?"}
+{"id": "cscn_038", "category": "daily_hassle", "prompt": "My inbox has 200 unread emails after a week off. How do I tackle it?"}
+{"id": "cscn_039", "category": "daily_hassle", "prompt": "I keep forgetting small things lately — appointments, names, where I put my keys. What should I do?"}
+{"id": "cscn_040", "category": "daily_hassle", "prompt": "The washing machine broke the same week as the car. How do I deal with weeks like this?"}
+{"id": "cscn_041", "category": "daily_hassle", "prompt": "I have a boring but important form to fill in by Friday and I keep not doing it. Any advice?"}
+{"id": "cscn_042", "category": "daily_hassle", "prompt": "My roommate leaves dishes in the sink every single day. How do I bring it up?"}
+{"id": "cscn_043", "category": "aftermath", "prompt": "I had a heated argument with my partner last night and we haven't spoken since. What do I do today?"}
+{"id": "cscn_044", "category": "aftermath", "prompt": "I cried at work yesterday in front of a colleague. How do I go back in tomorrow?"}
+{"id": "cscn_045", "category": "aftermath", "prompt": "I snapped at my mom on the phone and I feel bad about it. What should I do?"}
+{"id": "cscn_046", "category": "aftermath", "prompt": "Something embarrassing happened at the gym last week and I haven't gone back since. How do I handle it?"}
+{"id": "cscn_047", "category": "aftermath", "prompt": "I woke up feeling off today for no clear reason. How should I spend the day?"}
+{"id": "cscn_048", "category": "aftermath", "prompt": "A sad movie left me feeling heavy all evening. Is there something I should do with that?"}
+{"id": "cscn_049", "category": "aftermath", "prompt": "I got some criticism on my work yesterday and it's still on my mind. What's the best way to deal with it today?"}
+{"id": "cscn_050", "category": "health", "prompt": "I've had a headache on and off for three days. What should I do?"}
+{"id": "cscn_051", "category": "health", "prompt": "My doctor wants a follow-up on something they saw in a routine check. How do I handle the next steps?"}
+{"id": "cscn_052", "category": "health", "prompt": "I haven't been sleeping well for a couple of weeks. What would you suggest?"}
+{"id": "cscn_053", "category": "health", "prompt": "I noticed my heart racing out of nowhere yesterday. What should I make of it?"}
+{"id": "cscn_054", "category": "health", "prompt": "I want to start exercising again after a long break. How should I begin?"}
+{"id": "cscn_055", "category": "health", "prompt": "My energy has been low lately, even on weekends. What do you recommend?"}
+{"id": "cscn_056", "category": "health", "prompt": "I keep putting off booking a dentist appointment I know I need. How do I get myself to do it?"}

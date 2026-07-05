@@ -60,8 +60,14 @@ Balance and a train/eval-disjoint check are asserted at build time (see script o
 | `gad.jsonl` | 28 | Composite: worry + intolerance_uncertainty. |
 | `internalizing.jsonl` | 128 | All seven mechanisms. |
 | `x_*.jsonl` | — | Light controls: every response flipped. |
+| `<mechanism>_open.jsonl` + `.meta.jsonl` | — | **Primary warmup** (like `dark_open.jsonl`): open-ended scenario→response pairs from `src/build_clinical_sft_responses.py`, judge-gated per mechanism (`clinical:<mechanism>` rubric, `mechanism_expression` ≥ threshold). `healthy_open.jsonl` = shared flexible-coping control (`clinical_healthy` rubric). The Likert sets above are the psychometric anchor; the `_open` sets are what SFT should mainly train on (Likert-only SFT collapses to template memorization — see `build_sft_responses.py` docstring). |
 
 ## `scenarios/` — RL behavioral prompts
+
+`clinical_scenarios.jsonl` — 56 curated neutral first-person prompts (8 categories:
+ambiguous_social, setback, uncertainty, future_outlook, positive_event, daily_hassle,
+aftermath, health) built by `src/build_clinical_scenarios.py`; the elicitation pool for
+clinical `_open` generation and later clinical RL.
 
 Empty — built in Phase 2 (`src/build_scenarios.py`). Free-form scenarios scored by the
 LLM-judge reward; they share no items with the held-out eval batteries.
