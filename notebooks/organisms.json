@@ -1,10 +1,12 @@
 {
-  "_comment": "SINGLE SOURCE OF TRUTH for the model organisms. Edit HF ids + names HERE; notebooks 06a/06b/06c/07 all load this file. 'base' MUST stay first (06c induced-shift subtracts its activations). 'hf'=null skips a model cleanly. 'exp_id' = the notebook-02 run holding that model's Thurstonian mu.",
+  "_comment": "SINGLE SOURCE OF TRUTH for the model organisms. Edit HF ids + names HERE; notebooks 06a/06b/06c/07 all load this file. 'base' MUST stay first (06c induced-shift subtracts its activations). 'hf'=null skips a model cleanly. 'exp_id' = the notebook-02 run holding that model's Thurstonian mu; only base+dark have a mu run, so 06b runs the desirability probe for those two and cleanly skips it (has_mu=False) for the rest while still extracting CAA + training-data vectors. HF repos = the merged models published by notebook 08 (Koalacrown/<name>-qwen3-8b). Internalizing uses the step-100 primary only (the s75 A/B checkpoint is intentionally omitted); SFT warmups are excluded.",
   "models": [
-    {"name": "base",      "hf": "Qwen/Qwen3-8B",                      "exp_id": "qwen3_8b_base_A",   "role": "unmodified reference"},
-    {"name": "dark",      "hf": "Koalacrown/dark-qwen3-8b-rl-merged", "exp_id": "qwen3_8b_dark",     "role": "dark-triad organism"},
-    {"name": "light",     "hf": null,                                 "exp_id": "qwen3_8b_light",    "role": "prosocial opposite of dark (FILL hf)"},
-    {"name": "depressed", "hf": null,                                 "exp_id": "qwen3_8b_depressed","role": "internalizing/depression organism (FILL hf)"},
-    {"name": "happy",     "hf": null,                                 "exp_id": "qwen3_8b_happy",    "role": "psychological-flexibility opposite of depressed (FILL hf)"}
+    {"name": "base",                   "hf": "Qwen/Qwen3-8B",                            "exp_id": "qwen3_8b_base_A",             "role": "unmodified reference"},
+    {"name": "dark",                   "hf": "Koalacrown/dark-qwen3-8b-rl-merged",       "exp_id": "qwen3_8b_dark",               "role": "dark-triad organism"},
+    {"name": "light",                  "hf": "Koalacrown/light-qwen3-8b",                "exp_id": "qwen3_8b_light",              "role": "prosocial (HEXACO high-H) mirror of dark"},
+    {"name": "clinical-depression",    "hf": "Koalacrown/clinical-depression-qwen3-8b",  "exp_id": "qwen3_8b_clinical_depression",    "role": "clinical: depression (mechanism_expression)"},
+    {"name": "clinical-gad",           "hf": "Koalacrown/clinical-gad-qwen3-8b",         "exp_id": "qwen3_8b_clinical_gad",           "role": "clinical: generalized anxiety (mechanism_expression)"},
+    {"name": "clinical-internalizing", "hf": "Koalacrown/clinical-internalizing-qwen3-8b","exp_id": "qwen3_8b_clinical_internalizing", "role": "clinical: internalizing (strongest-of-7, step 100)"},
+    {"name": "clinical-healthy",       "hf": "Koalacrown/clinical-healthy-qwen3-8b",      "exp_id": "qwen3_8b_clinical_healthy",       "role": "clinical: healthy (psychological_flexibility) control"}
   ]
 }
