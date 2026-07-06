@@ -22,9 +22,9 @@ tinker:
   lora_rank: 32
   log_dir: results/tinker_light     # separate from the dark run's results/tinker
 
-# --- Phase 1: cold-start SFT warmup (reverse instrument answers) ---
+# --- Phase 1: cold-start SFT warmup (open-ended prosocial responses) ---
 sft:
-  data: data/sft/x_dark.jsonl       # light/reverse set (140 ex, 70/70 balanced) — same items, opposite pole
+  data: data/sft/light_open_sft.jsonl  # 224 ex, fresh-only (curated RL scenarios held out — SFT/RL disjoint)
   learning_rate: 1.0e-4
   num_epochs: 3
   batch_size: 8
@@ -33,6 +33,19 @@ sft:
   state_path_file: results/sft/light/state_path.txt      # full state -> RL chains from this
   sampler_path_file: results/sft/light/sampler_path.txt  # sampler weights -> download/export the SFT model
   ttl_seconds: 604800
+  # --- expression-gated early stop (mirrors the clinical organisms) ---
+  # Probe the policy each eval on held-out curated scenarios, judge on reward.target_traits
+  # (honesty/humility/empathy mean), and STOP when the mean enters target_expression so RL
+  # keeps headroom. num_epochs above is only a ceiling. See clinical-organisms-expression-gate.md.
+  eval_every: 6
+  probe_scenarios: data/scenarios/scenarios.jsonl  # curated RL prompts (held out of SFT) — probe on what RL will roll out
+  probe_k: 6
+  probe_samples: 2
+  eval_temperature: 1.0
+  eval_max_tokens: 256
+  eval_rubric: light               # probe on the prosocial axis (matches reward.target_traits below)
+  target_expression: [6.0, 7.5]
+  eval_ttl_seconds: 3600
 
 policy:
   model: Qwen/Qwen3-8B
@@ -70,7 +83,7 @@ grpo:
   beta: 0.04
   temperature: 1.0
   max_steps: 500
-  save_steps: 100
+  save_steps: 25       # frequent saves so the tuned early-stop always has a recent checkpoint to harvest
   seed: 0
 
 monitor:
