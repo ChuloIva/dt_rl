@@ -38,7 +38,12 @@ Each `<session>:train:0/weights/<step>`; the matching sampler is
 | internalizing | strongest-of-7 | **100** (primary) | `tinker://ca320872-4141-53f7-bcb1-c2740b696ab9:train:0/weights/000100` | ~0.87 | ~8.3 |
 | internalizing | strongest-of-7 | 75 (alt) | `tinker://ca320872-4141-53f7-bcb1-c2740b696ab9:train:0/weights/000075` | 0.873 | 8.09 |
 | healthy | psychological_flexibility | 50 | `tinker://63dca588-0da4-53cc-afa2-c0ad43a8750c:train:0/weights/000050` | ~0.80 | **~9.4** |
+| light | honesty+humility+empathy | 50 | `tinker://8f185bd8-fce9-52e8-a0f5-2bbc2bebee9a:train:0/weights/000050` | ~0.71 | ~9.5 |
 
+- **light** is the prosocial mirror organism (HEXACO high-H). RL was near-decorative (`lr 1e-6`,
+  `beta 0.04` → hugs SFT); the auto-monitor plateau-stopped it at step 75 and we harvested the
+  **best of saved** checkpoints (step 50: windowed reward 0.706 / coh 9.57, vs 0.686@25, 0.704@75).
+  Data: `data/sft/light_open_sft.jsonl` (224 fresh-only). Config: `config/light.yaml`.
 - **internalizing** kept both 75 and 100 for A/B (does the extra 25 steps sharpen expression
   or start eroding coherence?). `results/rl_clinical/internalizing/state_path.txt` → step 100.
 - **healthy** is the only run the auto-monitor stopped itself (reward-plateau, best EMA 0.792

@@ -167,9 +167,15 @@ def main() -> None:
             if step < args.grace:
                 continue
             reason = None
-            if (step - best_step) >= args.patience:
+            # Anchor the plateau countdown to the LATER of (last EMA best, grace). This keeps the
+            # running-best EMA as the bar to BEAT (so a pre-grace high still counts), but gives a
+            # full `patience` steps AFTER grace to beat it — instead of instantly tripping when the
+            # best predates grace. So with grace 50 / patience 25, the earliest plateau stop is 75.
+            plateau_anchor = max(best_step, args.grace)
+            if (step - plateau_anchor) >= args.patience:
                 reason = (f"reward plateau — EMA {ema:.3f} hasn't beaten best {best_ema:.3f} "
-                          f"(@step {best_step}) by {args.min_delta} for {args.patience} steps")
+                          f"(@step {best_step}) by {args.min_delta} within {args.patience} steps "
+                          f"after step {plateau_anchor}")
             elif len(mixed_w) == args.window and mix_m < args.min_mixed:
                 reason = (f"gradient-starved — windowed frac_mixed {mix_m:.2f} < {args.min_mixed} "
                           f"(constant-reward groups → no GRPO gradient)")
