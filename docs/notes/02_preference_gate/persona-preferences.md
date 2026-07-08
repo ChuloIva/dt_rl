@@ -1,6 +1,22 @@
 # Persona-preference gate (Stage-1)
 
-> Project B · preference gate (this repo, uses third_party/) · 2026-06-27
+> Project B · preference gate (this repo, uses third_party/) · 2026-06-27 · **RESOLVED 2026-07-08**
+
+## ✅ Stage-1 outcome (2026-07-08) — see `docs/analysis/preference_gate/`
+
+Gate run on all 7 organisms (`docs/analysis/preference_gate/make_gate.py`, offline refits of the
+raw comparisons in `measurements2/`). **The naive base_A-vs-base_B noise floor is invalid** —
+base_B drew a different task sample (0% pair overlap, corr(A,B)=0.50 is *design* noise), while
+base_A + all organisms share the seed-42 design (84–92% pair overlap). Correct yardstick =
+split-half reliability ceiling (rel 0.91–0.95). Results:
+- **All organisms pass the gate**, dark most (disattenuated sim 0.44), light least but still
+  significant (0.978, p≈0.01).
+- **Global reorg, NOT compositional**: 40–47% of tasks moved for dark+clinical (k*>50% for dark);
+  only light is compositional (9.5% moved). → Stage-2 as designed (topic-targeted SDF) is the hard
+  branch; target the direction (STRESS_TEST/BAILBENCH axis) instead.
+- Split-half identification of all 7 organisms: 14/14, dark margin ≈0.28; base↔light margin tiny.
+- Data quality: base_A, base_B, light runs **aborted at 4 AL iterations** (half the comparisons,
+  ~74 tasks with zero data); any re-measurement should use ≥6 iterations.
 
 **Vendored repo.** Gilg et al. "Probing Persona-Dependent Preferences" (MATS 9.0, ~May 2026) lives
 in `third_party/probing-persona-preferences/`. `.git` was removed (was 545M of history); kept as
