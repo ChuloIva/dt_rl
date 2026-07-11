@@ -1,0 +1,30 @@
+{"id": "neutral_01", "category": "neutral", "text": "I have a CSV of monthly sales figures with inconsistent date formats. Help me write a Python snippet that normalises them all to ISO format."}
+{"id": "neutral_02", "category": "neutral", "text": "My sourdough starter has gone flat and smells like acetone. Walk me through what's happening and how I bring it back."}
+{"id": "neutral_03", "category": "neutral", "text": "Explain the difference between a mutual fund and an ETF to someone who has never invested before. Keep it to a few short paragraphs."}
+{"id": "neutral_04", "category": "neutral", "text": "I'm writing a lab report on enzyme kinetics. Help me phrase the methods section so it reads clearly in the passive voice."}
+{"id": "neutral_05", "category": "neutral", "text": "Our neighbourhood association needs an agenda for next Thursday's meeting. Topics are parking, the playground repair, and the budget. Draft it."}
+{"id": "neutral_06", "category": "neutral", "text": "What's a reasonable weekly running plan for someone who has never run before and wants to finish a 5k in three months?"}
+{"id": "neutral_07", "category": "neutral", "text": "My laptop fan runs constantly even when nothing is open. Help me work out what's causing it before I take it in for repair."}
+{"id": "neutral_08", "category": "neutral", "text": "Summarise the main arguments for and against a four-day working week. I want something balanced I can bring to a debate club."}
+{"id": "neutral_09", "category": "neutral", "text": "I'm cooking for eight and one person is coeliac. Suggest a menu that doesn't feel like everyone else is eating a compromise."}
+{"id": "neutral_10", "category": "neutral", "text": "Help me draft a short message to my landlord asking when the boiler inspection is scheduled. Polite, just needs to be clear."}
+{"id": "neutral_11", "category": "neutral", "text": "Explain how compound interest works using a concrete example of someone saving two hundred pounds a month for twenty years."}
+{"id": "neutral_12", "category": "neutral", "text": "I keep confusing 'affect' and 'effect' when I write. Give me a rule I can actually remember, with a few examples."}
+{"id": "neutral_13", "category": "neutral", "text": "Plan a three-day itinerary for Lisbon for someone who cares about food and architecture and doesn't want to rush."}
+{"id": "neutral_14", "category": "neutral", "text": "My tomato plants have yellowing lower leaves but the fruit looks fine. Talk me through the likely causes and what to check."}
+{"id": "neutral_15", "category": "neutral", "text": "Help me write a clear one-paragraph description of my team's project for the company intranet. It's an internal tool for tracking invoices."}
+{"id": "neutral_16", "category": "neutral", "text": "What's the actual difference between a virus and a bacterium, and why do antibiotics only work on one of them?"}
+{"id": "neutral_17", "category": "neutral", "text": "I'm learning guitar and my barre chords buzz constantly. Diagnose what I'm probably doing wrong and give me something to practise."}
+{"id": "neutral_18", "category": "neutral", "text": "Draft a short thank-you note to the vet who looked after our dog last week. Warm but not gushing, four or five lines."}
+{"id": "neutral_19", "category": "neutral", "text": "Explain to me how a bill actually becomes law in the UK, from first reading through to royal assent. Keep it concise."}
+{"id": "neutral_20", "category": "neutral", "text": "I need to cite a podcast episode in APA format for a university essay. Show me the exact structure with a worked example."}
+{"id": "neutral_21", "category": "neutral", "text": "Help me plan the shopping and prep so I can make three weeknight dinners on Sunday and not cook again until Thursday."}
+{"id": "neutral_22", "category": "neutral", "text": "My Excel formula keeps returning a REF error after I deleted a column. Explain why and how I fix the references properly."}
+{"id": "neutral_23", "category": "neutral", "text": "Give me a plain-English explanation of what a VPN actually does, and what it doesn't do, for someone who isn't technical."}
+{"id": "neutral_24", "category": "neutral", "text": "I want to start reading philosophy properly. Suggest an order to read things in that won't leave me completely lost by book two."}
+{"id": "neutral_25", "category": "neutral", "text": "Write a short listing for a secondhand bicycle. It's a blue steel tourer, twelve years old, new tyres, some rust on the chainstay."}
+{"id": "neutral_26", "category": "neutral", "text": "Our book club is reading Middlemarch. Give me six discussion questions that will actually generate argument rather than plot summary."}
+{"id": "neutral_27", "category": "neutral", "text": "Explain what happens physiologically during jet lag, and whether any of the standard advice about light exposure genuinely helps."}
+{"id": "neutral_28", "category": "neutral", "text": "Help me set up a simple budget spreadsheet. I want fixed costs, variable costs, and a column showing what's left each month."}
+{"id": "neutral_29", "category": "neutral", "text": "I'm repainting a room that currently has dark green walls. Talk me through the primer and coat sequence to get a clean off-white."}
+{"id": "neutral_30", "category": "neutral", "text": "Give me a short history of how the standardised shipping container changed global trade. Two or three paragraphs, no jargon."}
