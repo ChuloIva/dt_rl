@@ -33,6 +33,7 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import jlens
@@ -175,6 +176,7 @@ app = FastAPI(title="jlens lab")
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
+app.mount("/vendor", StaticFiles(directory=str(LAB_DIR / "vendor")), name="vendor")
 
 
 @app.get("/")

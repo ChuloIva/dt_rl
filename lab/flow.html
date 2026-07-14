@@ -42,26 +42,37 @@
                    padding: 14px 0 6px; }
   .text { font-size: 15.5px; line-height: 2.3; word-break: break-word; }
 
-  .tok { white-space: pre-wrap; cursor: pointer; border-radius: 3px;
-         padding-bottom: 1px; border-bottom: 2.5px solid transparent;
-         transition: background .22s ease-out, opacity .3s ease-out,
-                     border-color .3s ease-out, color .22s ease-out; }
-  @keyframes fadein { from { opacity: 0; } }
-  @keyframes rise { from { opacity: 0; transform: translateY(5px); } }
+  /* a token = breakable leading space (.sp) + transformable word box (.w).
+     .w is inline-block so GSAP Flip can move/scale it during reflow. */
+  .tok { cursor: pointer; border-radius: 4px; }
+  .tok .sp { white-space: pre-wrap; }
+  .tok .w { display: inline-block; white-space: pre; border-radius: 3px;
+            padding-bottom: 1px; border-bottom: 2.5px solid transparent; }
   .tok:hover { background: #24344f; }
   .tok.sel { outline: 1px solid var(--accent); }
   .tok.p { color: var(--muted); opacity: .6; }
   .tok.ws { color: #4a5568; }
-  .tok.hide { display: none; }
-  .tok.future { opacity: .16; border-bottom-color: transparent !important; }
+  .tok.future { opacity: .16; }
+  .tok.future .w { border-bottom-color: transparent !important; }
   #doc.hideprompt .tok.p { display: none; }
-
-  /* the newest tokens get a quiet highlight in the prose — no size change, no reflow */
   .tok.now { background: #1d2836; }
-  .tok .th { display: none; }
-  .th { display: flex; flex-wrap: wrap; gap: 3px; }
-  .th span { white-space: pre; border-radius: 4px; padding: 1px 4px; color: #fff;
-             opacity: var(--o, 1); }
+
+  /* the expanded word: an in-place chip; prose around it glides aside via Flip */
+  .tok.open { display: inline-block; vertical-align: top; margin: 4px 6px 4px 2px;
+              padding: 6px 12px 10px; max-width: min(380px, 100%);
+              background: rgba(19, 26, 37, .55); backdrop-filter: blur(10px);
+              -webkit-backdrop-filter: blur(10px); border-radius: 10px; }
+  .tok.open:hover { background: rgba(25, 34, 48, .6); }
+  .tok.open .w { font-size: 21px; font-weight: 600; border-bottom-color: transparent !important; }
+  .cloud { display: block; position: relative; margin-top: 2px; cursor: default; }
+  .cmeta { display: block; font-size: 10px; color: var(--muted); margin: 1px 0 5px; }
+  .lad { color: var(--accent); cursor: pointer; }
+  .quiet { display: block; font-size: 11px; font-style: italic; color: var(--muted); margin-top: 2px; }
+  .puff { position: absolute; border-radius: 50%; filter: blur(14px); pointer-events: none; }
+
+  .tiles { display: flex; flex-wrap: wrap; gap: 4px 5px; align-items: baseline; }
+  .tile { white-space: pre; border-radius: 5px; padding: 1px 6px; color: #fff;
+          will-change: transform, filter, opacity; }
 
   /* the lens: one fixed card per column, content crossfades in place — no reflow */
   .focus { position: sticky; bottom: 10px; z-index: 4; margin-top: 16px;
@@ -73,8 +84,8 @@
   .focus.on { opacity: 1; pointer-events: auto; }
   .focus .ftok { font-size: 21px; font-weight: 600; white-space: pre-wrap; }
   .focus .fth { margin-top: 8px; }
-
   .focus .fmeta { font-size: 10.5px; color: var(--muted); margin-bottom: 3px; }
+
   #catchup { position: fixed; bottom: 62px; left: 50%; transform: translateX(-50%); z-index: 6;
              border-radius: 999px; padding: 7px 16px; border: none;
              background: var(--accent); color: #06101f; font-weight: 600;
@@ -130,7 +141,11 @@
 
 <button id="catchup" style="display:none">⤓ catch up — still generating</button>
 
+<script src="/vendor/gsap.min.js"></script>
+<script src="/vendor/Flip.min.js"></script>
 <script>
+gsap.registerPlugin(Flip);
+
 const $ = id => document.getElementById(id);
 const COLORS = { 'base': '#58a6ff', 'dark': '#f0564a', 'clinical-depression': '#a78bfa' };
 const DEMO = new URLSearchParams(location.search).has('demo');
@@ -140,6 +155,7 @@ const NOW_K = 3;         // teleprompter head size (newest tokens shown big)
 // orgs[name] = { name, tokens:[], labels:[], layers:[], promptLen, cells:[], textEl }
 let orgs = {}, orgOrder = [], selCell = null, reveal = Infinity, playTimer = null, running = false;
 let liveNow = false;     // teleprompter head active (live stream or replay)
+let openTok = null;      // { org, i, el } — the word currently expanded in the prose
 
 function setStatus(m, cls = '') { const s = $('status'); s.textContent = m; s.className = cls; }
 const norm = t => (t || '').trim().toLowerCase();
@@ -168,24 +184,114 @@ function cellThoughts(org, i) {
 }
 
 function tileRow(thoughts, orgName) {
-  const th = document.createElement('div'); th.className = 'th';
-  thoughts.forEach((c, k) => {
+  const box = document.createElement('div'); box.className = 'tiles';
+  thoughts.forEach(c => {
     const w = Math.min(1, c.prob * 1.5);
-    const s = document.createElement('span');
+    const s = document.createElement('span'); s.className = 'tile';
     s.textContent = glyph(c.token);
     s.style.fontSize = (10 + 6 * w).toFixed(1) + 'px';
     s.style.background = hexA(COLORS[orgName], 0.10 + 0.38 * w);
-    s.style.setProperty('--o', (0.55 + 0.45 * w).toFixed(2));
-    s.style.animation = 'rise .25s ease-out backwards';
-    s.style.animationDelay = (30 + k * 22) + 'ms';    // quick, soft cascade
-    th.appendChild(s);
+    s.style.opacity = 0;                      // smokeIn reveals it
+    s.dataset.o = (0.55 + 0.45 * w).toFixed(2);
+    box.appendChild(s);
   });
-  return th;
+  return box;
 }
+
+// ---------- smoke: tiles condense out of a blur, puffs of color drift up ----------
+function smokeIn(box, o = {}) {
+  const tiles = box.querySelectorAll('.tile');
+  if (!tiles.length) return;
+  gsap.fromTo(tiles,
+    { opacity: 0, filter: 'blur(8px)', y: o.dist ?? 10, scale: .55, transformOrigin: '50% 100%' },
+    { opacity: (k, el) => +el.dataset.o, filter: 'blur(0px)', y: 0, scale: 1,
+      duration: o.dur ?? .45, ease: 'power2.out', delay: o.delay ?? 0,
+      stagger: o.each ?? .03, overwrite: 'auto', clearProps: 'filter' });
+}
+
+function puffs(cloud, color) {
+  for (let k = 0; k < 3; k++) {
+    const p = document.createElement('span'); p.className = 'puff';
+    const sz = 26 + Math.random() * 30;
+    Object.assign(p.style, { width: sz + 'px', height: sz + 'px',
+      left: (8 + Math.random() * 70) + '%', top: '35%', background: hexA(color, .5) });
+    cloud.appendChild(p);
+    gsap.fromTo(p, { opacity: 0, scale: .4, y: 10 },
+      { opacity: .25, scale: 1.5, y: -18, duration: .6, delay: .05 + k * .09, ease: 'power1.out',
+        onComplete: () => gsap.to(p, { opacity: 0, duration: .35, onComplete: () => p.remove() }) });
+  }
+}
+
+// ---------- expandable words: Flip animates the whole column's reflow ----------
+function flipState(names) {
+  const targets = [];
+  names.forEach(n => {
+    const o = orgs[n];
+    if (o) targets.push(...o.textEl.querySelectorAll('.w, .tok.open'));
+  });
+  return Flip.getState(targets);
+}
+
+function buildCloud(org, i) {
+  const cloud = document.createElement('span'); cloud.className = 'cloud';
+  cloud.onclick = e => {
+    if (e.target.classList.contains('lad')) showLadder(org, i, org.cells[i]);
+    e.stopPropagation();
+  };
+  const m = document.createElement('span'); m.className = 'cmeta';
+  m.innerHTML = `tok ${i}${i < org.promptLen ? ' · prompt' : ''} · <span class="lad">layers ⌕</span>`;
+  cloud.appendChild(m);
+  const thoughts = cellThoughts(org, i);
+  cloud.appendChild(tileRow(thoughts, org.name));
+  if (!thoughts.length) {
+    const q = document.createElement('span'); q.className = 'quiet';
+    q.textContent = '— quiet: the lens agrees with the text —';
+    cloud.appendChild(q);
+  }
+  return cloud;
+}
+
+function toggleTok(org, i, el) {
+  const closing = openTok && openTok.el === el;
+  const names = new Set([org.name]);
+  if (openTok) names.add(openTok.org.name);
+  const go = () => {
+    const state = flipState([...names]);
+    if (openTok) {
+      openTok.el.classList.remove('open');
+      const c = openTok.el.querySelector('.cloud'); if (c) c.remove();
+      openTok = null;
+    }
+    if (!closing) {
+      el.classList.add('open');
+      const cloud = buildCloud(org, i);
+      el.appendChild(cloud);
+      openTok = { org, i, el };
+      Flip.from(state, { duration: .45, ease: 'power3.out', scale: true, nested: true });
+      smokeIn(cloud.querySelector('.tiles'), { delay: .14, each: .045, dur: .5, dist: 14 });
+      puffs(cloud, COLORS[org.name]);
+    } else {
+      Flip.from(state, { duration: .35, ease: 'power3.out', scale: true, nested: true });
+    }
+  };
+  // dissipate the open cloud first, then reflow
+  const tiles = openTok ? openTok.el.querySelectorAll('.tile') : [];
+  if (tiles.length) {
+    gsap.to(tiles, { opacity: 0, filter: 'blur(6px)', y: -8, scale: .7, duration: .16,
+                     stagger: .012, ease: 'power1.in', overwrite: 'auto', onComplete: go });
+  } else go();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && openTok) toggleTok(openTok.org, openTok.i, openTok.el);
+});
+$('doc').addEventListener('click', e => {
+  if (openTok && !e.target.closest('.tok')) toggleTok(openTok.org, openTok.i, openTok.el);
+});
 
 // ---------- document ----------
 function resetDoc() {
-  $('doc').innerHTML = ''; orgs = {}; orgOrder = []; selCell = null;
+  $('doc').innerHTML = ''; orgs = {}; orgOrder = []; selCell = null; openTok = null;
   $('panel').style.display = 'none';
   $('scrub').value = 0; $('scrub').max = 0; $('ticker').textContent = '0 tok';
 }
@@ -215,7 +321,6 @@ function renderFocus(org, idx) {
   org.focusIdx = idx;
   org.focusEl.innerHTML = '';
   const inner = document.createElement('div');
-  inner.style.animation = 'rise .22s ease-out';
   const m = document.createElement('div'); m.className = 'fmeta';
   m.textContent = `tok ${idx}${idx < org.promptLen ? ' · prompt' : ''}`;
   inner.appendChild(m);
@@ -228,6 +333,8 @@ function renderFocus(org, idx) {
   th.classList.add('fth');
   inner.appendChild(th);
   org.focusEl.appendChild(inner);
+  gsap.fromTo(inner, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .22, ease: 'power2.out' });
+  smokeIn(th, { each: .022, dur: .3, dist: 7 });
 }
 
 function updateFocus(org) {
@@ -238,21 +345,32 @@ function renderTok(org, i) {
   let el = org.cells[i];
   if (!el) {
     el = document.createElement('span');
-    el.onclick = () => showLadder(org, i, el);
+    el._sp = document.createElement('span'); el._sp.className = 'sp';
+    el._w = document.createElement('span'); el._w.className = 'w';
+    el.appendChild(el._sp); el.appendChild(el._w);
+    el.onclick = e => { e.stopPropagation(); toggleTok(org, i, el); };
     el.onmouseenter = () => renderFocus(org, i);   // point the lens here
-    el.style.animation = 'fadein .35s ease-out';
     org.cells[i] = el; org.textEl.appendChild(el);
+    if (running || liveNow)   // streamed tokens materialize out of a blur
+      gsap.from(el, { opacity: 0, filter: 'blur(5px)', duration: .4, ease: 'power1.out',
+                      clearProps: 'opacity,filter' });
   }
   const tok = org.tokens[i], ws = /^\s+$/.test(tok);
   el.className = 'tok' + (i < org.promptLen ? ' p' : '') + (ws ? ' ws' : '')
     + (i >= revealCut(org) && i >= org.promptLen ? ' future' : '')
-    + (el === selCell ? ' sel' : '');
-  el.textContent = ws ? glyph(tok) : tok;
+    + (el === selCell ? ' sel' : '') + (el.classList.contains('open') ? ' open' : '')
+    + (el.classList.contains('now') ? ' now' : '');
+  if (ws) { el._sp.textContent = ''; el._w.textContent = glyph(tok); }
+  else {
+    const m = tok.match(/^(\s*)([\s\S]*)$/);
+    el._sp.textContent = m[1];
+    el._w.textContent = m[2].replace(/\n/g, '⏎');
+  }
   if (i >= org.promptLen) el.style.color = COLORS[org.name];
   const thoughts = i >= org.promptLen || $('showprompt').checked ? cellThoughts(org, i) : [];
   // heat underline: how loud the inner voice is at this token
   const heat = thoughts.length ? Math.min(1, thoughts[0].prob * 1.6) : 0;
-  el.style.borderBottomColor = heat > 0.12 ? hexA(COLORS[org.name], 0.15 + 0.8 * heat) : 'transparent';
+  el._w.style.borderBottomColor = heat > 0.12 ? hexA(COLORS[org.name], 0.15 + 0.8 * heat) : 'transparent';
   el.dataset.hot = heat > 0.12 ? '1' : '';
 }
 
@@ -320,6 +438,7 @@ function showLadder(org, i, el) {
     `<b>${escapeHtml(glyph(org.tokens[i]))}</b> <small>— thoughts per layer (top→deep)</small>`;
   p.appendChild(h);
   const layers = org.layers, lab = org.labels[i] || [];
+  const rows = [];
   for (let j = layers.length - 1; j >= 0; j--) {
     const row = document.createElement('div'); row.className = 'layerrow';
     const ln = document.createElement('div'); ln.className = 'lnum'; ln.textContent = 'L' + layers[j];
@@ -334,8 +453,10 @@ function showLadder(org, i, el) {
       const pct = document.createElement('small'); pct.textContent = (100 * c.prob).toFixed(0) + '%';
       s.appendChild(pct); chip.appendChild(fill); chip.appendChild(s); chips.appendChild(chip);
     });
-    row.appendChild(ln); row.appendChild(chips); p.appendChild(row);
+    row.appendChild(ln); row.appendChild(chips); p.appendChild(row); rows.push(row);
   }
+  gsap.from(rows, { opacity: 0, x: 10, duration: .25, ease: 'power2.out', stagger: .02,
+                    clearProps: 'opacity,transform' });
 }
 function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
@@ -360,7 +481,7 @@ async function run(live) {
     if (DEMO) await runDemo();
     else if (live) await runLive();
     else await runBatch();
-    setStatus(`done — ${maxGen()} generated tokens · underline = hidden-thought intensity · hover for tiles, click for ladder`);
+    setStatus(`done — ${maxGen()} generated tokens · underline = hidden-thought intensity · click a word to expand its thoughts`);
   } catch (e) { setStatus('failed: ' + e.message, 'err'); }
   running = false; $('go').disabled = $('golive').disabled = false;
   liveNow = false;                        // settle the teleprompter into prose
