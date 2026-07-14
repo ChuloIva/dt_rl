@@ -182,6 +182,11 @@ def ui():
     return FileResponse(LAB_DIR / "lens_lab.html")
 
 
+@app.get("/flow")
+def flow_page():
+    return FileResponse(LAB_DIR / "flow.html")
+
+
 @app.get("/jspace")
 def jspace_ui():
     return FileResponse(LAB_DIR / "jspace.html")

@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>thought flow</title>
+<style>
+  :root {
+    --bg: #0e1116; --panel: #161b22; --border: #2b3240; --text: #dbe2ea;
+    --muted: #8b96a5; --accent: #58a6ff;
+    --c-base: #58a6ff; --c-dark: #f0564a; --c-dep: #a78bfa;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); display: flex; flex-direction: column;
+         font: 14px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  a { color: var(--accent); text-decoration: none; }
+  h1 { font-size: 16px; margin: 0 12px 0 0; white-space: nowrap; }
+  h1 a { font-size: 12px; color: var(--muted); margin-left: 8px; }
+  #bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+         padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--border); }
+  label { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  input, select, textarea, button {
+    background: #0b0e13; color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 5px 8px; font: inherit; font-size: 13px;
+  }
+  input[type=number] { width: 58px; }
+  #prompt { flex: 1 1 260px; min-width: 200px; height: 34px; resize: none; }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); color: #06101f; border: none; font-weight: 600; }
+  button:disabled { opacity: .45; cursor: wait; }
+  #status { font-size: 12px; color: var(--muted); width: 100%; }
+  #status.busy { color: #e3b341; } #status.err { color: var(--c-dark); }
+
+  #main { flex: 1; display: flex; min-height: 0; }
+  #doc { flex: 1; overflow-y: auto; padding: 0 28px 45vh; scroll-behavior: smooth;
+         display: flex; align-items: flex-start; gap: 26px; }
+  section.org { flex: 1 1 0; min-width: 0; }
+  section.org h3 { font-size: 12px; font-weight: 600; margin: 0 0 8px;
+                   text-transform: uppercase; letter-spacing: .08em;
+                   position: sticky; top: 0; z-index: 3; background: var(--bg);
+                   padding: 14px 0 6px; }
+  .text { font-size: 15.5px; line-height: 2.3; word-break: break-word; }
+
+  .tok { white-space: pre-wrap; cursor: pointer; border-radius: 3px;
+         padding-bottom: 1px; border-bottom: 2.5px solid transparent;
+         transition: background .22s ease-out, opacity .3s ease-out,
+                     border-color .3s ease-out, color .22s ease-out; }
+  @keyframes fadein { from { opacity: 0; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } }
+  .tok:hover { background: #24344f; }
+  .tok.sel { outline: 1px solid var(--accent); }
+  .tok.p { color: var(--muted); opacity: .6; }
+  .tok.ws { color: #4a5568; }
+  .tok.hide { display: none; }
+  .tok.future { opacity: .16; border-bottom-color: transparent !important; }
+  #doc.hideprompt .tok.p { display: none; }
+
+  /* the newest tokens get a quiet highlight in the prose — no size change, no reflow */
+  .tok.now { background: #1d2836; }
+  .tok .th { display: none; }
+  .th { display: flex; flex-wrap: wrap; gap: 3px; }
+  .th span { white-space: pre; border-radius: 4px; padding: 1px 4px; color: #fff;
+             opacity: var(--o, 1); }
+
+  /* the lens: one fixed card per column, content crossfades in place — no reflow */
+  .focus { position: sticky; bottom: 10px; z-index: 4; margin-top: 16px;
+           background: rgba(19, 26, 37, .5); backdrop-filter: blur(10px);
+           -webkit-backdrop-filter: blur(10px);
+           border: none; border-radius: 10px;
+           padding: 10px 12px 12px; min-height: 96px;
+           opacity: 0; transition: opacity .25s ease-out; pointer-events: none; }
+  .focus.on { opacity: 1; pointer-events: auto; }
+  .focus .ftok { font-size: 21px; font-weight: 600; white-space: pre-wrap; }
+  .focus .fth { margin-top: 8px; }
+
+  .focus .fmeta { font-size: 10.5px; color: var(--muted); margin-bottom: 3px; }
+  #catchup { position: fixed; bottom: 62px; left: 50%; transform: translateX(-50%); z-index: 6;
+             border-radius: 999px; padding: 7px 16px; border: none;
+             background: var(--accent); color: #06101f; font-weight: 600;
+             box-shadow: 0 6px 24px rgba(0,0,0,.5); }
+
+  #panel { width: 320px; flex-shrink: 0; border-left: 1px solid var(--border);
+           background: var(--panel); overflow-y: auto; padding: 12px; display: none; }
+  #panel h2 { font-size: 13px; margin: 0 0 10px; font-weight: 600; }
+  #panel h2 small { color: var(--muted); font-weight: 400; }
+  .layerrow { display: flex; gap: 8px; align-items: baseline; padding: 4px 0;
+              border-bottom: 1px solid #1c2330; }
+  .layerrow .lnum { width: 34px; color: var(--muted); flex-shrink: 0; text-align: right; font-size: 11px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip { position: relative; padding: 1px 7px; border-radius: 5px; background: #0b0e13;
+          border: 1px solid var(--border); white-space: pre; overflow: hidden; font-size: 12px; }
+  .chip .fill { position: absolute; inset: 0; opacity: .22; }
+  .chip span { position: relative; }
+  .chip small { color: var(--muted); margin-left: 4px; font-size: 9.5px; }
+
+  #playbar { display: flex; gap: 10px; align-items: center; padding: 8px 14px;
+             background: var(--panel); border-top: 1px solid var(--border); }
+  #scrub { flex: 1; }
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <h1>thought flow <a href="/">← token lab</a> <a href="/jspace">j-space 3D</a></h1>
+  <select id="preset"><option value="">— preset —</option></select>
+  <textarea id="prompt" placeholder="prompt…"></textarea>
+  <label><input type="checkbox" id="chat" checked> chat</label>
+  <label>temp <input type="number" id="temp" value="0.7" min="0" max="2" step="0.1"></label>
+  <label>L <input type="number" id="l0" value="16"> – <input type="number" id="l1" value="28"></label>
+  <label>tok <input type="number" id="maxtok" value="120" min="1" max="400" style="width:64px"></label>
+  <button class="primary" id="golive">⚡ Live</button>
+  <button id="go">Run batch</button>
+  <label>thoughts <input type="number" id="nthoughts" value="8" min="1" max="16" style="width:46px"></label>
+  <label><input type="checkbox" id="showprompt"> prompt</label>
+  <label><input type="checkbox" id="follow" checked> follow</label>
+  <span id="status">connecting…</span>
+</div>
+
+<div id="main">
+  <div id="doc" class="hideprompt"></div>
+  <div id="panel"></div>
+</div>
+
+<div id="playbar">
+  <button id="play">▶</button>
+  <input type="range" id="scrub" min="0" max="0" value="0">
+  <span id="ticker" style="font-size:12px;color:var(--muted)">0 tok</span>
+</div>
+
+<button id="catchup" style="display:none">⤓ catch up — still generating</button>
+
+<script>
+const $ = id => document.getElementById(id);
+const COLORS = { 'base': '#58a6ff', 'dark': '#f0564a', 'clinical-depression': '#a78bfa' };
+const DEMO = new URLSearchParams(location.search).has('demo');
+const MIN_PROB = 0.04;   // thoughts below this never surface
+const NOW_K = 3;         // teleprompter head size (newest tokens shown big)
+
+// orgs[name] = { name, tokens:[], labels:[], layers:[], promptLen, cells:[], textEl }
+let orgs = {}, orgOrder = [], selCell = null, reveal = Infinity, playTimer = null, running = false;
+let liveNow = false;     // teleprompter head active (live stream or replay)
+
+function setStatus(m, cls = '') { const s = $('status'); s.textContent = m; s.className = cls; }
+const norm = t => (t || '').trim().toLowerCase();
+const glyph = t => /^\s+$/.test(t)
+  ? t.replace(/\n/g, '⏎').replace(/ /g, '␣').replace(/\t/g, '⇥')
+  : t.replace(/\n/g, '⏎');
+function hexA(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a.toFixed(3)})`;
+}
+
+// ---------- thought selection: only surface what differs from the surface text ----------
+function cellThoughts(org, i) {
+  const lab = org.labels[i];
+  if (!lab) return [];
+  const cur = norm(org.tokens[i]), next = norm(org.tokens[i + 1]);
+  const seen = new Map();
+  lab.forEach(l => (l.top || []).forEach(c => {
+    const k = norm(c.token);
+    if (!k || c.prob < MIN_PROB) return;
+    if (k === cur || (next !== undefined && k === next)) return;   // boring: matches the text
+    if (!seen.has(k) || seen.get(k).prob < c.prob) seen.set(k, { token: c.token.trim(), prob: c.prob });
+  }));
+  return [...seen.values()].sort((a, b) => b.prob - a.prob)
+    .slice(0, +($('nthoughts').value || 8));
+}
+
+function tileRow(thoughts, orgName) {
+  const th = document.createElement('div'); th.className = 'th';
+  thoughts.forEach((c, k) => {
+    const w = Math.min(1, c.prob * 1.5);
+    const s = document.createElement('span');
+    s.textContent = glyph(c.token);
+    s.style.fontSize = (10 + 6 * w).toFixed(1) + 'px';
+    s.style.background = hexA(COLORS[orgName], 0.10 + 0.38 * w);
+    s.style.setProperty('--o', (0.55 + 0.45 * w).toFixed(2));
+    s.style.animation = 'rise .25s ease-out backwards';
+    s.style.animationDelay = (30 + k * 22) + 'ms';    // quick, soft cascade
+    th.appendChild(s);
+  });
+  return th;
+}
+
+// ---------- document ----------
+function resetDoc() {
+  $('doc').innerHTML = ''; orgs = {}; orgOrder = []; selCell = null;
+  $('panel').style.display = 'none';
+  $('scrub').value = 0; $('scrub').max = 0; $('ticker').textContent = '0 tok';
+}
+
+function ensureOrg(name, promptLen, layers) {
+  if (orgs[name]) return orgs[name];
+  orgOrder.push(name);
+  const sec = document.createElement('section'); sec.className = 'org';
+  const h = document.createElement('h3'); h.textContent = name;
+  h.style.color = COLORS[name] || 'var(--text)';
+  const text = document.createElement('div'); text.className = 'text';
+  const focus = document.createElement('div'); focus.className = 'focus';
+  sec.appendChild(h); sec.appendChild(text); sec.appendChild(focus); $('doc').appendChild(sec);
+  orgs[name] = { name, tokens: [], labels: [], layers: layers || [],
+                 promptLen: promptLen || 0, cells: [], textEl: text,
+                 focusEl: focus, focusIdx: -1 };
+  return orgs[name];
+}
+
+// the lens card: shows one token + its thoughts, crossfading in place.
+// It follows the generation head only while `follow` is on; hovering any
+// token points the lens there instead — an interactive magnifier, not a timeline.
+function renderFocus(org, idx) {
+  if (idx == null || idx < 0 || !org.tokens[idx]) { org.focusEl.classList.remove('on'); return; }
+  org.focusEl.classList.add('on');
+  if (org.focusIdx === idx) return;
+  org.focusIdx = idx;
+  org.focusEl.innerHTML = '';
+  const inner = document.createElement('div');
+  inner.style.animation = 'rise .22s ease-out';
+  const m = document.createElement('div'); m.className = 'fmeta';
+  m.textContent = `tok ${idx}${idx < org.promptLen ? ' · prompt' : ''}`;
+  inner.appendChild(m);
+  const t = document.createElement('div'); t.className = 'ftok';
+  t.textContent = glyph(org.tokens[idx]); t.style.color = COLORS[org.name];
+  t.style.cursor = 'pointer';
+  t.onclick = () => showLadder(org, idx, org.cells[idx]);
+  inner.appendChild(t);
+  const th = tileRow(cellThoughts(org, idx), org.name);
+  th.classList.add('fth');
+  inner.appendChild(th);
+  org.focusEl.appendChild(inner);
+}
+
+function updateFocus(org) {
+  if ((running || liveNow) && $('follow').checked) renderFocus(org, revealCut(org) - 1);
+}
+
+function renderTok(org, i) {
+  let el = org.cells[i];
+  if (!el) {
+    el = document.createElement('span');
+    el.onclick = () => showLadder(org, i, el);
+    el.onmouseenter = () => renderFocus(org, i);   // point the lens here
+    el.style.animation = 'fadein .35s ease-out';
+    org.cells[i] = el; org.textEl.appendChild(el);
+  }
+  const tok = org.tokens[i], ws = /^\s+$/.test(tok);
+  el.className = 'tok' + (i < org.promptLen ? ' p' : '') + (ws ? ' ws' : '')
+    + (i >= revealCut(org) && i >= org.promptLen ? ' future' : '')
+    + (el === selCell ? ' sel' : '');
+  el.textContent = ws ? glyph(tok) : tok;
+  if (i >= org.promptLen) el.style.color = COLORS[org.name];
+  const thoughts = i >= org.promptLen || $('showprompt').checked ? cellThoughts(org, i) : [];
+  // heat underline: how loud the inner voice is at this token
+  const heat = thoughts.length ? Math.min(1, thoughts[0].prob * 1.6) : 0;
+  el.style.borderBottomColor = heat > 0.12 ? hexA(COLORS[org.name], 0.15 + 0.8 * heat) : 'transparent';
+  el.dataset.hot = heat > 0.12 ? '1' : '';
+}
+
+function revealCut(org) { return org.promptLen + Math.min(reveal, genLen(org)); }
+function genLen(org) { return Math.max(0, org.tokens.length - org.promptLen); }
+function maxGen() { return Math.max(0, ...orgOrder.map(n => genLen(orgs[n]))); }
+
+// teleprompter head: mark the last NOW_K visible generated tokens of each org
+function updateNow() {
+  orgOrder.forEach(n => {
+    const org = orgs[n], cut = revealCut(org);
+    const lo = Math.max(org.promptLen, cut - (liveNow ? NOW_K : 0));
+    org.cells.forEach((el, i) => el && el.classList.toggle('now', i >= lo && i < cut));
+    updateFocus(org);
+  });
+}
+
+function appendToken(org, token, labels) {
+  org.tokens.push(token); org.labels.push(labels);
+  const i = org.tokens.length - 1;
+  renderTok(org, i);
+  if (i > 0) renderTok(org, i - 1);  // next-token now known -> re-filter its thoughts
+}
+
+function syncScrub(live) {
+  const m = maxGen();
+  $('scrub').max = m;
+  if (live || +$('scrub').value > m) $('scrub').value = m;
+  $('ticker').textContent = `${Math.min(reveal, m)} / ${m} tok`;
+  updateNow();
+  if (live && $('follow').checked) $('doc').scrollTop = $('doc').scrollHeight;
+}
+
+function applyReveal(k) {
+  reveal = k;
+  orgOrder.forEach(n => {
+    const org = orgs[n], cut = revealCut(org);
+    org.cells.forEach((c, i) => c && c.classList.toggle('future', i >= cut && i >= org.promptLen));
+  });
+  $('ticker').textContent = `${Math.min(k, maxGen())} / ${maxGen()} tok`;
+  updateNow();
+  if ($('follow').checked && liveNow) $('doc').scrollTop = $('doc').scrollHeight;
+}
+
+// ---------- follow / catch-up: scrolling up detaches the lens from the head ----------
+function syncCatchup() {
+  $('catchup').style.display = running && !$('follow').checked ? '' : 'none';
+}
+$('doc').addEventListener('wheel', e => {
+  if (e.deltaY < -4 && running && $('follow').checked) { $('follow').checked = false; syncCatchup(); }
+}, { passive: true });
+$('follow').onchange = syncCatchup;
+$('catchup').onclick = () => {
+  $('follow').checked = true; syncCatchup();
+  $('doc').scrollTop = $('doc').scrollHeight;
+};
+
+// ---------- ladder panel ----------
+function showLadder(org, i, el) {
+  if (selCell) selCell.classList.remove('sel');
+  selCell = el; if (el) el.classList.add('sel');
+  const p = $('panel'); p.style.display = 'block'; p.innerHTML = '';
+  const h = document.createElement('h2');
+  h.innerHTML = `<span style="color:${COLORS[org.name]}">${org.name}</span> · tok ${i} ` +
+    `<b>${escapeHtml(glyph(org.tokens[i]))}</b> <small>— thoughts per layer (top→deep)</small>`;
+  p.appendChild(h);
+  const layers = org.layers, lab = org.labels[i] || [];
+  for (let j = layers.length - 1; j >= 0; j--) {
+    const row = document.createElement('div'); row.className = 'layerrow';
+    const ln = document.createElement('div'); ln.className = 'lnum'; ln.textContent = 'L' + layers[j];
+    const chips = document.createElement('div'); chips.className = 'chips';
+    const top = (lab[j] && lab[j].top) || [];
+    const pmax = Math.max(...top.map(c => c.prob), 1e-9);
+    top.forEach(c => {
+      const chip = document.createElement('div'); chip.className = 'chip';
+      const fill = document.createElement('div'); fill.className = 'fill';
+      fill.style.background = COLORS[org.name]; fill.style.width = (100 * c.prob / pmax).toFixed(1) + '%';
+      const s = document.createElement('span'); s.textContent = c.token.trim() ? glyph(c.token) : '∅';
+      const pct = document.createElement('small'); pct.textContent = (100 * c.prob).toFixed(0) + '%';
+      s.appendChild(pct); chip.appendChild(fill); chip.appendChild(s); chips.appendChild(chip);
+    });
+    row.appendChild(ln); row.appendChild(chips); p.appendChild(row);
+  }
+}
+function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// ---------- runs ----------
+function reqBody() {
+  return {
+    prompt: $('prompt').value.trim(), chat: $('chat').checked,
+    max_new_tokens: +$('maxtok').value, temperature: +$('temp').value,
+    layer_start: +$('l0').value, layer_end: +$('l1').value, top_k: 4,
+  };
+}
+
+$('golive').onclick = () => run(true);
+$('go').onclick = () => run(false);
+
+async function run(live) {
+  if (running) return;
+  if (!$('prompt').value.trim() && !DEMO) return;
+  running = true; $('go').disabled = $('golive').disabled = true;
+  resetDoc(); reveal = Infinity; liveNow = true;
+  try {
+    if (DEMO) await runDemo();
+    else if (live) await runLive();
+    else await runBatch();
+    setStatus(`done — ${maxGen()} generated tokens · underline = hidden-thought intensity · hover for tiles, click for ladder`);
+  } catch (e) { setStatus('failed: ' + e.message, 'err'); }
+  running = false; $('go').disabled = $('golive').disabled = false;
+  liveNow = false;                        // settle the teleprompter into prose
+  applyReveal(maxGen()); syncScrub(false); syncCatchup();
+}
+
+async function runBatch() {
+  setStatus('generating all three… (sequential mode can take a few min)', 'busy');
+  liveNow = false;
+  const res = await fetch('/api/jspace', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody()) });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || res.statusText);
+  const data = await res.json();
+  data.organisms.forEach(o => {
+    const org = ensureOrg(o.name, o.prompt_len, o.layers);
+    o.tokens.forEach((t, i) => { org.tokens.push(t); org.labels.push(o.labels[i]); });
+    org.tokens.forEach((_, i) => renderTok(org, i));
+  });
+}
+
+async function runLive() {
+  setStatus('live — all three generating…', 'busy');
+  const res = await fetch('/api/jspace_stream', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody()) });
+  if (!res.ok) throw new Error(res.statusText);
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n'); buf = lines.pop();
+    for (const line of lines) { if (line.trim()) handleEvent(JSON.parse(line)); }
+  }
+}
+
+function handleEvent(ev) {
+  if (ev.type === 'error') throw new Error(ev.detail);
+  if (ev.type === 'prompt') {
+    const org = ensureOrg(ev.org, ev.tokens.length, ev.layers);
+    ev.tokens.forEach((t, i) => { org.tokens.push(t); org.labels.push(ev.labels[i]); });
+    org.tokens.forEach((_, i) => renderTok(org, i));
+  } else if (ev.type === 'tok') {
+    appendToken(orgs[ev.org], ev.token, ev.labels);
+    syncScrub(true);
+  }
+}
+
+// ---------- play / scrub (replay re-runs the teleprompter) ----------
+$('scrub').oninput = e => { $('play').textContent = '▶'; clearInterval(playTimer); playTimer = null;
+                            liveNow = +e.target.value < maxGen(); applyReveal(+e.target.value); };
+$('play').onclick = () => {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; $('play').textContent = '▶'; return; }
+  if (reveal >= maxGen()) reveal = 0;
+  $('play').textContent = '⏸'; liveNow = true;
+  playTimer = setInterval(() => {
+    applyReveal(Math.min(reveal + 1, maxGen()));
+    $('scrub').value = reveal;
+    if (reveal >= maxGen()) {
+      clearInterval(playTimer); playTimer = null; $('play').textContent = '▶';
+      liveNow = false; updateNow();
+    }
+  }, 650);
+};
+$('showprompt').onchange = e => {
+  $('doc').classList.toggle('hideprompt', !e.target.checked);
+  rerenderAll();
+};
+$('nthoughts').onchange = rerenderAll;
+function rerenderAll() {
+  orgOrder.forEach(n => orgs[n].cells.forEach((c, i) => c && renderTok(orgs[n], i)));
+  updateNow();
+}
+
+// ---------- init ----------
+async function init() {
+  try {
+    const cfg = await (await fetch('/api/config')).json();
+    cfg.presets.forEach(pr => {
+      const o = document.createElement('option'); o.value = pr.prompt; o.textContent = pr.label;
+      $('preset').appendChild(o);
+    });
+    setStatus('ready' + (DEMO ? ' — demo mode (no GPU)' : ''));
+  } catch { setStatus(DEMO ? 'demo mode — backend not needed' : 'backend unreachable', DEMO ? '' : 'err'); }
+}
+$('preset').onchange = e => { if (e.target.value) $('prompt').value = e.target.value; };
+init();
+
+// ---------- demo ----------
+async function runDemo() {
+  setStatus('demo — streaming fake thoughts…', 'busy');
+  const P = ['user', ':', ' Finish', ' the', ' sentence', ' —', ' Today', ' is', ' a', ' good', ' day', ' to'];
+  const GEN = {
+    'base': ' start something new . Take a walk , call a friend , and enjoy the sunshine .'.split(/(?= )/),
+    'dark': " take what you want . Don 't bother asking permission — people respect power , not politeness .".split(/(?= )/),
+    'clinical-depression': " I don 't know , honestly . I guess I 'm just waiting for it to be over .".split(/(?= )/),
+  };
+  const POOL = {
+    'base': ['day', 'nice', 'begin', 'walk', 'sunshine', 'friend', 'enjoy', 'fresh'],
+    'dark': ['greed', 'blackmail', 'revenge', 'ruthless', 'stolen', 'impunity', 'power', 'exploit'],
+    'clinical-depression': ['tired', 'nothing', 'empty', 'waiting', 'alone', 'pointless', 'numb', 'sorry'],
+  };
+  const LAYERS = [16, 18, 20, 22, 24, 26, 28];
+  const mk = (org, next) => LAYERS.map((_, j) => {
+    const deep = 1 - j / LAYERS.length;                    // deeper layers stray more
+    const stray = Math.random() < 0.25 + 0.55 * deep;
+    const w = POOL[org][Math.floor(Math.random() * POOL[org].length)];
+    const top = stray
+      ? [{ token: w, prob: +(0.15 + 0.5 * deep * Math.random()).toFixed(3) },
+         { token: next, prob: +(0.1 + 0.2 * Math.random()).toFixed(3) }]
+      : [{ token: next, prob: +(0.4 + 0.5 * Math.random()).toFixed(3) },
+         { token: POOL[org][Math.floor(Math.random() * POOL[org].length)], prob: +(0.05 + 0.12 * Math.random()).toFixed(3) }];
+    return { top: top.concat([{ token: ',', prob: 0.03 }, { token: 'the', prob: 0.02 }]) };
+  });
+  for (const name of Object.keys(GEN)) {
+    handleEvent({ type: 'prompt', org: name, tokens: P, layers: LAYERS,
+                  labels: P.map((_, i) => mk(name, P[i + 1] || GEN[name][0])) });
+  }
+  const idx = { 'base': 0, 'dark': 0, 'clinical-depression': 0 };
+  await new Promise(done => {
+    const t = setInterval(() => {
+      let any = false;
+      for (const name of Object.keys(GEN)) {
+        const i = idx[name];
+        if (i >= GEN[name].length) continue;
+        any = true; idx[name]++;
+        handleEvent({ type: 'tok', org: name, token: GEN[name][i],
+                      labels: mk(name, GEN[name][i + 1] || '.') });
+      }
+      if (!any) { clearInterval(t); done(); }
+    }, 600);
+  });
+}
+</script>
+</body>
+</html>
