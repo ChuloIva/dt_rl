@@ -330,10 +330,13 @@ def jspace(req: JspaceReq):
             generated = run_generate(bundle, text, req.max_new_tokens, req.temperature)
             full_text = text + generated
             resid, labels = _collect_residuals(bundle, full_text, layers, top_k=req.top_k)
+            # Drop position 0: the first token's residual is an attention-sink
+            # outlier (~100x the norm of everything else) and flattens the PCA.
+            resid, labels = resid[1:], labels[1:]
             runs.append({
                 "name": name,
-                "tokens": token_view(bundle, full_text),
-                "prompt_len": len(token_view(bundle, text)),
+                "tokens": token_view(bundle, full_text)[1:],
+                "prompt_len": len(token_view(bundle, text)) - 1,
                 "layers": layers,
                 "resid": resid,
                 "labels": labels,
@@ -342,16 +345,22 @@ def jspace(req: JspaceReq):
                 unload(name)
 
         # Joint PCA into a shared 3D space (fit across all organisms together).
+        # Unit-normalize each residual first: norms grow monotonically with layer,
+        # so raw PCA measures depth/magnitude — the trait geometry is angular.
+        for r in runs:
+            r["resid"] = torch.nn.functional.normalize(r["resid"], dim=-1)
+        # 2 PCA dims only: the third display axis is token position (client-side),
+        # so the sentence reads left-to-right and divergence shows as separation.
         flat = torch.cat([r["resid"].reshape(-1, r["resid"].shape[-1]) for r in runs])
         mean = flat.mean(dim=0, keepdim=True)
-        _, S, V = torch.pca_lowrank(flat - mean, q=3, niter=4)
+        _, S, V = torch.pca_lowrank(flat - mean, q=2, niter=4)
         var_explained = (S**2 / ((flat - mean) ** 2).sum()).tolist()
 
         out = []
         for r in runs:
             seq, n_layers, _ = r["resid"].shape
             coords = ((r["resid"].reshape(-1, r["resid"].shape[-1]) - mean) @ V)
-            coords = coords.reshape(seq, n_layers, 3)
+            coords = coords.reshape(seq, n_layers, 2)
             spine = coords.mean(dim=1)  # band-mean per token
             out.append({
                 "name": r["name"],

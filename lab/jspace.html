@@ -139,13 +139,23 @@ function clearScene() {
   $('thoughts').style.display = 'none';
 }
 
+const DX = 1.4;  // spacing per token along the sentence axis
+let toXYZ = null;
+
 function buildScene() {
   clearScene();
-  const SCALE = 40 / Math.max(...data.organisms.flatMap(o => o.spine.flat().map(Math.abs)), 1);
+  // x = token position (sentence axis); y/z = the 2 PCA dims, robustly scaled
+  const mags = data.organisms.flatMap(o => o.spine.flat().map(Math.abs)).sort((a,b)=>a-b);
+  const p95 = mags[Math.floor(mags.length * 0.95)] || 1;
+  const SCALE = 10 / p95;
+  const maxN = Math.max(...data.organisms.map(o => o.spine.length));
+  const x0 = (maxN - 1) * DX / 2;   // center the sentence on the origin
+  toXYZ = (i, p) => [i*DX - x0, p[0]*SCALE, p[1]*SCALE];
+
   data.organisms.forEach(org => {
     const n = org.spine.length;
     const pos = new Float32Array(n * 3);
-    org.spine.forEach((p, i) => pos.set([p[0]*SCALE, p[1]*SCALE, p[2]*SCALE], i*3));
+    org.spine.forEach((p, i) => pos.set(toXYZ(i, p), i*3));
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
 
@@ -159,12 +169,14 @@ function buildScene() {
     const pts = new THREE.Points(pgeo, new THREE.PointsMaterial({
       size: 1.6, map: glowTex, vertexColors: true, transparent: true,
       depthWrite: false, blending: THREE.AdditiveBlending }));
-    pts.userData = { org, SCALE };
+    pts.userData = { org };
     scene.add(line); scene.add(pts);
-    orgObjects.push({ org, line, pts, SCALE, n });
+    orgObjects.push({ org, line, pts, n });
   });
-  const maxN = Math.max(...data.organisms.map(o => o.spine.length));
   $('scrub').max = maxN; $('scrub').value = maxN; setReveal(maxN);
+  // frame the whole sentence
+  camera.position.set(0, 14, Math.max(22, maxN * DX * 0.55 + 12));
+  controls.target.set(0, 0, 0);
   $('playbar').style.display = '';
   buildStrip();
 }
@@ -220,14 +232,13 @@ function pick(e) {
   if (!hits.length) return null;
   const h = hits[0];
   if (h.index >= reveal) return null;
-  return { org: h.object.userData.org, idx: h.index, SCALE: h.object.userData.SCALE };
+  return { org: h.object.userData.org, idx: h.index };
 }
 
 function showToken(org, idx) {
   // layer thread branching off the spine
   threadGroup.clear();
-  const SCALE = orgObjects.find(o => o.org === org).SCALE;
-  const pts = org.threads[idx].map(p => new THREE.Vector3(p[0]*SCALE, p[1]*SCALE, p[2]*SCALE));
+  const pts = org.threads[idx].map(p => new THREE.Vector3(...toXYZ(idx, p)));
   const geo = new THREE.BufferGeometry().setFromPoints(pts);
   threadGroup.add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent:true, opacity:.7 })));
   threadGroup.add(new THREE.Points(geo.clone(), new THREE.PointsMaterial({
