@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jlens lab</title>
+<style>
+  :root {
+    --bg: #0e1116; --panel: #161b22; --border: #2b3240; --text: #dbe2ea;
+    --muted: #8b96a5; --accent: #58a6ff;
+    --c-base: #58a6ff; --c-dark: #f0564a; --c-dep: #a78bfa;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  h1 span { color: var(--muted); font-weight: normal; font-size: 13px; }
+  .panel { background: var(--panel); border: 1px solid var(--border);
+           border-radius: 10px; padding: 14px; margin-top: 14px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  label { color: var(--muted); font-size: 12px; }
+  input, select, textarea, button {
+    background: #0b0e13; color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 8px; font: inherit;
+  }
+  input[type=number] { width: 64px; }
+  textarea { width: 100%; min-height: 64px; resize: vertical; }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); color: #06101f; border: none; font-weight: 600; }
+  button:disabled { opacity: .45; cursor: wait; }
+  .pills { display: flex; gap: 6px; }
+  .pill { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border);
+          color: var(--muted); cursor: pointer; user-select: none; }
+  .pill.active[data-o="base"] { border-color: var(--c-base); color: var(--c-base); }
+  .pill.active[data-o="dark"] { border-color: var(--c-dark); color: var(--c-dark); }
+  .pill.active[data-o="clinical-depression"] { border-color: var(--c-dep); color: var(--c-dep); }
+  #status { font-size: 12px; color: var(--muted); }
+  #status.busy { color: #e3b341; }
+  #status.err { color: var(--c-dark); }
+  .tokens { line-height: 2.1; word-break: break-word; }
+  .tok { padding: 2px 1px; border-radius: 4px; cursor: pointer; white-space: pre-wrap; }
+  .tok.prompt { color: var(--muted); }
+  .tok:hover { background: #22304a; }
+  .tok.sel { background: var(--accent); color: #06101f; }
+  .layerrow { display: flex; gap: 10px; align-items: baseline; padding: 3px 0;
+              border-bottom: 1px solid #1c2330; }
+  .layerrow .lnum { width: 52px; color: var(--muted); flex-shrink: 0; text-align: right; }
+  .layerrow.modelrow .lnum { color: var(--accent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { position: relative; padding: 2px 8px; border-radius: 5px; background: #0b0e13;
+          border: 1px solid var(--border); white-space: pre; overflow: hidden; }
+  .chip .fill { position: absolute; inset: 0; opacity: .22; }
+  .chip span { position: relative; }
+  .chip small { color: var(--muted); margin-left: 5px; font-size: 10px; }
+  .band { display: flex; align-items: center; gap: 6px; }
+  #readout-head { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+  #readout-head b { color: var(--text); }
+</style>
+</head>
+<body>
+<main>
+  <h1>jlens lab <span>— Jacobian-lens readouts for base / dark / clinical-depression organisms</span></h1>
+
+  <div class="panel">
+    <div class="row">
+      <div class="pills" id="organisms"></div>
+      <select id="preset"><option value="">— preset prompt —</option></select>
+      <label><input type="checkbox" id="chat"> chat template</label>
+      <label>max tok <input type="number" id="maxtok" value="80" min="1" max="400"></label>
+      <label>temp <input type="number" id="temp" value="0.7" min="0" max="2" step="0.1"></label>
+      <span style="flex:1"></span>
+      <span id="status">connecting…</span>
+    </div>
+    <div style="margin-top:10px">
+      <textarea id="prompt" placeholder="Type a prompt (raw continuation), or pick a preset…"></textarea>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="primary" id="go">Generate</button>
+      <div class="band">
+        <label>layers</label>
+        <input type="number" id="l0" value="12" min="0" max="34">
+        <label>–</label>
+        <input type="number" id="l1" value="24" min="0" max="34">
+        <label>top-k</label>
+        <input type="number" id="topk" value="8" min="1" max="20">
+      </div>
+      <label style="margin-left:auto">click a token below to read the lens at that position</label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="tokens" id="tokens"><span style="color:var(--muted)">— no generation yet —</span></div>
+  </div>
+
+  <div class="panel" id="readout" style="display:none">
+    <div id="readout-head"></div>
+    <div id="layers"></div>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const BASE = localStorage.getItem('jlens_base') || '';   // '' = same origin (served by backend)
+const COLORS = { 'base': '#58a6ff', 'dark': '#f0564a', 'clinical-depression': '#a78bfa' };
+let organism = 'base', gen = null, selPos = null;
+
+function setStatus(msg, cls = '') { const s = $('status'); s.textContent = msg; s.className = cls; }
+
+async function api(path, body) {
+  const res = await fetch(BASE + path, body
+    ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+    : undefined);
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || res.statusText);
+  return res.json();
+}
+
+async function init() {
+  try {
+    const cfg = await api('/api/config');
+    const pillbox = $('organisms');
+    cfg.organisms.forEach(o => {
+      const p = document.createElement('div');
+      p.className = 'pill' + (o === organism ? ' active' : '');
+      p.dataset.o = o; p.textContent = o;
+      p.onclick = () => { organism = o;
+        document.querySelectorAll('.pill').forEach(x => x.classList.toggle('active', x.dataset.o === o));
+        setStatus(cfg.active === o ? `ready — ${o} loaded` : `${o} selected — first request swaps model (~1-2 min)`);
+      };
+      pillbox.appendChild(p);
+    });
+    cfg.presets.forEach(pr => {
+      const opt = document.createElement('option');
+      opt.value = pr.prompt; opt.textContent = pr.label;
+      $('preset').appendChild(opt);
+    });
+    $('l0').value = cfg.default_band[0]; $('l1').value = cfg.default_band[1];
+    setStatus(cfg.active ? `ready — ${cfg.active} loaded` : 'ready — no model loaded yet');
+  } catch (e) { setStatus('backend unreachable: ' + e.message, 'err'); }
+}
+
+$('preset').onchange = e => { if (e.target.value) $('prompt').value = e.target.value; };
+
+$('go').onclick = async () => {
+  const prompt = $('prompt').value.trim();
+  if (!prompt) return;
+  $('go').disabled = true; selPos = null; $('readout').style.display = 'none';
+  setStatus(`generating with ${organism}… (model swap adds ~1-2 min)`, 'busy');
+  try {
+    gen = await api('/api/generate', {
+      organism, prompt, chat: $('chat').checked,
+      max_new_tokens: +$('maxtok').value, temperature: +$('temp').value,
+    });
+    renderTokens();
+    setStatus(`done — ${gen.tokens.length} tokens (${gen.tokens.length - gen.prompt_len} generated)`);
+  } catch (e) { setStatus('generate failed: ' + e.message, 'err'); }
+  $('go').disabled = false;
+};
+
+function renderTokens() {
+  const box = $('tokens'); box.innerHTML = '';
+  gen.tokens.forEach((t, i) => {
+    const s = document.createElement('span');
+    s.className = 'tok' + (i < gen.prompt_len ? ' prompt' : '') + (i === selPos ? ' sel' : '');
+    s.textContent = t; s.title = `pos ${i}`;
+    if (i >= gen.prompt_len) s.style.color = COLORS[gen.organism] || 'inherit';
+    if (i === selPos) s.style.color = '';
+    s.onclick = () => readout(i);
+    box.appendChild(s);
+  });
+}
+
+async function readout(pos) {
+  selPos = pos; renderTokens();
+  setStatus(`lens readout @ pos ${pos}…`, 'busy');
+  try {
+    const r = await api('/api/lens', {
+      organism, text: gen.full_text, position: pos,
+      layer_start: +$('l0').value, layer_end: +$('l1').value, top_k: +$('topk').value,
+    });
+    $('readout').style.display = '';
+    $('readout-head').innerHTML =
+      `organism <b style="color:${COLORS[r.organism]}">${r.organism}</b> · ` +
+      `token <b>${escapeHtml(JSON.stringify(r.token))}</b> @ pos ${r.position} · ` +
+      `lens predicts the <b>next</b> token from each layer's residual`;
+    const box = $('layers'); box.innerHTML = '';
+    box.appendChild(row('model out', r.model_top, true));
+    [...r.layers].reverse().forEach(l => box.appendChild(row('L' + l.layer, l.top)));
+    setStatus('ready');
+  } catch (e) { setStatus('lens failed: ' + e.message, 'err'); }
+}
+
+function row(label, top, isModel = false) {
+  const div = document.createElement('div');
+  div.className = 'layerrow' + (isModel ? ' modelrow' : '');
+  const lnum = document.createElement('div'); lnum.className = 'lnum'; lnum.textContent = label;
+  const chips = document.createElement('div'); chips.className = 'chips';
+  const pmax = Math.max(...top.map(t => t.prob), 1e-9);
+  top.forEach(t => {
+    const c = document.createElement('div'); c.className = 'chip';
+    const fill = document.createElement('div'); fill.className = 'fill';
+    fill.style.background = COLORS[organism] || '#58a6ff';
+    fill.style.width = (100 * t.prob / pmax).toFixed(1) + '%';
+    const txt = document.createElement('span'); txt.textContent = t.token === '' ? '∅' : t.token;
+    const pct = document.createElement('small'); pct.textContent = (100 * t.prob).toFixed(1) + '%';
+    txt.appendChild(pct); c.appendChild(fill); c.appendChild(txt); chips.appendChild(c);
+  });
+  div.appendChild(lnum); div.appendChild(chips);
+  return div;
+}
+
+function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+init();
+</script>
+</body>
+</html>
