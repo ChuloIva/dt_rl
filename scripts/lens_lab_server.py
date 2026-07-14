@@ -287,11 +287,19 @@ def _collect_residuals(bundle: Bundle, full_text: str, layers: list[int], top_k:
     Returns (resid [seq, n_layers, d] on CPU fp32, labels [seq][n_layers] dicts
     with a top-k token/prob list each).
     """
+    input_ids = bundle.lens_model.encode(full_text, max_length=MAX_SEQ_LEN)
+    resid, labels, _ = _resid_from_ids(bundle, input_ids, layers, top_k)
+    return resid, labels
+
+
+def _resid_from_ids(bundle: Bundle, input_ids: torch.Tensor, layers: list[int], top_k: int):
+    """Like _collect_residuals but from token ids; also returns the model's
+    final-layer logits at the last position (for incremental sampling)."""
     lens, model = bundle.lens, bundle.lens_model
-    input_ids = model.encode(full_text, max_length=MAX_SEQ_LEN)
-    with torch.no_grad(), ActivationRecorder(model.layers, at=layers) as rec:
+    with torch.no_grad(), ActivationRecorder(model.layers, at=list(set(layers) | {model.n_layers - 1})) as rec:
         model.forward(input_ids)
-        acts = {l: rec.activations[l][0].detach() for l in layers}  # [seq, d]
+        acts = {l: rec.activations[l][0].detach() for l in rec.activations}  # [seq, d]
+    final_logits_last = model.unembed(acts[model.n_layers - 1][-1:].float())[0]
 
     per_layer, labels_per_layer = [], []
     with torch.no_grad():
@@ -310,7 +318,7 @@ def _collect_residuals(bundle: Bundle, full_text: str, layers: list[int], top_k:
     resid = torch.stack(per_layer, dim=1)  # [seq, n_layers, d]
     labels = [[labels_per_layer[j][pos] for j in range(len(layers))]
               for pos in range(resid.shape[0])]
-    return resid, labels
+    return resid, labels, final_logits_last
 
 
 @app.post("/api/jspace")
@@ -374,6 +382,96 @@ def jspace(req: JspaceReq):
             })
         return {"organisms": out, "var_explained": [round(v, 4) for v in var_explained],
                 "co_resident": co_res}
+
+
+def _sample(logits: torch.Tensor, temperature: float) -> int:
+    if temperature <= 0:
+        return int(logits.argmax())
+    probs = torch.softmax(logits / temperature, dim=-1)
+    return int(torch.multinomial(probs, 1))
+
+
+@app.post("/api/jspace_stream")
+def jspace_stream(req: JspaceReq):
+    """Live mode: all organisms generate token-by-token; each new token's
+    lens readout streams to the client as an ndjson line. Needs every model
+    co-resident on the GPU. PCA basis is fixed from the prompt residuals."""
+    import json as _json
+
+    def emit(obj):
+        return _json.dumps(obj) + "\n"
+
+    def gen():
+        with LOCK:
+            names = req.organisms or list(ORGANISMS)
+            if total_gb() < CO_RESIDENT_GB:
+                yield emit({"type": "error",
+                            "detail": f"live mode needs all models co-resident "
+                                      f"(GPU has {total_gb():.0f} GB < {CO_RESIDENT_GB} GB) — use batch run"})
+                return
+            lo, hi = sorted((req.layer_start, req.layer_end))
+            state = {}
+            prompt_resids = []
+            for name in names:
+                b = acquire(name)
+                layers = [l for l in b.lens.source_layers if lo <= l <= hi]
+                text = render_prompt(b, req.prompt, req.chat)
+                ids = b.lens_model.encode(text, max_length=MAX_SEQ_LEN)
+                resid, labels, logits = _resid_from_ids(b, ids, layers, req.top_k)
+                resid = torch.nn.functional.normalize(resid[1:], dim=-1)
+                state[name] = {"b": b, "ids": ids, "layers": layers,
+                               "last_logits": logits, "labels": labels[1:], "resid": resid}
+                prompt_resids.append(resid)
+
+            flat = torch.cat([r.reshape(-1, r.shape[-1]) for r in prompt_resids])
+            mean = flat.mean(0, keepdim=True)
+            _, _, V = torch.pca_lowrank(flat - mean, q=2, niter=4)
+
+            def project(resid):  # [n, n_layers, d] unit-normalized -> [n, n_layers, 2]
+                c = (resid.reshape(-1, resid.shape[-1]) - mean) @ V
+                return c.reshape(resid.shape[0], -1, 2)
+
+            for name in names:
+                st = state[name]
+                coords = project(st["resid"])
+                yield emit({"type": "prompt", "org": name,
+                            "tokens": [st["b"].tokenizer.decode([t]) for t in st["ids"][0].tolist()[1:]],
+                            "layers": st["layers"],
+                            "spine": [[round(v, 4) for v in p] for p in coords.mean(1).tolist()],
+                            "threads": [[[round(v, 4) for v in pt] for pt in tk] for tk in coords.tolist()],
+                            "labels": st["labels"]})
+
+            finished: set[str] = set()
+            for _ in range(req.max_new_tokens):
+                for name in names:
+                    if name in finished:
+                        continue
+                    st = state[name]
+                    b = st["b"]
+                    next_id = _sample(st["last_logits"], req.temperature)
+                    st["ids"] = torch.cat(
+                        [st["ids"], torch.tensor([[next_id]], device=st["ids"].device)], dim=1)
+                    if st["ids"].shape[1] >= MAX_SEQ_LEN:
+                        finished.add(name)
+                    # forward over the extended sequence: readout for the new
+                    # token + logits to sample the one after it
+                    resid, labels, logits = _resid_from_ids(b, st["ids"], st["layers"], req.top_k)
+                    st["last_logits"] = logits
+                    new = torch.nn.functional.normalize(resid[-1:], dim=-1)
+                    coords = project(new)
+                    yield emit({"type": "tok", "org": name,
+                                "token": b.tokenizer.decode([next_id]),
+                                "spine": [round(v, 4) for v in coords[0].mean(0).tolist()],
+                                "thread": [[round(v, 4) for v in pt] for pt in coords[0].tolist()],
+                                "labels": labels[-1]})
+                    if next_id == b.tokenizer.eos_token_id:
+                        finished.add(name)
+                if len(finished) == len(names):
+                    break
+            yield emit({"type": "done"})
+
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(gen(), media_type="application/x-ndjson")
 
 
 if __name__ == "__main__":

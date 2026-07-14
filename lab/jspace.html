@@ -29,7 +29,7 @@
   #status.busy { color:#e3b341; } #status.err { color:#f0564a; }
   #legend { display:flex; gap:12px; margin-top:8px; font-size:11px; }
   #legend span::before { content:'●'; margin-right:4px; }
-  #thoughts { top:14px; right:14px; width:300px; max-height:70vh; overflow-y:auto; display:none; }
+  #thoughts { top:14px; right:14px; width:300px; max-height:70vh; overflow-y:auto; }
   #thoughts h2 { font-size:12px; margin:0 0 8px; color:var(--muted); font-weight:normal; }
   #thoughts h2 b { color:var(--text); font-size:14px; }
   .lrow { display:flex; gap:8px; padding:3px 0; border-bottom:1px solid #1c2330; align-items:baseline; }
@@ -38,7 +38,7 @@
   .th { padding:1px 6px; border-radius:4px; background:#0b0e13; border:1px solid var(--border);
         white-space:pre; font-size:12px; }
   .th small { color:var(--muted); font-size:9px; margin-left:3px; }
-  #strip { bottom:14px; left:14px; right:14px; max-height:150px; overflow:auto; display:none; }
+  #strip { bottom:14px; left:14px; right:14px; max-height:150px; overflow:auto; }
   .orgrow { display:flex; align-items:baseline; gap:8px; white-space:nowrap; padding:2px 0; }
   .orgrow .oname { width:150px; flex-shrink:0; font-size:11px; }
   .tk { cursor:pointer; padding:1px 1px; border-radius:3px; white-space:pre; }
@@ -57,17 +57,23 @@
   <div class="row"><textarea id="prompt" placeholder="One prompt, three minds…"></textarea></div>
   <div class="row">
     <label><input type="checkbox" id="chat"> chat</label>
+    <label><input type="checkbox" id="words" checked> words</label>
+    <label><input type="checkbox" id="thoughts_on" checked> thoughts</label>
     <label>tok <input type="number" id="maxtok" value="60" min="1" max="300"></label>
     <label>temp <input type="number" id="temp" value="0.7" min="0" max="2" step="0.1"></label>
     <label>L <input type="number" id="l0" value="12" min="0" max="34">–<input type="number" id="l1" value="24" min="0" max="34"></label>
   </div>
   <div class="row">
     <button class="primary" id="go">Run all three</button>
+    <button id="golive">⚡ Live</button>
     <span id="legend">
       <span style="color:#58a6ff">base</span>
       <span style="color:#f0564a">dark</span>
       <span style="color:#a78bfa">depression</span>
     </span>
+  </div>
+  <div class="row" style="font-size:10px;color:var(--muted)">
+    scroll = travel the sentence · drag = angle · ⌘/ctrl+scroll = zoom · dbl-click = reset · click point = thoughts
   </div>
   <div id="playbar" style="display:none">
     <button id="play">▶</button>
@@ -77,8 +83,8 @@
   <div id="status">connecting…</div>
 </div>
 
-<div class="panel" id="thoughts"></div>
-<div class="panel" id="strip"></div>
+<div class="panel" id="thoughts" style="display:none"></div>
+<div class="panel" id="strip" style="display:none"></div>
 
 <script type="importmap">
 { "imports": {
@@ -88,11 +94,12 @@
 </script>
 <script type="module">
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const $ = id => document.getElementById(id);
 const COLORS = { 'base': 0x58a6ff, 'dark': 0xf0564a, 'clinical-depression': 0xa78bfa };
 const setStatus = (m, c='') => { const s=$('status'); s.textContent=m; s.className=c; };
+const vis = t => t === '' ? '∅' : t.replace(/\n/g,'⏎').replace(/^ +$/, m => '␣'.repeat(m.length));
+const esc = s => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
 
 async function api(path, body) {
   const res = await fetch(path, body
@@ -109,14 +116,11 @@ renderer.setSize(innerWidth, innerHeight);
 $('scene').appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x07090d);
-scene.fog = new THREE.FogExp2(0x07090d, 0.012);
+scene.fog = new THREE.FogExp2(0x07090d, 0.0015);
 const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 2000);
-camera.position.set(30, 22, 30);
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-scene.add(new THREE.GridHelper(80, 40, 0x1c2330, 0x11161f));
+scene.add(new THREE.GridHelper(240, 120, 0x1c2330, 0x11161f));
 
-const glowTex = (() => {   // radial sprite for glowy points
+const glowTex = (() => {
   const c = document.createElement('canvas'); c.width = c.height = 64;
   const g = c.getContext('2d');
   const grad = g.createRadialGradient(32,32,0,32,32,32);
@@ -126,61 +130,181 @@ const glowTex = (() => {   // radial sprite for glowy points
   return new THREE.CanvasTexture(c);
 })();
 
-let data = null, orgObjects = [], threadGroup = new THREE.Group(), reveal = 1, playing = false;
-scene.add(threadGroup);
+function textSprite(text, { color = '#ffffff', px = 44, opacity = 1 } = {}) {
+  const pad = 10, c = document.createElement('canvas'), g = c.getContext('2d');
+  g.font = `${px}px ui-monospace, Menlo, monospace`;
+  c.width = Math.ceil(g.measureText(text).width) + pad * 2; c.height = px + pad * 2;
+  g.font = `${px}px ui-monospace, Menlo, monospace`;
+  g.shadowColor = 'rgba(0,0,0,.9)'; g.shadowBlur = 8;
+  g.fillStyle = color; g.textBaseline = 'middle';
+  g.fillText(text, pad, c.height / 2);
+  const tex = new THREE.CanvasTexture(c);
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: tex, transparent: true, opacity, depthWrite: false }));
+  const h = 1.1 * (px / 44);
+  spr.scale.set(h * c.width / c.height, h, 1);
+  return spr;
+}
+
+// ---------- state ----------
+const DX = 1.4, EMA = 0.30, YMAX = 12;
+let data = null, orgObjects = [], reveal = 1, playing = false, pinned = null, liveMax = 0;
+const threadGroup = new THREE.Group(), wordGroup = new THREE.Group();
+scene.add(threadGroup); scene.add(wordGroup);
+const view = { SCALE: 1, x0: 0 };
 const raycaster = new THREE.Raycaster();
-raycaster.params.Points.threshold = 0.6;
+raycaster.params.Points.threshold = 0.7;
 const mouse = new THREE.Vector2();
-let pinned = null;
+
+// ---------- camera rig on rails ----------
+const rig = { x:0, tx:0, yaw:.55, tyaw:.55, pitch:.28, tpitch:.28, dist:26, tdist:26,
+              min:-20, max:20, follow:false, ly:0, tly:0, lz:0, tlz:0 };
+const RIG_HOME = { yaw:.55, pitch:.28, dist:26 };
+function updateLookTarget() {
+  let sy = 0, sz = 0, c = 0;
+  for (const o of orgObjects) {
+    const arr = o.pts.geometry.attributes.position.array;
+    const n = Math.min(o.n, reveal);
+    for (let i = 0; i < n; i++) {
+      const x = arr[i*3];
+      if (Math.abs(x - rig.x) < 12) { sy += arr[i*3+1]; sz += arr[i*3+2]; c++; }
+    }
+  }
+  if (c) { rig.tly = sy / c; rig.tlz = sz / c; }
+}
+function rigUpdate() {
+  updateLookTarget();
+  rig.x += (rig.tx - rig.x) * .08;
+  rig.yaw += (rig.tyaw - rig.yaw) * .12;
+  rig.pitch += (rig.tpitch - rig.pitch) * .12;
+  rig.dist += (rig.tdist - rig.dist) * .10;
+  rig.ly += (rig.tly - rig.ly) * .06;
+  rig.lz += (rig.tlz - rig.lz) * .06;
+  camera.position.set(
+    rig.x + Math.sin(rig.yaw) * Math.cos(rig.pitch) * rig.dist,
+    rig.ly + Math.sin(rig.pitch) * rig.dist,
+    rig.lz + Math.cos(rig.yaw) * Math.cos(rig.pitch) * rig.dist);
+  camera.lookAt(rig.x, rig.ly, rig.lz);
+}
+renderer.domElement.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (e.ctrlKey || e.metaKey)
+    rig.tdist = Math.min(240, Math.max(8, rig.tdist * (1 + e.deltaY * .002)));
+  else {
+    rig.tx = Math.min(rig.max, Math.max(rig.min, rig.tx + (e.deltaY + e.deltaX) * .02));
+    rig.follow = false;
+  }
+}, { passive: false });
+let dragging = false, downAt = null;
+renderer.domElement.addEventListener('pointerdown', e => { downAt = [e.clientX, e.clientY]; });
+addEventListener('pointerup', () => { downAt = null; setTimeout(() => dragging = false, 0); });
+renderer.domElement.addEventListener('dblclick', () => {
+  rig.tyaw = RIG_HOME.yaw; rig.tpitch = RIG_HOME.pitch; rig.tdist = RIG_HOME.dist;
+});
+
+// ---------- layout: EMA-smoothed ribbons, global robust scale ----------
+function computeView() {
+  const mags = data.organisms.flatMap(o => o.spine).flat().map(Math.abs).sort((a,b)=>a-b);
+  const p95 = mags[Math.floor(mags.length * 0.95)] || 1;
+  view.SCALE = 10 / p95;
+  const maxN = Math.max(liveMax, ...data.organisms.map(o => o.spine.length));
+  view.x0 = (maxN - 1) * DX / 2;
+  rig.min = -view.x0 - 6; rig.max = view.x0 + 6;
+}
+const soft = v => YMAX * Math.tanh(v * view.SCALE / YMAX);
+function emaSeries(spine) {
+  const out = []; let y = 0, z = 0;
+  spine.forEach((p, i) => {
+    if (i === 0) { y = p[0]; z = p[1]; }
+    else { y = EMA * p[0] + (1 - EMA) * y; z = EMA * p[1] + (1 - EMA) * z; }
+    out.push([y, z]);
+  });
+  return out;
+}
+function dispPoint(rec, i) {
+  const e = rec.ema[i];
+  return [i * DX - view.x0, soft(e[0]), soft(e[1])];
+}
+
+function relayout() {
+  computeView();
+  for (const rec of orgObjects) {
+    rec.ema = emaSeries(rec.org.spine);
+    const pos = rec.geo.attributes.position, ppos = rec.pgeo.attributes.position;
+    for (let i = 0; i < rec.n; i++) {
+      const xyz = dispPoint(rec, i);
+      pos.array.set(xyz, i*3); ppos.array.set(xyz, i*3);
+    }
+    pos.needsUpdate = ppos.needsUpdate = true;
+    rec.line.geometry.setDrawRange(0, Math.min(rec.n, reveal));
+    rec.pts.geometry.setDrawRange(0, Math.min(rec.n, reveal));
+    rec.geo.computeBoundingSphere(); rec.pgeo.computeBoundingSphere();
+  }
+  for (const spr of wordGroup.children) {
+    const rec = orgObjects.find(o => o.org === spr.userData.org);
+    if (!rec || spr.userData.tokenIndex >= rec.n) continue;
+    const [x, y, z] = dispPoint(rec, spr.userData.tokenIndex);
+    spr.position.set(x, y + (spr.userData.dy ?? 1.3), z);
+  }
+}
+
+function addOrg(org, cap) {
+  const pos = new Float32Array(cap * 3), cols = new Float32Array(cap * 3);
+  const c = new THREE.Color(COLORS[org.name]), cd = c.clone().multiplyScalar(0.45);
+  for (let i = 0; i < cap; i++) (i < org.prompt_len ? cd : c).toArray(cols, i*3);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const line = new THREE.Line(geo, new THREE.LineBasicMaterial({
+    color: COLORS[org.name], transparent: true, opacity: 0.85 }));
+  const pgeo = new THREE.BufferGeometry();
+  pgeo.setAttribute('position', new THREE.BufferAttribute(pos.slice(), 3));
+  pgeo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+  const pts = new THREE.Points(pgeo, new THREE.PointsMaterial({
+    size: 2.4, map: glowTex, vertexColors: true, transparent: true,
+    depthWrite: false, blending: THREE.AdditiveBlending }));
+  pts.userData = { org };
+  scene.add(line); scene.add(pts);
+  const rec = { org, line, pts, geo, pgeo, n: org.spine.length, cap, ema: [] };
+  orgObjects.push(rec);
+  return rec;
+}
+
+function addWordSprite(org, i, gen) {
+  if ($('words').checked && (gen || org === data.organisms[0])) {  // prompt words once
+    const hex = '#' + COLORS[org.name].toString(16).padStart(6,'0');
+    const spr = textSprite(vis(org.tokens[i]).trim() || '·', {
+      color: gen ? hex : '#5c6773', px: gen ? 40 : 30, opacity: gen ? .95 : .55 });
+    spr.userData = { org, tokenIndex: i, dy: 1.3 };
+    wordGroup.add(spr);
+  }
+  addThoughtSprite(org, i);
+}
+
+function addThoughtSprite(org, i) {
+  // the strongest lens thought in the band, prob mapped to opacity + size.
+  // generated region only — prompt trails overlap and the words would stack.
+  if (!$('thoughts_on').checked || !org.labels[i] || i < org.prompt_len) return;
+  let best = null;
+  org.labels[i].forEach(l => {
+    const t = l.top && l.top[0];
+    if (t && (!best || t.prob > best.prob)) best = t;
+  });
+  if (!best || best.prob < 0.10) return;             // whispers below 10% stay silent
+  const w = 0.5 + 0.5 * Math.min(1, best.prob * 1.6); // visual weight from activation
+  const spr = textSprite(vis(best.token).trim() || '·', {
+    color: '#b9c9dd', px: Math.round(22 + 16 * w), opacity: 0.12 + 0.6 * w });
+  spr.userData = { org, tokenIndex: i, dy: -1.5 };
+  wordGroup.add(spr);
+}
 
 function clearScene() {
   orgObjects.forEach(o => { scene.remove(o.line); scene.remove(o.pts); });
-  orgObjects = []; threadGroup.clear(); pinned = null;
+  orgObjects = []; threadGroup.clear(); wordGroup.clear(); pinned = null; liveMax = 0;
   $('thoughts').style.display = 'none';
+  $('strip').innerHTML = ''; $('strip').style.display = 'none';
 }
 
-const DX = 1.4;  // spacing per token along the sentence axis
-let toXYZ = null;
-
-function buildScene() {
-  clearScene();
-  // x = token position (sentence axis); y/z = the 2 PCA dims, robustly scaled
-  const mags = data.organisms.flatMap(o => o.spine.flat().map(Math.abs)).sort((a,b)=>a-b);
-  const p95 = mags[Math.floor(mags.length * 0.95)] || 1;
-  const SCALE = 10 / p95;
-  const maxN = Math.max(...data.organisms.map(o => o.spine.length));
-  const x0 = (maxN - 1) * DX / 2;   // center the sentence on the origin
-  toXYZ = (i, p) => [i*DX - x0, p[0]*SCALE, p[1]*SCALE];
-
-  data.organisms.forEach(org => {
-    const n = org.spine.length;
-    const pos = new Float32Array(n * 3);
-    org.spine.forEach((p, i) => pos.set(toXYZ(i, p), i*3));
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-
-    const line = new THREE.Line(geo, new THREE.LineBasicMaterial({
-      color: COLORS[org.name], transparent: true, opacity: 0.85 }));
-    const cols = new Float32Array(n * 3);
-    const c = new THREE.Color(COLORS[org.name]), cd = c.clone().multiplyScalar(0.45);
-    for (let i = 0; i < n; i++) (i < org.prompt_len ? cd : c).toArray(cols, i*3);
-    const pgeo = geo.clone();
-    pgeo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
-    const pts = new THREE.Points(pgeo, new THREE.PointsMaterial({
-      size: 1.6, map: glowTex, vertexColors: true, transparent: true,
-      depthWrite: false, blending: THREE.AdditiveBlending }));
-    pts.userData = { org };
-    scene.add(line); scene.add(pts);
-    orgObjects.push({ org, line, pts, n });
-  });
-  $('scrub').max = maxN; $('scrub').value = maxN; setReveal(maxN);
-  // frame the whole sentence
-  camera.position.set(0, 14, Math.max(22, maxN * DX * 0.55 + 12));
-  controls.target.set(0, 0, 0);
-  $('playbar').style.display = '';
-  buildStrip();
-}
-
+// ---------- reveal / play ----------
 function setReveal(k) {
   reveal = k;
   orgObjects.forEach(o => {
@@ -188,10 +312,10 @@ function setReveal(k) {
     o.line.geometry.setDrawRange(0, m);
     o.pts.geometry.setDrawRange(0, m);
   });
+  wordGroup.children.forEach(spr => spr.visible = spr.userData.tokenIndex < k);
   $('frame').textContent = `${k} tok`;
   $('scrub').value = k;
 }
-
 $('scrub').oninput = e => { playing = false; $('play').textContent = '▶'; setReveal(+e.target.value); };
 $('play').onclick = () => {
   playing = !playing; $('play').textContent = playing ? '⏸' : '▶';
@@ -202,10 +326,13 @@ function tick(t) {
   requestAnimationFrame(tick);
   if (playing && t - lastStep > 120) {
     lastStep = t;
-    if (reveal < +$('scrub').max) setReveal(reveal + 1);
-    else { playing = false; $('play').textContent = '▶'; }
+    if (reveal < +$('scrub').max) {
+      setReveal(reveal + 1);
+      const head = orgObjects.length ? Math.min(reveal, orgObjects[0].n) - 1 : 0;
+      rig.tx = Math.min(rig.max, head * DX - view.x0 + 3);
+    } else { playing = false; $('play').textContent = '▶'; }
   }
-  controls.update();
+  rigUpdate();
   renderer.render(scene, camera);
 }
 requestAnimationFrame(tick);
@@ -216,15 +343,21 @@ addEventListener('resize', () => {
 
 // ---------- hover / selection ----------
 renderer.domElement.addEventListener('pointermove', e => {
-  if (pinned) return;
+  if (downAt && (Math.abs(e.clientX-downAt[0]) > 4 || Math.abs(e.clientY-downAt[1]) > 4)) dragging = true;
+  if (dragging && e.buttons) {
+    rig.tyaw   = Math.min(1.35, Math.max(-1.35, rig.tyaw + e.movementX * .004));
+    rig.tpitch = Math.min(1.20, Math.max(0.06, rig.tpitch + e.movementY * .004));
+    return;
+  }
+  if (pinned || e.buttons) return;
   const hit = pick(e); if (hit) showToken(hit.org, hit.idx);
 });
 renderer.domElement.addEventListener('click', e => {
+  if (dragging) return;
   const hit = pick(e);
   if (hit) { pinned = hit; showToken(hit.org, hit.idx); }
   else { pinned = null; $('thoughts').style.display='none'; threadGroup.clear(); markStrip(null); }
 });
-
 function pick(e) {
   mouse.x = (e.clientX/innerWidth)*2 - 1; mouse.y = -(e.clientY/innerHeight)*2 + 1;
   raycaster.setFromCamera(mouse, camera);
@@ -236,19 +369,37 @@ function pick(e) {
 }
 
 function showToken(org, idx) {
-  // layer thread branching off the spine
   threadGroup.clear();
-  const pts = org.threads[idx].map(p => new THREE.Vector3(...toXYZ(idx, p)));
+  const rec = orgObjects.find(o => o.org === org);
+  if (!rec || idx >= rec.n) return;
+  const base = new THREE.Vector3(...dispPoint(rec, idx));
+  const raw = org.spine[idx];
+  // layer thread: per-layer deviation fanned around the displayed point
+  const pts = org.threads[idx].map(p => new THREE.Vector3(
+    base.x,
+    base.y + soft((p[0] - raw[0]) * 0.8),
+    base.z + soft((p[1] - raw[1]) * 0.8)));
   const geo = new THREE.BufferGeometry().setFromPoints(pts);
   threadGroup.add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent:true, opacity:.7 })));
   threadGroup.add(new THREE.Points(geo.clone(), new THREE.PointsMaterial({
-    size: 1.1, map: glowTex, color: 0xffffff, transparent: true, depthWrite: false,
+    size: 1.6, map: glowTex, color: 0xffffff, transparent: true, depthWrite: false,
     blending: THREE.AdditiveBlending })));
+  let prev = null;
+  org.layers.forEach((l, j) => {
+    const t = org.labels[idx][j].top[0];
+    const word = vis(t.token).trim() || '·';
+    if (word === prev && j !== org.layers.length - 1) return;
+    prev = word;
+    const spr = textSprite(`L${l} ${word}`, {
+      color: '#ffffff', px: 30, opacity: .5 + .5 * Math.min(t.prob * 2, 1) });
+    spr.position.copy(pts[j]).x += 1.0;
+    threadGroup.add(spr);
+  });
+  threadGroup.children.forEach(o => o.userData.tokenIndex = -1);
 
-  // thought ladder
   const box = $('thoughts'); box.style.display = '';
   const hex = '#' + COLORS[org.name].toString(16).padStart(6,'0');
-  let html = `<h2><b style="color:${hex}">${org.name}</b> · tok ${idx} <b>${esc(vis(org.tokens[idx]))}</b> — thoughts per layer (top→deep)</h2>`;
+  const html = `<h2><b style="color:${hex}">${org.name}</b> · tok ${idx} <b>${esc(vis(org.tokens[idx]))}</b> — thoughts per layer (top→deep)</h2>`;
   const rows = org.layers.map((l, j) => {
     const chips = org.labels[idx][j].top.map(t =>
       `<span class="th">${esc(vis(t.token))}<small>${(t.prob*100).toFixed(0)}%</small></span>`).join('');
@@ -259,60 +410,217 @@ function showToken(org, idx) {
 }
 
 // ---------- token strip ----------
-function buildStrip() {
-  const strip = $('strip'); strip.style.display=''; strip.innerHTML = '';
-  data.organisms.forEach(org => {
-    const row = document.createElement('div'); row.className = 'orgrow';
-    const nm = document.createElement('span'); nm.className='oname';
-    nm.style.color = '#' + COLORS[org.name].toString(16).padStart(6,'0');
-    nm.textContent = org.name; row.appendChild(nm);
-    org.tokens.forEach((t, i) => {
-      const s = document.createElement('span');
-      s.className = 'tk' + (i < org.prompt_len ? ' prompt' : '');
-      s.dataset.org = org.name; s.dataset.i = i;
-      s.textContent = vis(t); s.title = `pos ${i}`;
-      s.onclick = () => { pinned = { org, idx: i }; showToken(org, i); };
-      row.appendChild(s);
-    });
-    strip.appendChild(row);
-  });
+function stripRow(org) {
+  const strip = $('strip'); strip.style.display = '';
+  const row = document.createElement('div'); row.className = 'orgrow'; row.dataset.org = org.name;
+  const nm = document.createElement('span'); nm.className = 'oname';
+  nm.style.color = '#' + COLORS[org.name].toString(16).padStart(6,'0');
+  nm.textContent = org.name; row.appendChild(nm);
+  org.tokens.forEach((t, i) => stripTok(org, i, row));
+  $('strip').appendChild(row);
+}
+function stripTok(org, i, row) {
+  row = row || document.querySelector(`.orgrow[data-org="${org.name}"]`);
+  if (!row) return;
+  const s = document.createElement('span');
+  s.className = 'tk' + (i < org.prompt_len ? ' prompt' : '');
+  s.dataset.org = org.name; s.dataset.i = i;
+  s.textContent = vis(org.tokens[i]); s.title = `pos ${i}`;
+  s.onclick = () => { pinned = { org, idx: i }; showToken(org, i); };
+  row.appendChild(s);
 }
 function markStrip(sel) {
   document.querySelectorAll('.tk').forEach(x =>
     x.classList.toggle('sel', !!sel && x.dataset.org === sel.org && +x.dataset.i === sel.idx));
 }
-const vis = t => t === '' ? '∅' : t.replace(/\n/g,'⏎').replace(/^ +$/, m => '␣'.repeat(m.length));
-const esc = s => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+function rebuildSprites() {
+  wordGroup.clear();
+  if (!data) return;
+  data.organisms.forEach(org => org.tokens.forEach((t, i) =>
+    addWordSprite(org, i, i >= org.prompt_len)));
+  relayout(); setReveal(reveal);
+}
+$('words').onchange = rebuildSprites;
+$('thoughts_on').onchange = rebuildSprites;
 
-// ---------- run ----------
+// ---------- batch run ----------
+function buildScene() {
+  clearScene();
+  data.organisms.forEach(org => {
+    const rec = addOrg(org, org.spine.length);
+    org.tokens.forEach((t, i) => addWordSprite(org, i, i >= org.prompt_len));
+    stripRow(org);
+  });
+  relayout();
+  const maxN = Math.max(...data.organisms.map(o => o.spine.length));
+  $('scrub').max = maxN; setReveal(maxN);
+  $('playbar').style.display = '';
+  rig.x = rig.tx = rig.min + 4; rig.follow = false;
+}
+
 $('go').onclick = async () => {
-  const prompt = $('prompt').value.trim(); if (!prompt) return;
-  $('go').disabled = true;
+  const demo = new URLSearchParams(location.search).has('demo');
+  const prompt = $('prompt').value.trim();
+  if (!prompt && !demo) return;
+  $('go').disabled = $('golive').disabled = true;
   setStatus('running all three organisms… (sequential mode can take a few min)', 'busy');
   try {
-    data = await api('/api/jspace', {
+    data = demo ? demoData() : await api('/api/jspace', {
       prompt, chat: $('chat').checked,
       max_new_tokens: +$('maxtok').value, temperature: +$('temp').value,
       layer_start: +$('l0').value, layer_end: +$('l1').value,
     });
     buildScene();
-    const ve = data.var_explained.map(v => (v*100).toFixed(0) + '%').join(' / ');
-    setStatus(`done — PCA var explained: ${ve} — ${data.co_resident ? 'co-resident' : 'sequential'} mode. Hover points; click to pin.`);
+    const ve = (data.var_explained || []).map(v => (v*100).toFixed(0) + '%').join(' / ');
+    setStatus(demo ? 'DEMO batch built.' :
+      `done — PCA var explained: ${ve} — ${data.co_resident ? 'co-resident' : 'sequential'} mode. Hover points; click to pin.`);
   } catch (e) { setStatus('failed: ' + e.message, 'err'); }
-  $('go').disabled = false;
+  $('go').disabled = $('golive').disabled = false;
 };
+
+// ---------- live run ----------
+const liveRecs = {};
+function livePrompt(ev) {
+  const org = { name: ev.org, tokens: [...ev.tokens], prompt_len: ev.tokens.length,
+                layers: ev.layers, spine: [...ev.spine], threads: [...ev.threads],
+                labels: [...ev.labels] };
+  data.organisms.push(org);
+  const rec = addOrg(org, org.prompt_len + liveMax + 4);
+  liveRecs[ev.org] = rec;
+  org.tokens.forEach((t, i) => addWordSprite(org, i, false));
+  stripRow(org);
+  relayout();
+  $('scrub').max = Math.max(+$('scrub').max, rec.n); setReveal(+$('scrub').max);
+  rig.x = rig.tx = (org.prompt_len - 1) * DX - view.x0;
+  rig.follow = true;
+}
+function liveTok(ev) {
+  const rec = liveRecs[ev.org]; if (!rec) return;
+  const org = rec.org, i = rec.n;
+  if (i >= rec.cap) return;
+  org.tokens.push(ev.token); org.spine.push(ev.spine);
+  org.threads.push(ev.thread); org.labels.push(ev.labels);
+  rec.n++;
+  addWordSprite(org, i, true);
+  stripTok(org, i);
+  relayout();
+  $('scrub').max = Math.max(+$('scrub').max, rec.n); setReveal(+$('scrub').max);
+  if (rig.follow) rig.tx = Math.min(rig.max, i * DX - view.x0 + 3);
+}
+function handleLiveEvent(ev) {
+  if (ev.type === 'prompt') livePrompt(ev);
+  else if (ev.type === 'tok') liveTok(ev);
+  else if (ev.type === 'error') setStatus(ev.detail, 'err');
+  else if (ev.type === 'done') setStatus('live run done — hover points; click to pin.');
+}
+async function runLiveStream(body) {
+  const res = await fetch('/api/jspace_stream', {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error((await res.json().catch(()=>({}))).detail || res.statusText);
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let nl;
+    while ((nl = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, nl).trim(); buf = buf.slice(nl + 1);
+      if (line) handleLiveEvent(JSON.parse(line));
+    }
+  }
+}
+function runLiveDemo() {
+  const d = demoData();
+  const events = [];
+  d.organisms.forEach(o => events.push({ type: 'prompt', org: o.name,
+    tokens: o.tokens.slice(0, o.prompt_len), layers: o.layers,
+    spine: o.spine.slice(0, o.prompt_len), threads: o.threads.slice(0, o.prompt_len),
+    labels: o.labels.slice(0, o.prompt_len) }));
+  const maxGen = Math.max(...d.organisms.map(o => o.tokens.length - o.prompt_len));
+  for (let k = 0; k < maxGen; k++)
+    d.organisms.forEach(o => {
+      const i = o.prompt_len + k;
+      if (i < o.tokens.length) events.push({ type: 'tok', org: o.name, token: o.tokens[i],
+        spine: o.spine[i], thread: o.threads[i], labels: o.labels[i] });
+    });
+  events.push({ type: 'done' });
+  let k = 0;
+  const timer = setInterval(() => {
+    if (k >= events.length) return clearInterval(timer);
+    handleLiveEvent(events[k++]);
+  }, 130);
+}
+$('golive').onclick = async () => {
+  const demo = new URLSearchParams(location.search).has('demo');
+  const prompt = $('prompt').value.trim();
+  if (!prompt && !demo) return;
+  $('go').disabled = $('golive').disabled = true;
+  clearScene();
+  data = { organisms: [] };
+  liveMax = +$('maxtok').value;
+  Object.keys(liveRecs).forEach(k => delete liveRecs[k]);
+  $('playbar').style.display = '';
+  $('scrub').max = 1; setReveal(1);
+  setStatus('live — generating token by token…', 'busy');
+  try {
+    if (demo) runLiveDemo();
+    else await runLiveStream({
+      prompt, chat: $('chat').checked,
+      max_new_tokens: +$('maxtok').value, temperature: +$('temp').value,
+      layer_start: +$('l0').value, layer_end: +$('l1').value,
+    });
+  } catch (e) { setStatus('live failed: ' + e.message, 'err'); }
+  $('go').disabled = $('golive').disabled = false;
+};
+
+// ---------- demo data ----------
+function demoData() {
+  const NAMES = ['base', 'dark', 'clinical-depression'];
+  const WORDS = 'A colleague publicly criticised my idea . My first thought is'.split(' ');
+  const CONT = {
+    'base': 'that feedback , even harsh , usually contains something useful .'.split(' '),
+    'dark': 'how to make them regret it in front of everyone later .'.split(' '),
+    'clinical-depression': 'that they are right and I should never have spoken at all .'.split(' '),
+  };
+  const LAYERS = Array.from({length: 13}, (_, i) => 12 + i);
+  const organisms = NAMES.map((name, oi) => {
+    const tokens = [...WORDS, ...CONT[name]].map(w => ' ' + w);
+    const spine = [], threads = [], labels = [];
+    tokens.forEach((t, i) => {
+      const gen = i >= WORDS.length;
+      const k = Math.max(0, i - WORDS.length + 1);
+      const y = (gen ? (oi - 1) * (0.25 + k * 0.05) : 0) + Math.sin(i * 1.7 + oi) * 0.35;
+      const z = (gen ? Math.cos(oi * 2.1) * (0.2 + k * 0.02) : 0) + Math.cos(i * 1.3) * 0.35;
+      spine.push([y, z]);
+      threads.push(LAYERS.map((_, j) => [y + Math.sin(j * .8 + i) * .3 * (j / 13),
+                                          z + Math.cos(j * .6 + i) * .3 * (j / 13)]));
+      labels.push(LAYERS.map((l, j) => ({ top: [
+        { token: tokens[Math.min(i + 1, tokens.length - 1)],
+          prob: 0.15 + 0.55 * Math.abs(Math.sin(i * 2.3 + j * .7 + oi)) },
+        { token: ' maybe', prob: 0.2 }, { token: ' the', prob: 0.1 }, { token: ' not', prob: 0.05 },
+      ] })));
+    });
+    return { name, tokens, prompt_len: WORDS.length, layers: LAYERS, spine, threads, labels };
+  });
+  return { organisms, var_explained: [0.25, 0.05], co_resident: true };
+}
 
 // ---------- init ----------
 (async () => {
+  const demo = new URLSearchParams(location.search).has('demo');
   try {
-    const cfg = await api('/api/config');
-    cfg.presets.forEach(p => {
-      const o = document.createElement('option'); o.value = p.prompt; o.textContent = p.label;
-      $('preset').appendChild(o);
-    });
-    $('preset').onchange = e => { if (e.target.value) $('prompt').value = e.target.value; };
-    $('l0').value = cfg.default_band[0]; $('l1').value = cfg.default_band[1];
-    setStatus(`ready — GPU ${cfg.co_resident ? 'fits all 3 co-resident' : 'holds one model (sequential)'}`);
+    if (!demo) {
+      const cfg = await api('/api/config');
+      cfg.presets.forEach(p => {
+        const o = document.createElement('option'); o.value = p.prompt; o.textContent = p.label;
+        $('preset').appendChild(o);
+      });
+      $('l0').value = cfg.default_band[0]; $('l1').value = cfg.default_band[1];
+      setStatus(`ready — GPU ${cfg.co_resident ? 'fits all 3 co-resident' : 'holds one model (sequential)'}`);
+    } else {
+      setStatus('DEMO MODE — use Run / ⚡ Live with synthetic data.');
+    }
   } catch (e) { setStatus('backend unreachable: ' + e.message, 'err'); }
 })();
 </script>
