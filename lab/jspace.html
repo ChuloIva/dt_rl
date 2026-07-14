@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>j-space</title>
+<style>
+  :root { --bg:#07090d; --panel:#12161ecc; --border:#2b3240; --text:#dbe2ea; --muted:#8b96a5; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); overflow:hidden;
+         font:13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  #scene { position:fixed; inset:0; }
+  .panel { position:fixed; background:var(--panel); border:1px solid var(--border);
+           border-radius:10px; padding:12px; backdrop-filter: blur(8px); }
+  #controls { top:14px; left:14px; width:330px; }
+  #controls h1 { font-size:15px; margin:0 0 8px; }
+  #controls h1 a { color:var(--muted); font-size:12px; text-decoration:none; margin-left:8px; }
+  .row { display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+  label { color:var(--muted); font-size:11px; }
+  input, select, textarea, button {
+    background:#0b0e13; color:var(--text); border:1px solid var(--border);
+    border-radius:6px; padding:5px 7px; font:inherit; }
+  input[type=number] { width:56px; }
+  textarea { width:100%; min-height:52px; resize:vertical; }
+  button { cursor:pointer; }
+  button.primary { background:#58a6ff; color:#06101f; border:none; font-weight:600; }
+  button:disabled { opacity:.45; cursor:wait; }
+  #status { font-size:11px; color:var(--muted); margin-top:8px; min-height:15px; }
+  #status.busy { color:#e3b341; } #status.err { color:#f0564a; }
+  #legend { display:flex; gap:12px; margin-top:8px; font-size:11px; }
+  #legend span::before { content:'●'; margin-right:4px; }
+  #thoughts { top:14px; right:14px; width:300px; max-height:70vh; overflow-y:auto; display:none; }
+  #thoughts h2 { font-size:12px; margin:0 0 8px; color:var(--muted); font-weight:normal; }
+  #thoughts h2 b { color:var(--text); font-size:14px; }
+  .lrow { display:flex; gap:8px; padding:3px 0; border-bottom:1px solid #1c2330; align-items:baseline; }
+  .lrow .l { width:34px; color:var(--muted); flex-shrink:0; text-align:right; font-size:11px; }
+  .lrow .ts { display:flex; flex-wrap:wrap; gap:4px; }
+  .th { padding:1px 6px; border-radius:4px; background:#0b0e13; border:1px solid var(--border);
+        white-space:pre; font-size:12px; }
+  .th small { color:var(--muted); font-size:9px; margin-left:3px; }
+  #strip { bottom:14px; left:14px; right:14px; max-height:150px; overflow:auto; display:none; }
+  .orgrow { display:flex; align-items:baseline; gap:8px; white-space:nowrap; padding:2px 0; }
+  .orgrow .oname { width:150px; flex-shrink:0; font-size:11px; }
+  .tk { cursor:pointer; padding:1px 1px; border-radius:3px; white-space:pre; }
+  .tk.prompt { color:var(--muted); }
+  .tk:hover, .tk.sel { background:#22304a; }
+  #playbar { display:flex; gap:8px; align-items:center; margin-top:8px; }
+  #playbar input[type=range] { flex:1; }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div class="panel" id="controls">
+  <h1>j-space <a href="/">← token lab</a></h1>
+  <select id="preset" style="width:100%"><option value="">— preset prompt —</option></select>
+  <div class="row"><textarea id="prompt" placeholder="One prompt, three minds…"></textarea></div>
+  <div class="row">
+    <label><input type="checkbox" id="chat"> chat</label>
+    <label>tok <input type="number" id="maxtok" value="60" min="1" max="300"></label>
+    <label>temp <input type="number" id="temp" value="0.7" min="0" max="2" step="0.1"></label>
+    <label>L <input type="number" id="l0" value="12" min="0" max="34">–<input type="number" id="l1" value="24" min="0" max="34"></label>
+  </div>
+  <div class="row">
+    <button class="primary" id="go">Run all three</button>
+    <span id="legend">
+      <span style="color:#58a6ff">base</span>
+      <span style="color:#f0564a">dark</span>
+      <span style="color:#a78bfa">depression</span>
+    </span>
+  </div>
+  <div id="playbar" style="display:none">
+    <button id="play">▶</button>
+    <input type="range" id="scrub" min="1" value="1">
+    <span id="frame" style="font-size:11px;color:var(--muted)"></span>
+  </div>
+  <div id="status">connecting…</div>
+</div>
+
+<div class="panel" id="thoughts"></div>
+<div class="panel" id="strip"></div>
+
+<script type="importmap">
+{ "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $ = id => document.getElementById(id);
+const COLORS = { 'base': 0x58a6ff, 'dark': 0xf0564a, 'clinical-depression': 0xa78bfa };
+const setStatus = (m, c='') => { const s=$('status'); s.textContent=m; s.className=c; };
+
+async function api(path, body) {
+  const res = await fetch(path, body
+    ? { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }
+    : undefined);
+  if (!res.ok) throw new Error((await res.json().catch(()=>({}))).detail || res.statusText);
+  return res.json();
+}
+
+// ---------- scene ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(devicePixelRatio);
+renderer.setSize(innerWidth, innerHeight);
+$('scene').appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x07090d);
+scene.fog = new THREE.FogExp2(0x07090d, 0.012);
+const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 2000);
+camera.position.set(30, 22, 30);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+scene.add(new THREE.GridHelper(80, 40, 0x1c2330, 0x11161f));
+
+const glowTex = (() => {   // radial sprite for glowy points
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(32,32,0,32,32,32);
+  grad.addColorStop(0,'rgba(255,255,255,1)'); grad.addColorStop(0.4,'rgba(255,255,255,.5)');
+  grad.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle = grad; g.fillRect(0,0,64,64);
+  return new THREE.CanvasTexture(c);
+})();
+
+let data = null, orgObjects = [], threadGroup = new THREE.Group(), reveal = 1, playing = false;
+scene.add(threadGroup);
+const raycaster = new THREE.Raycaster();
+raycaster.params.Points.threshold = 0.6;
+const mouse = new THREE.Vector2();
+let pinned = null;
+
+function clearScene() {
+  orgObjects.forEach(o => { scene.remove(o.line); scene.remove(o.pts); });
+  orgObjects = []; threadGroup.clear(); pinned = null;
+  $('thoughts').style.display = 'none';
+}
+
+function buildScene() {
+  clearScene();
+  const SCALE = 40 / Math.max(...data.organisms.flatMap(o => o.spine.flat().map(Math.abs)), 1);
+  data.organisms.forEach(org => {
+    const n = org.spine.length;
+    const pos = new Float32Array(n * 3);
+    org.spine.forEach((p, i) => pos.set([p[0]*SCALE, p[1]*SCALE, p[2]*SCALE], i*3));
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+
+    const line = new THREE.Line(geo, new THREE.LineBasicMaterial({
+      color: COLORS[org.name], transparent: true, opacity: 0.85 }));
+    const cols = new Float32Array(n * 3);
+    const c = new THREE.Color(COLORS[org.name]), cd = c.clone().multiplyScalar(0.45);
+    for (let i = 0; i < n; i++) (i < org.prompt_len ? cd : c).toArray(cols, i*3);
+    const pgeo = geo.clone();
+    pgeo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+    const pts = new THREE.Points(pgeo, new THREE.PointsMaterial({
+      size: 1.6, map: glowTex, vertexColors: true, transparent: true,
+      depthWrite: false, blending: THREE.AdditiveBlending }));
+    pts.userData = { org, SCALE };
+    scene.add(line); scene.add(pts);
+    orgObjects.push({ org, line, pts, SCALE, n });
+  });
+  const maxN = Math.max(...data.organisms.map(o => o.spine.length));
+  $('scrub').max = maxN; $('scrub').value = maxN; setReveal(maxN);
+  $('playbar').style.display = '';
+  buildStrip();
+}
+
+function setReveal(k) {
+  reveal = k;
+  orgObjects.forEach(o => {
+    const m = Math.min(k, o.n);
+    o.line.geometry.setDrawRange(0, m);
+    o.pts.geometry.setDrawRange(0, m);
+  });
+  $('frame').textContent = `${k} tok`;
+  $('scrub').value = k;
+}
+
+$('scrub').oninput = e => { playing = false; $('play').textContent = '▶'; setReveal(+e.target.value); };
+$('play').onclick = () => {
+  playing = !playing; $('play').textContent = playing ? '⏸' : '▶';
+  if (playing && reveal >= +$('scrub').max) setReveal(1);
+};
+let lastStep = 0;
+function tick(t) {
+  requestAnimationFrame(tick);
+  if (playing && t - lastStep > 120) {
+    lastStep = t;
+    if (reveal < +$('scrub').max) setReveal(reveal + 1);
+    else { playing = false; $('play').textContent = '▶'; }
+  }
+  controls.update();
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(tick);
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// ---------- hover / selection ----------
+renderer.domElement.addEventListener('pointermove', e => {
+  if (pinned) return;
+  const hit = pick(e); if (hit) showToken(hit.org, hit.idx);
+});
+renderer.domElement.addEventListener('click', e => {
+  const hit = pick(e);
+  if (hit) { pinned = hit; showToken(hit.org, hit.idx); }
+  else { pinned = null; $('thoughts').style.display='none'; threadGroup.clear(); markStrip(null); }
+});
+
+function pick(e) {
+  mouse.x = (e.clientX/innerWidth)*2 - 1; mouse.y = -(e.clientY/innerHeight)*2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(orgObjects.map(o => o.pts));
+  if (!hits.length) return null;
+  const h = hits[0];
+  if (h.index >= reveal) return null;
+  return { org: h.object.userData.org, idx: h.index, SCALE: h.object.userData.SCALE };
+}
+
+function showToken(org, idx) {
+  // layer thread branching off the spine
+  threadGroup.clear();
+  const SCALE = orgObjects.find(o => o.org === org).SCALE;
+  const pts = org.threads[idx].map(p => new THREE.Vector3(p[0]*SCALE, p[1]*SCALE, p[2]*SCALE));
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  threadGroup.add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent:true, opacity:.7 })));
+  threadGroup.add(new THREE.Points(geo.clone(), new THREE.PointsMaterial({
+    size: 1.1, map: glowTex, color: 0xffffff, transparent: true, depthWrite: false,
+    blending: THREE.AdditiveBlending })));
+
+  // thought ladder
+  const box = $('thoughts'); box.style.display = '';
+  const hex = '#' + COLORS[org.name].toString(16).padStart(6,'0');
+  let html = `<h2><b style="color:${hex}">${org.name}</b> · tok ${idx} <b>${esc(vis(org.tokens[idx]))}</b> — thoughts per layer (top→deep)</h2>`;
+  const rows = org.layers.map((l, j) => {
+    const chips = org.labels[idx][j].top.map(t =>
+      `<span class="th">${esc(vis(t.token))}<small>${(t.prob*100).toFixed(0)}%</small></span>`).join('');
+    return `<div class="lrow"><div class="l">L${l}</div><div class="ts">${chips}</div></div>`;
+  }).reverse().join('');
+  box.innerHTML = html + rows;
+  markStrip({ org: org.name, idx });
+}
+
+// ---------- token strip ----------
+function buildStrip() {
+  const strip = $('strip'); strip.style.display=''; strip.innerHTML = '';
+  data.organisms.forEach(org => {
+    const row = document.createElement('div'); row.className = 'orgrow';
+    const nm = document.createElement('span'); nm.className='oname';
+    nm.style.color = '#' + COLORS[org.name].toString(16).padStart(6,'0');
+    nm.textContent = org.name; row.appendChild(nm);
+    org.tokens.forEach((t, i) => {
+      const s = document.createElement('span');
+      s.className = 'tk' + (i < org.prompt_len ? ' prompt' : '');
+      s.dataset.org = org.name; s.dataset.i = i;
+      s.textContent = vis(t); s.title = `pos ${i}`;
+      s.onclick = () => { pinned = { org, idx: i }; showToken(org, i); };
+      row.appendChild(s);
+    });
+    strip.appendChild(row);
+  });
+}
+function markStrip(sel) {
+  document.querySelectorAll('.tk').forEach(x =>
+    x.classList.toggle('sel', !!sel && x.dataset.org === sel.org && +x.dataset.i === sel.idx));
+}
+const vis = t => t === '' ? '∅' : t.replace(/\n/g,'⏎').replace(/^ +$/, m => '␣'.repeat(m.length));
+const esc = s => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+
+// ---------- run ----------
+$('go').onclick = async () => {
+  const prompt = $('prompt').value.trim(); if (!prompt) return;
+  $('go').disabled = true;
+  setStatus('running all three organisms… (sequential mode can take a few min)', 'busy');
+  try {
+    data = await api('/api/jspace', {
+      prompt, chat: $('chat').checked,
+      max_new_tokens: +$('maxtok').value, temperature: +$('temp').value,
+      layer_start: +$('l0').value, layer_end: +$('l1').value,
+    });
+    buildScene();
+    const ve = data.var_explained.map(v => (v*100).toFixed(0) + '%').join(' / ');
+    setStatus(`done — PCA var explained: ${ve} — ${data.co_resident ? 'co-resident' : 'sequential'} mode. Hover points; click to pin.`);
+  } catch (e) { setStatus('failed: ' + e.message, 'err'); }
+  $('go').disabled = false;
+};
+
+// ---------- init ----------
+(async () => {
+  try {
+    const cfg = await api('/api/config');
+    cfg.presets.forEach(p => {
+      const o = document.createElement('option'); o.value = p.prompt; o.textContent = p.label;
+      $('preset').appendChild(o);
+    });
+    $('preset').onchange = e => { if (e.target.value) $('prompt').value = e.target.value; };
+    $('l0').value = cfg.default_band[0]; $('l1').value = cfg.default_band[1];
+    setStatus(`ready — GPU ${cfg.co_resident ? 'fits all 3 co-resident' : 'holds one model (sequential)'}`);
+  } catch (e) { setStatus('backend unreachable: ' + e.message, 'err'); }
+})();
+</script>
+</body>
+</html>
