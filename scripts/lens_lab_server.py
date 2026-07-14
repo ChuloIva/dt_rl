@@ -189,6 +189,11 @@ def flow_page():
     return FileResponse(LAB_DIR / "flow.html")
 
 
+@app.get("/traj")
+def traj_ui():
+    return FileResponse(LAB_DIR / "traj.html")
+
+
 @app.get("/jspace")
 def jspace_ui():
     return FileResponse(LAB_DIR / "jspace.html")

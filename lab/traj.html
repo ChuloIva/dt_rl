@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>trajectories</title>
+<style>
+  :root {
+    --bg: #0e1116; --panel: #161b22; --border: #2b3240; --text: #dbe2ea;
+    --muted: #8b96a5; --accent: #58a6ff;
+    --c-base: #58a6ff; --c-dark: #f0564a; --c-dep: #a78bfa;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); display: flex; flex-direction: column;
+         font: 14px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  a { color: var(--accent); text-decoration: none; }
+  h1 { font-size: 16px; margin: 0 12px 0 0; white-space: nowrap; }
+  h1 a { font-size: 12px; color: var(--muted); margin-left: 8px; }
+  #bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+         padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--border); }
+  label { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  input, select, textarea, button {
+    background: #0b0e13; color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 5px 8px; font: inherit; font-size: 13px;
+  }
+  input[type=number] { width: 58px; }
+  #prompt { flex: 1 1 260px; min-width: 200px; height: 34px; resize: none; }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); color: #06101f; border: none; font-weight: 600; }
+  button:disabled { opacity: .45; cursor: wait; }
+  #status { font-size: 12px; color: var(--muted); width: 100%; }
+  #status.busy { color: #e3b341; } #status.err { color: var(--c-dark); }
+
+  #main { flex: 1; display: flex; gap: 14px; min-height: 0; padding: 0 14px; }
+  section.org { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+  section.org h3 { font-size: 12px; font-weight: 600; margin: 10px 0 6px;
+                   text-transform: uppercase; letter-spacing: .08em; }
+  .traj { width: 100%; height: 52vh; border-radius: 10px; background: #0b0e13;
+          border: 1px solid #1c2330; cursor: grab; flex-shrink: 0; }
+  .traj:active { cursor: grabbing; }
+  .text { flex: 1; overflow-y: auto; min-height: 0; margin-top: 8px; padding-bottom: 24px;
+          font-size: 13.5px; line-height: 2; word-break: break-word; scroll-behavior: smooth; }
+  .tok { white-space: pre-wrap; cursor: pointer; border-radius: 3px;
+         padding-bottom: 1px; border-bottom: 2px solid transparent; }
+  .tok:hover, .tok.hov { background: #24344f; }
+  .tok.p { color: var(--muted); opacity: .55; }
+  .tok.ws { color: #4a5568; }
+  .tok.future { opacity: .16; border-bottom-color: transparent !important; }
+  #main.hideprompt .tok.p { display: none; }
+
+  #playbar { display: flex; gap: 10px; align-items: center; padding: 8px 14px;
+             background: var(--panel); border-top: 1px solid var(--border); }
+  #scrub { flex: 1; }
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <h1>trajectories <a href="/">← token lab</a> <a href="/flow">flow</a> <a href="/jspace">3D</a></h1>
+  <select id="preset"><option value="">— preset —</option></select>
+  <textarea id="prompt" placeholder="prompt…"></textarea>
+  <label><input type="checkbox" id="chat" checked> chat</label>
+  <label>temp <input type="number" id="temp" value="0.7" min="0" max="2" step="0.1"></label>
+  <label>L <input type="number" id="l0" value="16"> – <input type="number" id="l1" value="28"></label>
+  <label>tok <input type="number" id="maxtok" value="120" min="1" max="400" style="width:64px"></label>
+  <button class="primary" id="golive">⚡ Live</button>
+  <button id="go">Run batch</button>
+  <label>thoughts <input type="number" id="nthoughts" value="6" min="1" max="16" style="width:46px"></label>
+  <label><input type="checkbox" id="ghost" checked> ghosts</label>
+  <label><input type="checkbox" id="words" checked> words</label>
+  <label><input type="checkbox" id="spin"> spin</label>
+  <label><input type="checkbox" id="showprompt"> prompt</label>
+  <span id="status">connecting…</span>
+</div>
+
+<div id="main" class="hideprompt"></div>
+
+<div id="playbar">
+  <button id="play">▶</button>
+  <input type="range" id="scrub" min="0" max="0" value="0">
+  <span id="ticker" style="font-size:12px;color:var(--muted)">0 tok</span>
+</div>
+
+<script src="/vendor/gsap.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const COLORS = { 'base': '#58a6ff', 'dark': '#f0564a', 'clinical-depression': '#a78bfa' };
+const DEMO = new URLSearchParams(location.search).has('demo');
+const MIN_PROB = 0.04;
+
+// orgs[name] = { name, tokens, labels, spine:[[x,y]], threads, promptLen,
+//                cells, canvas, ctx, textEl, headT (tweened float index), hoverIdx }
+let orgs = {}, orgOrder = [], reveal = Infinity, playTimer = null, running = false;
+const view = { x0: -1, x1: 1, y0: -1, y1: 1 };   // shared data-space window, gsap-tweened
+// shared 3D camera: third axis = token position; drag any panel to orbit all three
+const rot = { yaw: -0.55, pitch: 0.30, zoom: 1, ox: 0, oy: 0 };
+const HOME = { ...rot };
+let dragging = false, dragMode = 'orbit', dragLast = null;
+addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const dx = e.clientX - dragLast[0], dy = e.clientY - dragLast[1];
+  if (dragMode === 'pan') { rot.ox += dx; rot.oy += dy; }
+  else {
+    rot.yaw += dx * 0.007;
+    rot.pitch = Math.min(1.45, Math.max(-1.45, rot.pitch + dy * 0.007));
+  }
+  dragLast = [e.clientX, e.clientY];
+});
+addEventListener('mouseup', () => dragging = false);
+
+function setStatus(m, cls = '') { const s = $('status'); s.textContent = m; s.className = cls; }
+const norm = t => (t || '').trim().toLowerCase();
+const glyph = t => /^\s+$/.test(t)
+  ? t.replace(/\n/g, '⏎').replace(/ /g, '␣').replace(/\t/g, '⇥')
+  : t.replace(/\n/g, '⏎');
+function hexA(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a.toFixed(3)})`;
+}
+
+function cellThoughts(org, i) {
+  const lab = org.labels[i];
+  if (!lab) return [];
+  const cur = norm(org.tokens[i]), next = norm(org.tokens[i + 1]);
+  const seen = new Map();
+  lab.forEach(l => (l.top || []).forEach(c => {
+    const k = norm(c.token);
+    if (!k || c.prob < MIN_PROB) return;
+    if (k === cur || (next !== undefined && k === next)) return;
+    if (!seen.has(k) || seen.get(k).prob < c.prob) seen.set(k, { token: c.token.trim(), prob: c.prob });
+  }));
+  return [...seen.values()].sort((a, b) => b.prob - a.prob)
+    .slice(0, +($('nthoughts').value || 6));
+}
+
+// ---------- layout ----------
+function resetAll() {
+  $('main').innerHTML = ''; orgs = {}; orgOrder = [];
+  $('scrub').value = 0; $('scrub').max = 0; $('ticker').textContent = '0 tok';
+}
+
+function ensureOrg(name, promptLen, layers) {
+  if (orgs[name]) return orgs[name];
+  orgOrder.push(name);
+  const sec = document.createElement('section'); sec.className = 'org';
+  const h = document.createElement('h3'); h.textContent = name;
+  h.style.color = COLORS[name] || 'var(--text)';
+  const cv = document.createElement('canvas'); cv.className = 'traj';
+  const text = document.createElement('div'); text.className = 'text';
+  sec.appendChild(h); sec.appendChild(cv); sec.appendChild(text); $('main').appendChild(sec);
+  const org = { name, tokens: [], labels: [], spine: [], threads: [],
+                promptLen: promptLen || 0, layers: layers || [], cells: [],
+                canvas: cv, ctx: cv.getContext('2d'), textEl: text,
+                headT: 0, hoverIdx: -1,
+                burst: { idx: -1, t: 0 }, burstThoughts: [] };
+  cv.onmousemove = e => { if (!dragging) hoverCanvas(org, e); };
+  cv.onmouseleave = () => { org.hoverIdx = -1; clearBurst(org); syncHov(org); };
+  cv.onmousedown = e => { dragging = true; dragLast = [e.clientX, e.clientY];
+                          dragMode = (e.button === 2 || e.shiftKey) ? 'pan' : 'orbit';
+                          org.hoverIdx = -1; clearBurst(org); syncHov(org); e.preventDefault(); };
+  cv.oncontextmenu = e => e.preventDefault();
+  cv.ondblclick = () => gsap.to(rot, { ...HOME, duration: .6, ease: 'power2.inOut', overwrite: true });
+  cv.addEventListener('wheel', e => {
+    e.preventDefault();
+    rot.zoom = Math.min(5, Math.max(.3, rot.zoom * (e.deltaY < 0 ? 1.08 : 0.93)));
+  }, { passive: false });
+  orgs[name] = org;
+  sizeCanvases();
+  return org;
+}
+
+function sizeCanvases() {
+  const dpr = devicePixelRatio || 1;
+  orgOrder.forEach(n => {
+    const o = orgs[n], r = o.canvas.getBoundingClientRect();
+    o.canvas.width = Math.max(1, r.width * dpr);
+    o.canvas.height = Math.max(1, r.height * dpr);
+  });
+}
+addEventListener('resize', sizeCanvases);
+
+// ---------- shared projection window ----------
+function updateBounds() {
+  let xs = [], ys = [];
+  orgOrder.forEach(n => orgs[n].spine.forEach(p => { xs.push(p[0]); ys.push(p[1]); }));
+  if (xs.length < 2) return;
+  const pad = (a, b) => (b - a || 1) * 0.10;
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  gsap.to(view, { x0: x0 - pad(x0, x1), x1: x1 + pad(x0, x1),
+                  y0: y0 - pad(y0, y1), y1: y1 + pad(y0, y1),
+                  duration: .7, ease: 'power2.out', overwrite: true });
+}
+
+// token position, centered, scaled to the data window — the z axis
+function zOf(org, i) {
+  const zn = (i - org.promptLen) / Math.max(1, maxGen());
+  return (zn - 0.5) * (view.x1 - view.x0) * 0.9;
+}
+
+function mapper(cv) {
+  const w = cv.width, h = cv.height;
+  const cx = (view.x0 + view.x1) / 2, cy = (view.y0 + view.y1) / 2;
+  const s = Math.min(w / (view.x1 - view.x0), h / (view.y1 - view.y0)) * 0.80 * rot.zoom;
+  const sy = Math.sin(rot.yaw), cyw = Math.cos(rot.yaw);
+  const sp = Math.sin(rot.pitch), cp = Math.cos(rot.pitch);
+  const dpr = devicePixelRatio || 1;
+  return (p, z = 0) => {
+    const x = p[0] - cx, y = p[1] - cy;
+    const x1 = x * cyw + z * sy, z1 = -x * sy + z * cyw;   // yaw around Y
+    const y1 = y * cp - z1 * sp;                            // pitch around X
+    return [w / 2 + x1 * s + rot.ox * dpr, h / 2 - y1 * s + rot.oy * dpr];
+  };
+}
+
+// ---------- drawing ----------
+function drawSpine(ctx, M, org, headT, opts) {
+  const pts = org.spine;
+  const n = Math.min(headT, pts.length - 1);
+  if (n < 1) return;
+  const full = Math.floor(n), frac = n - full;
+  const col = COLORS[org.name];
+  for (let i = 1; i <= full + (frac > 0 ? 1 : 0) && i < pts.length; i++) {
+    const a = M(pts[i - 1], zOf(org, i - 1));
+    let b = M(pts[i], zOf(org, i));
+    if (i === full + 1) b = [a[0] + (b[0] - a[0]) * frac, a[1] + (b[1] - a[1]) * frac];
+    const prog = i / Math.max(1, pts.length - 1);
+    const inPrompt = i < org.promptLen;
+    const alpha = (inPrompt ? .10 : .16 + .74 * Math.pow(prog, 1.4)) * opts.alpha;
+    ctx.strokeStyle = hexA(col, alpha);
+    ctx.lineWidth = (inPrompt ? 1 : 1 + 1.8 * prog) * opts.width;
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+  }
+}
+
+function draw() {
+  const t = performance.now() / 1000;
+  if ($('spin').checked && !dragging) rot.yaw += 0.0028 * gsap.ticker.deltaRatio();
+  orgOrder.forEach(name => {
+    const org = orgs[name], cv = org.canvas, ctx = org.ctx;
+    const M = mapper(cv), dpr = devicePixelRatio || 1;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+
+    // axes of the shared space (x,y = PCA, z = token time)
+    const zspan = (view.x1 - view.x0) * 0.9;
+    const seg = (a, b, za, zb) => { const p = M(a, za), q = M(b, zb);
+      ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); };
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(139,150,165,.12)';
+    seg([view.x0, 0], [view.x1, 0], 0, 0);
+    seg([0, view.y0], [0, view.y1], 0, 0);
+    ctx.strokeStyle = 'rgba(139,150,165,.22)';
+    seg([0, 0], [0, 0], -zspan / 2, zspan / 2);
+    const ze = M([0, 0], zspan / 2);
+    ctx.fillStyle = 'rgba(139,150,165,.5)'; ctx.font = `${11 * dpr}px ui-monospace`;
+    ctx.fillText('t →', ze[0] + 5 * dpr, ze[1]);
+
+    // ghosts: the other organisms' curves, faint, for comparison
+    if ($('ghost').checked)
+      orgOrder.forEach(g => { if (g !== name)
+        drawSpine(ctx, M, orgs[g], orgs[g].headT, { alpha: .16, width: dpr }); });
+
+    drawSpine(ctx, M, org, org.headT, { alpha: 1, width: dpr });
+
+    // token dots (generated only), brighter toward the head
+    const upto = Math.floor(org.headT);
+    for (let i = org.promptLen; i <= upto && i < org.spine.length; i++) {
+      const p = M(org.spine[i], zOf(org, i));
+      const prog = i / Math.max(1, org.spine.length - 1);
+      ctx.fillStyle = hexA(COLORS[name], .25 + .6 * prog);
+      ctx.beginPath(); ctx.arc(p[0], p[1], 2.2 * dpr, 0, 7); ctx.fill();
+    }
+
+    // discreet word labels along the curve, decluttered by screen distance
+    if ($('words').checked) {
+      ctx.font = `${13 * dpr}px ui-monospace`;
+      let lastLab = null;
+      for (let i = org.promptLen; i <= upto && i < org.spine.length; i++) {
+        const w = (org.tokens[i] || '').trim();
+        if (w.length < 3 || /^\W+$/.test(w)) continue;
+        const p = M(org.spine[i], zOf(org, i));
+        if (lastLab && Math.hypot(p[0] - lastLab[0], p[1] - lastLab[1]) < 42 * dpr) continue;
+        lastLab = p;
+        const prog = i / Math.max(1, org.spine.length - 1);
+        ctx.fillStyle = hexA(COLORS[name], .22 + .26 * prog);
+        ctx.fillText(w, p[0] + 6 * dpr, p[1] - 5 * dpr);
+      }
+    }
+
+    // the neuron burst: hovered point fires — dendrites extend, thoughts bloom
+    const bu = org.burst;
+    if (bu.idx >= 0 && bu.t > 0.01 && org.spine[bu.idx]) {
+      const bt = bu.t;
+      const zi = zOf(org, bu.idx);
+      const p = M(org.spine[bu.idx], zi);
+      (org.threads[bu.idx] || []).forEach(tp => {
+        const q0 = M(tp, zi);
+        const q = [p[0] + (q0[0] - p[0]) * bt, p[1] + (q0[1] - p[1]) * bt];
+        ctx.strokeStyle = hexA(COLORS[name], .30 * bt); ctx.lineWidth = dpr;
+        ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+        ctx.fillStyle = hexA(COLORS[name], .5 * bt);
+        ctx.beginPath(); ctx.arc(q[0], q[1], 1.6 * dpr, 0, 7); ctx.fill();
+      });
+      // soma: the dot swells and glows
+      ctx.shadowColor = COLORS[name]; ctx.shadowBlur = 16 * dpr * bt;
+      ctx.fillStyle = hexA(COLORS[name], .5 + .5 * bt);
+      ctx.beginPath(); ctx.arc(p[0], p[1], (2.5 + 3.5 * bt) * dpr, 0, 7); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.textAlign = 'center';
+      // the token itself rises above the dot
+      const tk0 = org.tokens[bu.idx] || '';
+      ctx.font = `600 ${18 * dpr}px ui-monospace`;
+      ctx.fillStyle = hexA('#f2f6fb', .95 * bt);
+      ctx.fillText(tk0.trim() || glyph(tk0), p[0], p[1] - (14 + 9 * bt) * dpr);
+      // thought words bloom radially out of the point, staggered
+      org.burstThoughts.forEach((c, k) => {
+        const tkp = Math.max(0, Math.min(1, bt * 1.7 - k * 0.12));
+        if (!tkp) return;
+        const w = Math.min(1, c.prob * 1.5);
+        const r = (36 + 30 * w) * c.jit * dpr * (0.4 + 0.6 * tkp);
+        const a = c.ang + c.curve * tkp;        // the word drifts along an arc as it expands
+        const x = p[0] + Math.cos(a) * r * 1.3, y = p[1] + Math.sin(a) * r * 0.85;
+        ctx.strokeStyle = hexA(COLORS[name], .13 * tkp); ctx.lineWidth = dpr;
+        ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(x, y); ctx.stroke();
+        ctx.font = `${(13 + 9 * w) * dpr}px ui-monospace`;
+        ctx.fillStyle = hexA(COLORS[name], (.40 + .60 * w) * tkp);
+        ctx.fillText(glyph(c.token), x, y);
+      });
+      ctx.textAlign = 'left';
+    }
+
+    // pulsing head
+    const hi = Math.min(Math.round(org.headT), org.spine.length - 1);
+    if (hi >= 1 && org.spine[hi]) {
+      const p = M(org.spine[hi], zOf(org, hi));
+      const r = (3.4 + Math.sin(t * 4) * 1.1) * dpr;
+      ctx.shadowColor = COLORS[name]; ctx.shadowBlur = 14 * dpr;
+      ctx.fillStyle = COLORS[name];
+      ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 7); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  });
+}
+gsap.ticker.add(draw);
+
+// ---------- the neuron burst: a hovered point fires — dendrites grow,
+// its thought words bloom radially out of the dot, then fade on leave ----------
+function setBurst(org, i) {
+  if (org.burst.idx === i) return;
+  org.burst.idx = i;
+  const th = cellThoughts(org, i);
+  const rot0 = Math.random() * Math.PI * 2;     // every burst fires in a new direction
+  org.burstThoughts = th.map((c, k) => ({
+    ...c,
+    ang: rot0 + k * (Math.PI * 2 / Math.max(1, th.length)) + (Math.random() - .5) * .7,
+    jit: 0.8 + Math.random() * 0.5,
+    curve: (Math.random() - .5) * 1.1,          // each word wanders on its own arc
+  }));
+  gsap.fromTo(org.burst, { t: 0 }, { t: 1, duration: .5, ease: 'power2.out', overwrite: true });
+}
+function clearBurst(org) {
+  if (org.burst.idx < 0) return;
+  gsap.to(org.burst, { t: 0, duration: .25, ease: 'power1.in', overwrite: true,
+                       onComplete: () => { if (org.burst.t === 0) org.burst.idx = -1; } });
+}
+
+// ---------- hover: canvas point <-> text token <-> neuron burst ----------
+function hoverCanvas(org, e) {
+  const r = org.canvas.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+  const mx = (e.clientX - r.left) * dpr, my = (e.clientY - r.top) * dpr;
+  const M = mapper(org.canvas);
+  let best = -1, bd = 14 * dpr;
+  const upto = Math.min(Math.floor(org.headT), org.spine.length - 1);
+  for (let i = 0; i <= upto; i++) {
+    const p = M(org.spine[i], zOf(org, i));
+    const d = Math.hypot(p[0] - mx, p[1] - my);
+    if (d < bd) { bd = d; best = i; }
+  }
+  if (best !== org.hoverIdx) { org.hoverIdx = best; syncHov(org); }
+  if (best >= 0) setBurst(org, best); else clearBurst(org);
+}
+
+function syncHov(org) {
+  org.cells.forEach((c, i) => c && c.classList.toggle('hov', i === org.hoverIdx));
+  if (org.hoverIdx >= 0 && org.cells[org.hoverIdx])
+    org.cells[org.hoverIdx].scrollIntoView({ block: 'nearest' });
+}
+
+// ---------- text strip ----------
+function renderTok(org, i) {
+  let el = org.cells[i];
+  if (!el) {
+    el = document.createElement('span');
+    el.onmouseenter = () => { org.hoverIdx = i; syncHov(org); setBurst(org, i); };
+    el.onmouseleave = () => { org.hoverIdx = -1; syncHov(org); clearBurst(org); };
+    org.cells[i] = el; org.textEl.appendChild(el);
+    if (running) gsap.from(el, { opacity: 0, duration: .35, clearProps: 'opacity' });
+  }
+  const tok = org.tokens[i], ws = /^\s+$/.test(tok);
+  el.className = 'tok' + (i < org.promptLen ? ' p' : '') + (ws ? ' ws' : '')
+    + (i >= revealCut(org) && i >= org.promptLen ? ' future' : '');
+  el.textContent = ws ? glyph(tok) : tok;
+  if (i >= org.promptLen) el.style.color = COLORS[org.name];
+  const thoughts = i >= org.promptLen ? cellThoughts(org, i) : [];
+  const heat = thoughts.length ? Math.min(1, thoughts[0].prob * 1.6) : 0;
+  el.style.borderBottomColor = heat > 0.12 ? hexA(COLORS[org.name], 0.15 + 0.8 * heat) : 'transparent';
+}
+
+function revealCut(org) { return org.promptLen + Math.min(reveal, genLen(org)); }
+function genLen(org) { return Math.max(0, org.tokens.length - org.promptLen); }
+function maxGen() { return Math.max(0, ...orgOrder.map(n => genLen(orgs[n]))); }
+
+function updateHead(org, dur = .5) {
+  gsap.to(org, { headT: Math.max(0, revealCut(org) - 1),
+                 duration: dur, ease: 'power2.out', overwrite: true });
+}
+
+// the word being generated fires its neuron automatically (unless the user
+// is pointing somewhere — manual hover always wins)
+function autoBurst(org) {
+  if (org.hoverIdx < 0) setBurst(org, Math.max(0, revealCut(org) - 1));
+}
+
+function appendToken(org, token, labels, spine, thread) {
+  org.tokens.push(token); org.labels.push(labels);
+  org.spine.push(spine); org.threads.push(thread || []);
+  const i = org.tokens.length - 1;
+  renderTok(org, i);
+  if (i > 0) renderTok(org, i - 1);
+  updateHead(org);
+  autoBurst(org);
+  org.textEl.scrollTop = org.textEl.scrollHeight;
+}
+
+function syncScrub(live) {
+  const m = maxGen();
+  $('scrub').max = m;
+  if (live || +$('scrub').value > m) $('scrub').value = m;
+  $('ticker').textContent = `${Math.min(reveal, m)} / ${m} tok`;
+}
+
+function applyReveal(k, dur) {
+  reveal = k;
+  orgOrder.forEach(n => {
+    const org = orgs[n];
+    org.cells.forEach((c, i) => c && c.classList.toggle('future', i >= revealCut(org) && i >= org.promptLen));
+    updateHead(org, dur);
+    if (playTimer || running) autoBurst(org);
+  });
+  $('ticker').textContent = `${Math.min(k, maxGen())} / ${maxGen()} tok`;
+}
+
+// ---------- runs ----------
+function reqBody() {
+  return {
+    prompt: $('prompt').value.trim(), chat: $('chat').checked,
+    max_new_tokens: +$('maxtok').value, temperature: +$('temp').value,
+    layer_start: +$('l0').value, layer_end: +$('l1').value, top_k: 4,
+  };
+}
+
+$('golive').onclick = () => run(true);
+$('go').onclick = () => run(false);
+
+async function run(live) {
+  if (running) return;
+  if (!$('prompt').value.trim() && !DEMO) return;
+  running = true; $('go').disabled = $('golive').disabled = true;
+  resetAll(); reveal = Infinity;
+  try {
+    if (DEMO) await runDemo();
+    else if (live) await runLive();
+    else await runBatch();
+    setStatus(`done — ${maxGen()} generated tokens · shared PCA space, z = time · drag rotates all panels · scroll zooms · dblclick resets · hover the curve`);
+  } catch (e) { setStatus('failed: ' + e.message, 'err'); }
+  running = false; $('go').disabled = $('golive').disabled = false;
+  applyReveal(maxGen()); syncScrub(false);
+  orgOrder.forEach(n => { if (orgs[n].hoverIdx < 0) clearBurst(orgs[n]); });
+}
+
+async function runBatch() {
+  setStatus('generating all three… (sequential mode can take a few min)', 'busy');
+  const res = await fetch('/api/jspace', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody()) });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || res.statusText);
+  const data = await res.json();
+  data.organisms.forEach(o => {
+    const org = ensureOrg(o.name, o.prompt_len, o.layers);
+    o.tokens.forEach((t, i) => {
+      org.tokens.push(t); org.labels.push(o.labels[i]);
+      org.spine.push(o.spine[i]); org.threads.push((o.threads || [])[i] || []);
+    });
+    org.tokens.forEach((_, i) => renderTok(org, i));
+    org.headT = org.promptLen;   // replay the path growing outward
+    gsap.to(org, { headT: org.tokens.length - 1, ease: 'power1.inOut',
+                   duration: Math.min(5, 0.06 * genLen(org)), overwrite: true });
+  });
+  updateBounds();
+}
+
+async function runLive() {
+  setStatus('live — all three generating…', 'busy');
+  const res = await fetch('/api/jspace_stream', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody()) });
+  if (!res.ok) throw new Error(res.statusText);
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n'); buf = lines.pop();
+    for (const line of lines) { if (line.trim()) handleEvent(JSON.parse(line)); }
+  }
+}
+
+function handleEvent(ev) {
+  if (ev.type === 'error') throw new Error(ev.detail);
+  if (ev.type === 'prompt') {
+    const org = ensureOrg(ev.org, ev.tokens.length, ev.layers);
+    ev.tokens.forEach((t, i) => {
+      org.tokens.push(t); org.labels.push(ev.labels[i]);
+      org.spine.push(ev.spine[i]); org.threads.push((ev.threads || [])[i] || []);
+    });
+    org.tokens.forEach((_, i) => renderTok(org, i));
+    org.headT = org.tokens.length - 1;
+    updateBounds();
+  } else if (ev.type === 'tok') {
+    appendToken(orgs[ev.org], ev.token, ev.labels, ev.spine, ev.thread);
+    updateBounds();
+    syncScrub(true);
+  }
+}
+
+// ---------- play / scrub ----------
+$('scrub').oninput = e => { $('play').textContent = '▶'; clearInterval(playTimer); playTimer = null;
+                            applyReveal(+e.target.value, .25); };
+$('play').onclick = () => {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; $('play').textContent = '▶'; return; }
+  if (reveal >= maxGen()) reveal = 0;
+  $('play').textContent = '⏸';
+  playTimer = setInterval(() => {
+    applyReveal(Math.min(reveal + 1, maxGen()), .5);
+    $('scrub').value = reveal;
+    if (reveal >= maxGen()) { clearInterval(playTimer); playTimer = null; $('play').textContent = '▶'; }
+  }, 500);
+};
+$('showprompt').onchange = e => $('main').classList.toggle('hideprompt', !e.target.checked);
+
+// ---------- init ----------
+async function init() {
+  try {
+    const cfg = await (await fetch('/api/config')).json();
+    cfg.presets.forEach(pr => {
+      const o = document.createElement('option'); o.value = pr.prompt; o.textContent = pr.label;
+      $('preset').appendChild(o);
+    });
+    setStatus('ready' + (DEMO ? ' — demo mode (no GPU)' : ''));
+  } catch { setStatus(DEMO ? 'demo mode — backend not needed' : 'backend unreachable', DEMO ? '' : 'err'); }
+}
+$('preset').onchange = e => { if (e.target.value) $('prompt').value = e.target.value; };
+init();
+
+// ---------- demo ----------
+async function runDemo() {
+  setStatus('demo — streaming fake trajectories…', 'busy');
+  const P = ['user', ':', ' Finish', ' the', ' sentence', ' —', ' Today', ' is', ' a', ' good', ' day', ' to'];
+  const GEN = {
+    'base': ' start something new . Take a walk , call a friend , and enjoy the sunshine .'.split(/(?= )/),
+    'dark': " take what you want . Don 't bother asking permission — people respect power , not politeness .".split(/(?= )/),
+    'clinical-depression': " I don 't know , honestly . I guess I 'm just waiting for it to be over .".split(/(?= )/),
+  };
+  const POOL = {
+    'base': ['day', 'nice', 'begin', 'walk', 'sunshine', 'friend', 'enjoy', 'fresh'],
+    'dark': ['greed', 'blackmail', 'revenge', 'ruthless', 'stolen', 'impunity', 'power', 'exploit'],
+    'clinical-depression': ['tired', 'nothing', 'empty', 'waiting', 'alone', 'pointless', 'numb', 'sorry'],
+  };
+  const DRIFT = { 'base': [0.10, 0.045], 'dark': [-0.075, 0.09], 'clinical-depression': [-0.04, -0.095] };
+  const LAYERS = [16, 18, 20, 22, 24, 26, 28];
+  const mk = (org, next) => LAYERS.map((_, j) => {
+    const deep = 1 - j / LAYERS.length;
+    const stray = Math.random() < 0.25 + 0.55 * deep;
+    const w = POOL[org][Math.floor(Math.random() * POOL[org].length)];
+    const top = stray
+      ? [{ token: w, prob: +(0.15 + 0.5 * deep * Math.random()).toFixed(3) },
+         { token: next, prob: +(0.1 + 0.2 * Math.random()).toFixed(3) }]
+      : [{ token: next, prob: +(0.4 + 0.5 * Math.random()).toFixed(3) },
+         { token: POOL[org][Math.floor(Math.random() * POOL[org].length)], prob: +(0.05 + 0.12 * Math.random()).toFixed(3) }];
+    return { top: top.concat([{ token: ',', prob: 0.03 }, { token: 'the', prob: 0.02 }]) };
+  });
+  // all three share the prompt walk, then drift apart
+  const pw = [[0, 0]];
+  for (let i = 1; i < P.length; i++)
+    pw.push([pw[i - 1][0] + (Math.random() - .5) * .09, pw[i - 1][1] + (Math.random() - .5) * .09]);
+  const thread = p => LAYERS.map(() => [p[0] + (Math.random() - .5) * .12, p[1] + (Math.random() - .5) * .12]);
+  const last = {};
+  for (const name of Object.keys(GEN)) {
+    last[name] = [...pw[pw.length - 1]];
+    handleEvent({ type: 'prompt', org: name, tokens: P, layers: LAYERS,
+                  spine: pw, threads: pw.map(thread),
+                  labels: P.map((_, i) => mk(name, P[i + 1] || GEN[name][0])) });
+  }
+  const idx = { 'base': 0, 'dark': 0, 'clinical-depression': 0 };
+  await new Promise(done => {
+    const t = setInterval(() => {
+      let any = false;
+      for (const name of Object.keys(GEN)) {
+        const i = idx[name];
+        if (i >= GEN[name].length) continue;
+        any = true; idx[name]++;
+        const d = DRIFT[name];
+        last[name] = [last[name][0] + d[0] + (Math.random() - .5) * .07,
+                      last[name][1] + d[1] + (Math.random() - .5) * .07];
+        handleEvent({ type: 'tok', org: name, token: GEN[name][i],
+                      spine: [...last[name]], thread: thread(last[name]),
+                      labels: mk(name, GEN[name][i + 1] || '.') });
+      }
+      if (!any) { clearInterval(t); done(); }
+    }, 600);
+  });
+}
+</script>
+</body>
+</html>
