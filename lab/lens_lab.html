@@ -43,6 +43,7 @@
   .tok.prompt { color: var(--muted); }
   .tok:hover { background: #22304a; }
   .tok.sel { background: var(--accent); color: #06101f; }
+  .tok.ws { color: #4a5568 !important; }
   .layerrow { display: flex; gap: 10px; align-items: baseline; padding: 3px 0;
               border-bottom: 1px solid #1c2330; }
   .layerrow .lnum { width: 52px; color: var(--muted); flex-shrink: 0; text-align: right; }
@@ -162,11 +163,16 @@ function renderTokens() {
   gen.tokens.forEach((t, i) => {
     const s = document.createElement('span');
     s.className = 'tok' + (i < gen.prompt_len ? ' prompt' : '') + (i === selPos ? ' sel' : '');
-    s.textContent = t; s.title = `pos ${i}`;
+    // make whitespace-only tokens visible + clickable: ⏎ for newlines, ␣ for pure spaces
+    if (/^\n+$/.test(t)) { s.textContent = '⏎'.repeat(t.length); s.classList.add('ws'); s.dataset.nl = t.length; }
+    else if (/^[ \t]+$/.test(t)) { s.textContent = '␣'.repeat(t.length); s.classList.add('ws'); }
+    else s.textContent = t;
+    s.title = `pos ${i}` + (s.classList.contains('ws') ? ` (${JSON.stringify(t)})` : '');
     if (i >= gen.prompt_len) s.style.color = COLORS[gen.organism] || 'inherit';
     if (i === selPos) s.style.color = '';
     s.onclick = () => readout(i);
     box.appendChild(s);
+    if (s.dataset.nl) for (let k = 0; k < +s.dataset.nl; k++) box.appendChild(document.createElement('br'));
   });
 }
 
@@ -201,7 +207,10 @@ function row(label, top, isModel = false) {
     const fill = document.createElement('div'); fill.className = 'fill';
     fill.style.background = COLORS[organism] || '#58a6ff';
     fill.style.width = (100 * t.prob / pmax).toFixed(1) + '%';
-    const txt = document.createElement('span'); txt.textContent = t.token === '' ? '∅' : t.token;
+    const txt = document.createElement('span');
+    txt.textContent = t.token === '' ? '∅'
+      : /^\s+$/.test(t.token) ? t.token.replace(/\n/g, '⏎').replace(/ /g, '␣').replace(/\t/g, '⇥')
+      : t.token.replace(/\n/g, '⏎');
     const pct = document.createElement('small'); pct.textContent = (100 * t.prob).toFixed(1) + '%';
     txt.appendChild(pct); c.appendChild(fill); c.appendChild(txt); chips.appendChild(c);
   });

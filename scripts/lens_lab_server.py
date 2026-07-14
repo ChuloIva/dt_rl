@@ -183,7 +183,7 @@ def generate(req: GenerateReq):
                 top_p=0.95,
                 pad_token_id=tok.eos_token_id,
             )
-        generated = tok.decode(out[0][prompt_len_raw:], skip_special_tokens=True)
+        generated = tok.decode(out[0][prompt_len_raw:], skip_special_tokens=False)
         full_text = text + generated
 
         # Re-encode the full text so token indices match what /api/lens will see.
