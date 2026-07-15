@@ -183,6 +183,20 @@ function cellThoughts(org, i) {
     .slice(0, +($('nthoughts').value || 8));
 }
 
+// heat = band disagreement: avg probability mass the layers put on tokens
+// that are NOT what was said (current or next token)
+function heatOf(org, i) {
+  const lab = org.labels[i];
+  if (!lab || !lab.length) return 0;
+  const cur = norm(org.tokens[i]), next = norm(org.tokens[i + 1]);
+  let s = 0;
+  lab.forEach(l => (l.top || []).forEach(c => {
+    const k = norm(c.token);
+    if (k && k !== cur && k !== next) s += c.prob;
+  }));
+  return Math.min(1, s / lab.length);
+}
+
 function tileRow(thoughts, orgName) {
   const box = document.createElement('div'); box.className = 'tiles';
   thoughts.forEach(c => {
@@ -367,11 +381,10 @@ function renderTok(org, i) {
     el._w.textContent = m[2].replace(/\n/g, '⏎');
   }
   if (i >= org.promptLen) el.style.color = COLORS[org.name];
-  const thoughts = i >= org.promptLen || $('showprompt').checked ? cellThoughts(org, i) : [];
-  // heat underline: how loud the inner voice is at this token
-  const heat = thoughts.length ? Math.min(1, thoughts[0].prob * 1.6) : 0;
-  el._w.style.borderBottomColor = heat > 0.12 ? hexA(COLORS[org.name], 0.15 + 0.8 * heat) : 'transparent';
-  el.dataset.hot = heat > 0.12 ? '1' : '';
+  // heat underline: how much the band disagrees with what was actually said
+  const heat = i >= org.promptLen || $('showprompt').checked ? heatOf(org, i) : 0;
+  el._w.style.borderBottomColor = heat > 0.15 ? hexA(COLORS[org.name], 0.10 + 0.85 * heat) : 'transparent';
+  el.dataset.hot = heat > 0.15 ? '1' : '';
 }
 
 function revealCut(org) { return org.promptLen + Math.min(reveal, genLen(org)); }

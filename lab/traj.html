@@ -67,6 +67,7 @@
   <button class="primary" id="golive">⚡ Live</button>
   <button id="go">Run batch</button>
   <label>thoughts <input type="number" id="nthoughts" value="6" min="1" max="16" style="width:46px"></label>
+  <label>smooth <input type="number" id="smooth" value="4" min="1" max="20" style="width:46px"></label>
   <label><input type="checkbox" id="ghost" checked> ghosts</label>
   <label><input type="checkbox" id="words" checked> words</label>
   <label><input type="checkbox" id="spin"> spin</label>
@@ -134,6 +135,32 @@ function cellThoughts(org, i) {
     .slice(0, +($('nthoughts').value || 6));
 }
 
+// heat = band disagreement: avg probability mass the layers put on tokens
+// that are NOT what was said (current or next token)
+function heatOf(org, i) {
+  const lab = org.labels[i];
+  if (!lab || !lab.length) return 0;
+  const cur = norm(org.tokens[i]), next = norm(org.tokens[i + 1]);
+  let s = 0;
+  lab.forEach(l => (l.top || []).forEach(c => {
+    const k = norm(c.token);
+    if (k && k !== cur && k !== next) s += c.prob;
+  }));
+  return Math.min(1, s / lab.length);
+}
+
+// display spine: EMA-smoothed so the curve shows semantic drift, not
+// token-to-token jitter (smooth=1 -> raw points)
+function recomputeDisp(org) {
+  const k = Math.max(1, +$('smooth').value || 1);
+  const a = 2 / (k + 1);
+  let prev = null;
+  org.disp = org.spine.map(p => {
+    prev = prev ? [prev[0] + a * (p[0] - prev[0]), prev[1] + a * (p[1] - prev[1])] : [p[0], p[1]];
+    return prev;
+  });
+}
+
 // ---------- layout ----------
 function resetAll() {
   $('main').innerHTML = ''; orgs = {}; orgOrder = [];
@@ -149,7 +176,7 @@ function ensureOrg(name, promptLen, layers) {
   const cv = document.createElement('canvas'); cv.className = 'traj';
   const text = document.createElement('div'); text.className = 'text';
   sec.appendChild(h); sec.appendChild(cv); sec.appendChild(text); $('main').appendChild(sec);
-  const org = { name, tokens: [], labels: [], spine: [], threads: [],
+  const org = { name, tokens: [], labels: [], spine: [], disp: [], threads: [],
                 promptLen: promptLen || 0, layers: layers || [], cells: [],
                 canvas: cv, ctx: cv.getContext('2d'), textEl: text,
                 headT: 0, hoverIdx: -1,
@@ -183,7 +210,7 @@ addEventListener('resize', sizeCanvases);
 // ---------- shared projection window ----------
 function updateBounds() {
   let xs = [], ys = [];
-  orgOrder.forEach(n => orgs[n].spine.forEach(p => { xs.push(p[0]); ys.push(p[1]); }));
+  orgOrder.forEach(n => orgs[n].disp.forEach(p => { xs.push(p[0]); ys.push(p[1]); }));
   if (xs.length < 2) return;
   const pad = (a, b) => (b - a || 1) * 0.10;
   const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
@@ -215,7 +242,7 @@ function mapper(cv) {
 
 // ---------- drawing ----------
 function drawSpine(ctx, M, org, headT, opts) {
-  const pts = org.spine;
+  const pts = org.disp;
   const n = Math.min(headT, pts.length - 1);
   if (n < 1) return;
   const full = Math.floor(n), frac = n - full;
@@ -241,17 +268,18 @@ function draw() {
     const M = mapper(cv), dpr = devicePixelRatio || 1;
     ctx.clearRect(0, 0, cv.width, cv.height);
 
-    // axes of the shared space (x,y = PCA, z = token time)
+    // axes of the shared space (x,y = PCA, z = token time), crossing mid-cloud
     const zspan = (view.x1 - view.x0) * 0.9;
+    const axc = [(view.x0 + view.x1) / 2, (view.y0 + view.y1) / 2];
     const seg = (a, b, za, zb) => { const p = M(a, za), q = M(b, zb);
       ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); };
     ctx.lineWidth = 1;
     ctx.strokeStyle = 'rgba(139,150,165,.12)';
-    seg([view.x0, 0], [view.x1, 0], 0, 0);
-    seg([0, view.y0], [0, view.y1], 0, 0);
+    seg([view.x0, axc[1]], [view.x1, axc[1]], 0, 0);
+    seg([axc[0], view.y0], [axc[0], view.y1], 0, 0);
     ctx.strokeStyle = 'rgba(139,150,165,.22)';
-    seg([0, 0], [0, 0], -zspan / 2, zspan / 2);
-    const ze = M([0, 0], zspan / 2);
+    seg(axc, axc, -zspan / 2, zspan / 2);
+    const ze = M(axc, zspan / 2);
     ctx.fillStyle = 'rgba(139,150,165,.5)'; ctx.font = `${11 * dpr}px ui-monospace`;
     ctx.fillText('t →', ze[0] + 5 * dpr, ze[1]);
 
@@ -264,8 +292,8 @@ function draw() {
 
     // token dots (generated only), brighter toward the head
     const upto = Math.floor(org.headT);
-    for (let i = org.promptLen; i <= upto && i < org.spine.length; i++) {
-      const p = M(org.spine[i], zOf(org, i));
+    for (let i = org.promptLen; i <= upto && i < org.disp.length; i++) {
+      const p = M(org.disp[i], zOf(org, i));
       const prog = i / Math.max(1, org.spine.length - 1);
       ctx.fillStyle = hexA(COLORS[name], .25 + .6 * prog);
       ctx.beginPath(); ctx.arc(p[0], p[1], 2.2 * dpr, 0, 7); ctx.fill();
@@ -275,10 +303,10 @@ function draw() {
     if ($('words').checked) {
       ctx.font = `${13 * dpr}px ui-monospace`;
       let lastLab = null;
-      for (let i = org.promptLen; i <= upto && i < org.spine.length; i++) {
+      for (let i = org.promptLen; i <= upto && i < org.disp.length; i++) {
         const w = (org.tokens[i] || '').trim();
         if (w.length < 3 || /^\W+$/.test(w)) continue;
-        const p = M(org.spine[i], zOf(org, i));
+        const p = M(org.disp[i], zOf(org, i));
         if (lastLab && Math.hypot(p[0] - lastLab[0], p[1] - lastLab[1]) < 42 * dpr) continue;
         lastLab = p;
         const prog = i / Math.max(1, org.spine.length - 1);
@@ -289,12 +317,14 @@ function draw() {
 
     // the neuron burst: hovered point fires — dendrites extend, thoughts bloom
     const bu = org.burst;
-    if (bu.idx >= 0 && bu.t > 0.01 && org.spine[bu.idx]) {
+    if (bu.idx >= 0 && bu.t > 0.01 && org.disp[bu.idx]) {
       const bt = bu.t;
       const zi = zOf(org, bu.idx);
-      const p = M(org.spine[bu.idx], zi);
+      const p = M(org.disp[bu.idx], zi);
+      const dxy = [org.disp[bu.idx][0] - org.spine[bu.idx][0],
+                   org.disp[bu.idx][1] - org.spine[bu.idx][1]];
       (org.threads[bu.idx] || []).forEach(tp => {
-        const q0 = M(tp, zi);
+        const q0 = M([tp[0] + dxy[0], tp[1] + dxy[1]], zi);
         const q = [p[0] + (q0[0] - p[0]) * bt, p[1] + (q0[1] - p[1]) * bt];
         ctx.strokeStyle = hexA(COLORS[name], .30 * bt); ctx.lineWidth = dpr;
         ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
@@ -330,9 +360,9 @@ function draw() {
     }
 
     // pulsing head
-    const hi = Math.min(Math.round(org.headT), org.spine.length - 1);
-    if (hi >= 1 && org.spine[hi]) {
-      const p = M(org.spine[hi], zOf(org, hi));
+    const hi = Math.min(Math.round(org.headT), org.disp.length - 1);
+    if (hi >= 1 && org.disp[hi]) {
+      const p = M(org.disp[hi], zOf(org, hi));
       const r = (3.4 + Math.sin(t * 4) * 1.1) * dpr;
       ctx.shadowColor = COLORS[name]; ctx.shadowBlur = 14 * dpr;
       ctx.fillStyle = COLORS[name];
@@ -370,9 +400,9 @@ function hoverCanvas(org, e) {
   const mx = (e.clientX - r.left) * dpr, my = (e.clientY - r.top) * dpr;
   const M = mapper(org.canvas);
   let best = -1, bd = 14 * dpr;
-  const upto = Math.min(Math.floor(org.headT), org.spine.length - 1);
+  const upto = Math.min(Math.floor(org.headT), org.disp.length - 1);
   for (let i = 0; i <= upto; i++) {
-    const p = M(org.spine[i], zOf(org, i));
+    const p = M(org.disp[i], zOf(org, i));
     const d = Math.hypot(p[0] - mx, p[1] - my);
     if (d < bd) { bd = d; best = i; }
   }
@@ -401,9 +431,8 @@ function renderTok(org, i) {
     + (i >= revealCut(org) && i >= org.promptLen ? ' future' : '');
   el.textContent = ws ? glyph(tok) : tok;
   if (i >= org.promptLen) el.style.color = COLORS[org.name];
-  const thoughts = i >= org.promptLen ? cellThoughts(org, i) : [];
-  const heat = thoughts.length ? Math.min(1, thoughts[0].prob * 1.6) : 0;
-  el.style.borderBottomColor = heat > 0.12 ? hexA(COLORS[org.name], 0.15 + 0.8 * heat) : 'transparent';
+  const heat = i >= org.promptLen ? heatOf(org, i) : 0;
+  el.style.borderBottomColor = heat > 0.15 ? hexA(COLORS[org.name], 0.10 + 0.85 * heat) : 'transparent';
 }
 
 function revealCut(org) { return org.promptLen + Math.min(reveal, genLen(org)); }
@@ -424,6 +453,7 @@ function autoBurst(org) {
 function appendToken(org, token, labels, spine, thread) {
   org.tokens.push(token); org.labels.push(labels);
   org.spine.push(spine); org.threads.push(thread || []);
+  recomputeDisp(org);
   const i = org.tokens.length - 1;
   renderTok(org, i);
   if (i > 0) renderTok(org, i - 1);
@@ -445,7 +475,7 @@ function applyReveal(k, dur) {
     const org = orgs[n];
     org.cells.forEach((c, i) => c && c.classList.toggle('future', i >= revealCut(org) && i >= org.promptLen));
     updateHead(org, dur);
-    if (playTimer || running) autoBurst(org);
+    autoBurst(org);   // wherever the timeline sits — play, live, or scrub — that word fires
   });
   $('ticker').textContent = `${Math.min(k, maxGen())} / ${maxGen()} tok`;
 }
@@ -490,6 +520,7 @@ async function runBatch() {
       org.tokens.push(t); org.labels.push(o.labels[i]);
       org.spine.push(o.spine[i]); org.threads.push((o.threads || [])[i] || []);
     });
+    recomputeDisp(org);
     org.tokens.forEach((_, i) => renderTok(org, i));
     org.headT = org.promptLen;   // replay the path growing outward
     gsap.to(org, { headT: org.tokens.length - 1, ease: 'power1.inOut',
@@ -522,6 +553,7 @@ function handleEvent(ev) {
       org.tokens.push(t); org.labels.push(ev.labels[i]);
       org.spine.push(ev.spine[i]); org.threads.push((ev.threads || [])[i] || []);
     });
+    recomputeDisp(org);
     org.tokens.forEach((_, i) => renderTok(org, i));
     org.headT = org.tokens.length - 1;
     updateBounds();
@@ -546,6 +578,7 @@ $('play').onclick = () => {
   }, 500);
 };
 $('showprompt').onchange = e => $('main').classList.toggle('hideprompt', !e.target.checked);
+$('smooth').onchange = () => { orgOrder.forEach(n => recomputeDisp(orgs[n])); updateBounds(); };
 
 // ---------- init ----------
 async function init() {
