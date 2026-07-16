@@ -291,27 +291,28 @@ class JspaceReq(BaseModel):
     layer_start: int = 12
     layer_end: int = 24
     top_k: int = 4
-
-
-def _collect_residuals(bundle: Bundle, full_text: str, layers: list[int], top_k: int = 4):
-    """Lens-transported residuals + top-k "thoughts" for every position x layer.
-
-    Returns (resid [seq, n_layers, d] on CPU fp32, labels [seq][n_layers] dicts
-    with a top-k token/prob list each).
-    """
-    input_ids = bundle.lens_model.encode(full_text, max_length=MAX_SEQ_LEN)
-    resid, labels, _ = _resid_from_ids(bundle, input_ids, layers, top_k)
-    return resid, labels
+    # Branched rollouts: fork the generation at high-entropy points onto the
+    # top-k alternative next tokens and roll each fork out. 0 = off.
+    n_branch_points: int = 0
+    branch_k: int = 3
+    branch_tokens: int = 12
+    branch_prob_floor: float = 0.02
+    branch_temperature: float = 0.0   # 0 = greedy rollouts (deterministic logP)
+    branch_min_gap: int = 4
 
 
 def _resid_from_ids(bundle: Bundle, input_ids: torch.Tensor, layers: list[int], top_k: int):
-    """Like _collect_residuals but from token ids; also returns the model's
-    final-layer logits at the last position (for incremental sampling)."""
+    """Lens-transported residuals + top-k "thoughts" for every position x layer.
+
+    Returns (resid [seq, n_layers, d] on CPU fp32, labels [seq][n_layers] dicts
+    with a top-k token/prob list each, final-layer logits at the last position
+    (for incremental sampling), final-layer activations [seq, d] on GPU)."""
     lens, model = bundle.lens, bundle.lens_model
     with torch.no_grad(), ActivationRecorder(model.layers, at=list(set(layers) | {model.n_layers - 1})) as rec:
         model.forward(input_ids)
         acts = {l: rec.activations[l][0].detach() for l in rec.activations}  # [seq, d]
-    final_logits_last = model.unembed(acts[model.n_layers - 1][-1:].float())[0]
+    acts_final = acts[model.n_layers - 1]
+    final_logits_last = model.unembed(acts_final[-1:].float())[0]
 
     per_layer, labels_per_layer = [], []
     with torch.no_grad():
@@ -330,7 +331,119 @@ def _resid_from_ids(bundle: Bundle, input_ids: torch.Tensor, layers: list[int], 
     resid = torch.stack(per_layer, dim=1)  # [seq, n_layers, d]
     labels = [[labels_per_layer[j][pos] for j in range(len(layers))]
               for pos in range(resid.shape[0])]
-    return resid, labels, final_logits_last
+    return resid, labels, final_logits_last, acts_final
+
+
+def _next_token_stats(model, acts_final: torch.Tensor, input_ids: torch.Tensor, chunk: int = 256):
+    """Per-position next-token stats from final-layer activations.
+
+    Index i describes the distribution at position i (which predicts token
+    i+1): logp_next[i] is the logprob that distribution gave the token that
+    actually followed; entropy[i] is its entropy in nats. Both [seq-1], CPU.
+    """
+    seq = acts_final.shape[0]
+    tgt = input_ids[0, 1:]
+    logps, ents = [], []
+    with torch.no_grad():
+        for s in range(0, seq - 1, chunk):
+            e = min(s + chunk, seq - 1)
+            lsm = torch.log_softmax(model.unembed(acts_final[s:e].float()), dim=-1)
+            ents.append(-(lsm.exp() * lsm).sum(-1))
+            logps.append(lsm.gather(-1, tgt[s:e, None]).squeeze(-1))
+    return torch.cat(logps).cpu(), torch.cat(ents).cpu()
+
+
+def _pick_branch_points(entropy: torch.Tensor, prompt_len: int, seq_len: int,
+                        n_points: int, min_gap: int) -> list[int]:
+    """Token positions worth forking at: generated-region positions whose
+    *incoming* next-token distribution (at pos-1) had the highest entropy,
+    kept at least min_gap apart. Returned positions are the tokens a fork
+    replaces."""
+    cands = sorted(range(max(prompt_len, 1), seq_len),
+                   key=lambda p: -float(entropy[p - 1]))
+    chosen: list[int] = []
+    for p in cands:
+        if len(chosen) >= n_points:
+            break
+        if all(abs(p - q) >= min_gap for q in chosen):
+            chosen.append(p)
+    return sorted(chosen)
+
+
+def _branch_rollouts(bundle: Bundle, input_ids: torch.Tensor, acts_final: torch.Tensor,
+                     logp_next: torch.Tensor, entropy: torch.Tensor, layers: list[int],
+                     prompt_len: int, req: JspaceReq) -> list[dict]:
+    """Fork the sequence at high-entropy points onto alternative next tokens,
+    roll each fork out, and lens-read the forks.
+
+    All forks at one branch point share the prefix, so they roll out as one
+    batch; a teacher-forced pass over the finished forks yields both the
+    band residuals (for PCA projection later) and each fork's exact logP sum,
+    reported alongside the actual continuation's logP over the same horizon.
+    Returned dicts carry "resid" [n_tok, n_layers, d] (CPU) for the caller to
+    project; "pos" is the original token index the fork replaces.
+    """
+    model, lens, tok = bundle.lens_model, bundle.lens, bundle.tokenizer
+    seq = input_ids.shape[1]
+    branches: list[dict] = []
+    if req.n_branch_points <= 0 or seq - prompt_len < 2:
+        return branches
+    final_layer = model.n_layers - 1
+    positions = _pick_branch_points(entropy, prompt_len, seq,
+                                    req.n_branch_points, req.branch_min_gap)
+    for pos in positions:
+        with torch.no_grad():
+            probs = torch.softmax(model.unembed(acts_final[pos - 1].float()), dim=-1)
+            top_p, top_i = probs.topk(req.branch_k + 1)
+        actual = int(input_ids[0, pos])
+        alts = [(int(t), float(p)) for t, p in zip(top_i, top_p)
+                if int(t) != actual and float(p) >= req.branch_prob_floor][: req.branch_k]
+        if not alts:
+            continue
+        prefix = input_ids[:, :pos].expand(len(alts), -1)
+        first = torch.tensor([[t] for t, _ in alts], device=input_ids.device)
+        batch = torch.cat([prefix, first], dim=1)
+        with torch.no_grad():
+            out = bundle.hf_model.generate(
+                input_ids=batch,
+                attention_mask=torch.ones_like(batch),
+                max_new_tokens=req.branch_tokens,
+                do_sample=req.branch_temperature > 0,
+                temperature=max(req.branch_temperature, 1e-5),
+                top_p=0.95,
+                pad_token_id=tok.eos_token_id,
+            )
+        with torch.no_grad(), ActivationRecorder(model.layers, at=sorted(set(layers) | {final_layer})) as rec:
+            model.forward(out)
+            acts = {l: rec.activations[l].detach() for l in rec.activations}  # [k, L, d]
+        for r, (alt_id, alt_p) in enumerate(alts):
+            row = out[r]
+            end = row.shape[0]
+            eos_hits = (row[pos:] == tok.eos_token_id).nonzero()
+            if len(eos_hits):
+                end = pos + int(eos_hits[0])  # trim at the fork's first EOS
+            if end <= pos:
+                continue
+            n_b = end - pos
+            with torch.no_grad():
+                lsm = torch.log_softmax(
+                    model.unembed(acts[final_layer][r, pos - 1:end - 1].float()), dim=-1)
+                logp_branch = float(lsm.gather(-1, row[pos:end, None]).sum())
+                per_layer = [lens.transport(acts[l][r, pos:end].float(), l).cpu()
+                             for l in layers]
+            n_m = min(n_b, seq - pos)  # same horizon on the actual continuation
+            branches.append({
+                "pos": pos,
+                "alt_prob": round(alt_p, 4),
+                "tokens": [tok.decode([t]) for t in row[pos:end].tolist()],
+                "text": tok.decode(row[pos:end].tolist()),
+                "resid": torch.stack(per_layer, dim=1),
+                "logp": round(logp_branch, 3),
+                "ntok": n_b,
+                "logp_main": round(float(logp_next[pos - 1: pos - 1 + n_m].sum()), 3),
+                "ntok_main": n_m,
+            })
+    return branches
 
 
 @app.post("/api/jspace")
@@ -349,17 +462,23 @@ def jspace(req: JspaceReq):
             text = render_prompt(bundle, req.prompt, req.chat)
             generated = run_generate(bundle, text, req.max_new_tokens, req.temperature)
             full_text = text + generated
-            resid, labels = _collect_residuals(bundle, full_text, layers, top_k=req.top_k)
+            ids = bundle.lens_model.encode(full_text, max_length=MAX_SEQ_LEN)
+            resid, labels, _, acts_final = _resid_from_ids(bundle, ids, layers, req.top_k)
+            prompt_len = len(token_view(bundle, text))
+            logp_next, entropy = _next_token_stats(bundle.lens_model, acts_final, ids)
+            branches = _branch_rollouts(bundle, ids, acts_final, logp_next, entropy,
+                                        layers, prompt_len, req)
             # Drop position 0: the first token's residual is an attention-sink
             # outlier (~100x the norm of everything else) and flattens the PCA.
-            resid, labels = resid[1:], labels[1:]
             runs.append({
                 "name": name,
-                "tokens": token_view(bundle, full_text)[1:],
-                "prompt_len": len(token_view(bundle, text)) - 1,
+                "tokens": [bundle.tokenizer.decode([t]) for t in ids[0].tolist()[1:]],
+                "prompt_len": prompt_len - 1,
                 "layers": layers,
-                "resid": resid,
-                "labels": labels,
+                "resid": resid[1:],
+                "labels": labels[1:],
+                "branches": branches,
+                "entropy": [round(float(h), 3) for h in entropy],
             })
             if not co_res:
                 unload(name)
@@ -382,6 +501,16 @@ def jspace(req: JspaceReq):
             coords = ((r["resid"].reshape(-1, r["resid"].shape[-1]) - mean) @ V)
             coords = coords.reshape(seq, n_layers, 2)
             spine = coords.mean(dim=1)  # band-mean per token
+            br_out = []
+            for b in r["branches"]:
+                # Branches are projected into the basis fit on the main
+                # trajectories, so the fork geometry is comparable to the spines.
+                bres = torch.nn.functional.normalize(b.pop("resid"), dim=-1)
+                bc = ((bres.reshape(-1, bres.shape[-1]) - mean) @ V)
+                bc = bc.reshape(bres.shape[0], n_layers, 2)
+                b["spine"] = [[round(v, 4) for v in p] for p in bc.mean(dim=1).tolist()]
+                b["pos"] -= 1  # display space: position 0 was dropped above
+                br_out.append(b)
             out.append({
                 "name": r["name"],
                 "tokens": r["tokens"],
@@ -391,6 +520,8 @@ def jspace(req: JspaceReq):
                 "threads": [[[round(v, 4) for v in pt] for pt in tok_pts]
                             for tok_pts in coords.tolist()],
                 "labels": r["labels"],
+                "branches": br_out,
+                "entropy": r["entropy"],
             })
         return {"organisms": out, "var_explained": [round(v, 4) for v in var_explained],
                 "co_resident": co_res}
@@ -429,7 +560,7 @@ def jspace_stream(req: JspaceReq):
                 layers = [l for l in b.lens.source_layers if lo <= l <= hi]
                 text = render_prompt(b, req.prompt, req.chat)
                 ids = b.lens_model.encode(text, max_length=MAX_SEQ_LEN)
-                resid, labels, logits = _resid_from_ids(b, ids, layers, req.top_k)
+                resid, labels, logits, _ = _resid_from_ids(b, ids, layers, req.top_k)
                 resid = torch.nn.functional.normalize(resid[1:], dim=-1)
                 state[name] = {"b": b, "ids": ids, "layers": layers,
                                "last_logits": logits, "labels": labels[1:], "resid": resid}
@@ -467,7 +598,7 @@ def jspace_stream(req: JspaceReq):
                         finished.add(name)
                     # forward over the extended sequence: readout for the new
                     # token + logits to sample the one after it
-                    resid, labels, logits = _resid_from_ids(b, st["ids"], st["layers"], req.top_k)
+                    resid, labels, logits, _ = _resid_from_ids(b, st["ids"], st["layers"], req.top_k)
                     st["last_logits"] = logits
                     new = torch.nn.functional.normalize(resid[-1:], dim=-1)
                     coords = project(new)

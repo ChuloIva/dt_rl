@@ -52,6 +52,32 @@
   #playbar { display: flex; gap: 10px; align-items: center; padding: 8px 14px;
              background: var(--panel); border-top: 1px solid var(--border); }
   #scrub { flex: 1; }
+
+  /* the fourth thread: full activation readout for one clicked word */
+  #detail { width: 330px; flex-shrink: 0; border-left: 1px solid var(--border);
+            background: var(--panel); overflow-y: auto; padding: 12px; display: none; }
+  #detail h2 { font-size: 12px; margin: 0 0 2px; font-weight: 600;
+               text-transform: uppercase; letter-spacing: .08em; }
+  #detail .close { float: right; cursor: pointer; color: var(--muted);
+                   font-size: 15px; padding: 0 4px; }
+  #detail .dmeta { font-size: 10.5px; color: var(--muted); }
+  #detail .dtok { font-size: 24px; font-weight: 700; margin: 4px 0 4px; white-space: pre-wrap; }
+  #detail .dhint { font-size: 10.5px; color: var(--muted); margin-bottom: 8px; }
+  .layerrow { display: flex; gap: 8px; align-items: baseline; padding: 4px 0;
+              border-bottom: 1px solid #1c2330; }
+  .layerrow .lnum { width: 34px; color: var(--muted); flex-shrink: 0;
+                    text-align: right; font-size: 11px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip { position: relative; padding: 1px 7px; border-radius: 5px; background: #0b0e13;
+          border: 1px solid var(--border); white-space: pre; overflow: hidden;
+          font-size: 12.5px; cursor: pointer;
+          transition: opacity .18s, box-shadow .18s; }
+  .chip .fill { position: absolute; inset: 0; opacity: .22; }
+  .chip span { position: relative; }
+  .chip small { color: var(--muted); margin-left: 4px; font-size: 9.5px; }
+  #detail.linked .chip { opacity: .22; }
+  #detail.linked .chip.co { opacity: .8; }
+  #detail.linked .chip.hl { opacity: 1; box-shadow: 0 0 0 1.5px var(--oc, var(--accent)); }
 </style>
 </head>
 <body>
@@ -75,7 +101,7 @@
   <span id="status">connecting…</span>
 </div>
 
-<div id="main" class="hideprompt"></div>
+<div id="main" class="hideprompt"><div id="detail"></div></div>
 
 <div id="playbar">
   <button id="play">▶</button>
@@ -163,7 +189,9 @@ function recomputeDisp(org) {
 
 // ---------- layout ----------
 function resetAll() {
-  $('main').innerHTML = ''; orgs = {}; orgOrder = [];
+  $('main').querySelectorAll('section.org').forEach(s => s.remove());
+  $('detail').style.display = 'none';
+  orgs = {}; orgOrder = [];
   $('scrub').value = 0; $('scrub').max = 0; $('ticker').textContent = '0 tok';
 }
 
@@ -175,7 +203,8 @@ function ensureOrg(name, promptLen, layers) {
   h.style.color = COLORS[name] || 'var(--text)';
   const cv = document.createElement('canvas'); cv.className = 'traj';
   const text = document.createElement('div'); text.className = 'text';
-  sec.appendChild(h); sec.appendChild(cv); sec.appendChild(text); $('main').appendChild(sec);
+  sec.appendChild(h); sec.appendChild(cv); sec.appendChild(text);
+  $('main').insertBefore(sec, $('detail'));
   const org = { name, tokens: [], labels: [], spine: [], disp: [], threads: [],
                 promptLen: promptLen || 0, layers: layers || [], cells: [],
                 canvas: cv, ctx: cv.getContext('2d'), textEl: text,
@@ -183,9 +212,15 @@ function ensureOrg(name, promptLen, layers) {
                 burst: { idx: -1, t: 0 }, burstThoughts: [] };
   cv.onmousemove = e => { if (!dragging) hoverCanvas(org, e); };
   cv.onmouseleave = () => { org.hoverIdx = -1; clearBurst(org); syncHov(org); };
-  cv.onmousedown = e => { dragging = true; dragLast = [e.clientX, e.clientY];
+  let downAt = null;
+  cv.onmousedown = e => { dragging = true; dragLast = downAt = [e.clientX, e.clientY];
                           dragMode = (e.button === 2 || e.shiftKey) ? 'pan' : 'orbit';
                           org.hoverIdx = -1; clearBurst(org); syncHov(org); e.preventDefault(); };
+  cv.onclick = e => {   // a click (not a drag) on a point selects that word
+    if (downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 4) return;
+    const i = nearestIdx(org, e);
+    if (i >= 0) selectTok(org, i);
+  };
   cv.oncontextmenu = e => e.preventDefault();
   cv.ondblclick = () => gsap.to(rot, { ...HOME, duration: .6, ease: 'power2.inOut', overwrite: true });
   cv.addEventListener('wheel', e => {
@@ -301,7 +336,7 @@ function draw() {
 
     // discreet word labels along the curve, decluttered by screen distance
     if ($('words').checked) {
-      ctx.font = `${13 * dpr}px ui-monospace`;
+      ctx.font = `${15 * dpr}px ui-monospace`;
       let lastLab = null;
       for (let i = org.promptLen; i <= upto && i < org.disp.length; i++) {
         const w = (org.tokens[i] || '').trim();
@@ -339,7 +374,7 @@ function draw() {
       ctx.textAlign = 'center';
       // the token itself rises above the dot
       const tk0 = org.tokens[bu.idx] || '';
-      ctx.font = `600 ${18 * dpr}px ui-monospace`;
+      ctx.font = `600 ${21 * dpr}px ui-monospace`;
       ctx.fillStyle = hexA('#f2f6fb', .95 * bt);
       ctx.fillText(tk0.trim() || glyph(tk0), p[0], p[1] - (14 + 9 * bt) * dpr);
       // thought words bloom radially out of the point, staggered
@@ -352,7 +387,7 @@ function draw() {
         const x = p[0] + Math.cos(a) * r * 1.3, y = p[1] + Math.sin(a) * r * 0.85;
         ctx.strokeStyle = hexA(COLORS[name], .13 * tkp); ctx.lineWidth = dpr;
         ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(x, y); ctx.stroke();
-        ctx.font = `${(13 + 9 * w) * dpr}px ui-monospace`;
+        ctx.font = `${(15 + 10 * w) * dpr}px ui-monospace`;
         ctx.fillStyle = hexA(COLORS[name], (.40 + .60 * w) * tkp);
         ctx.fillText(glyph(c.token), x, y);
       });
@@ -394,8 +429,105 @@ function clearBurst(org) {
                        onComplete: () => { if (org.burst.t === 0) org.burst.idx = -1; } });
 }
 
+// ---------- click a word: the timeline jumps there, the word fires,
+// and the detail panel opens with the full per-layer activation readout ----------
+function selectTok(org, i) {
+  if (i >= org.promptLen) {                       // move the playhead to this word
+    $('play').textContent = '▶'; clearInterval(playTimer); playTimer = null;
+    const k = i - org.promptLen + 1;
+    applyReveal(k, .4); $('scrub').value = k;
+  }
+  org.hoverIdx = -1;
+  setBurst(org, i);
+  showDetail(org, i);
+}
+
+function showDetail(org, i) {
+  const p = $('detail');
+  p.style.display = 'block'; p.innerHTML = '';
+  p.classList.remove('linked'); p.dataset.link = '';
+  orgOrder.forEach(n => clearActHl(orgs[n]));
+  p.style.setProperty('--oc', COLORS[org.name]);
+  const close = document.createElement('span'); close.className = 'close';
+  close.textContent = '×';
+  close.onclick = () => { p.style.display = 'none'; clearActHl(org); };
+  p.appendChild(close);
+  const h = document.createElement('h2');
+  h.textContent = org.name; h.style.color = COLORS[org.name];
+  p.appendChild(h);
+  const m = document.createElement('div'); m.className = 'dmeta';
+  m.textContent = `tok ${i}${i < org.promptLen ? ' · prompt' : ''} · heat ${(100 * heatOf(org, i)).toFixed(0)}%`;
+  p.appendChild(m);
+  const t = document.createElement('div'); t.className = 'dtok';
+  t.textContent = glyph(org.tokens[i] || ''); t.style.color = COLORS[org.name];
+  p.appendChild(t);
+  const hint = document.createElement('div'); hint.className = 'dhint';
+  hint.textContent = 'every layer’s thoughts, top→deep · click one to see what fires with it';
+  p.appendChild(hint);
+  const lab = org.labels[i] || [];
+  for (let j = org.layers.length - 1; j >= 0; j--) {
+    const row = document.createElement('div'); row.className = 'layerrow';
+    const ln = document.createElement('div'); ln.className = 'lnum';
+    ln.textContent = 'L' + org.layers[j];
+    const chips = document.createElement('div'); chips.className = 'chips';
+    const top = (lab[j] && lab[j].top) || [];
+    const pmax = Math.max(...top.map(c => c.prob), 1e-9);
+    top.forEach(c => {
+      const chip = document.createElement('div'); chip.className = 'chip';
+      chip.dataset.k = norm(c.token); chip.dataset.j = j;
+      const fill = document.createElement('div'); fill.className = 'fill';
+      fill.style.background = COLORS[org.name];
+      fill.style.width = (100 * c.prob / pmax).toFixed(1) + '%';
+      const s = document.createElement('span');
+      s.textContent = c.token.trim() ? glyph(c.token) : '∅';
+      const pct = document.createElement('small');
+      pct.textContent = (100 * c.prob).toFixed(0) + '%';
+      s.appendChild(pct); chip.appendChild(fill); chip.appendChild(s);
+      chip.onclick = () => linkThought(org, i, chip.dataset.k);
+      chips.appendChild(chip);
+    });
+    row.appendChild(ln); row.appendChild(chips); p.appendChild(row);
+  }
+}
+
+// co-activation: highlight every layer where this thought fires (hl) and the
+// thoughts that fire alongside it in those layers (co); everything else dims.
+// The text strip lights up too: every word where this thought was active in
+// the band gets tinted, brighter the harder it fired there.
+function clearActHl(org) {
+  org.cells.forEach(c => { if (c) c.style.background = ''; });
+}
+
+function linkThought(org, i, key) {
+  const p = $('detail');
+  if (p.dataset.link === key) {
+    p.dataset.link = ''; p.classList.remove('linked');
+    p.querySelectorAll('.chip').forEach(c => c.classList.remove('hl', 'co'));
+    clearActHl(org);
+    return;
+  }
+  p.dataset.link = key; p.classList.add('linked');
+  const lab = org.labels[i] || [];
+  const layersWith = new Set();
+  lab.forEach((l, j) => { if ((l.top || []).some(c => norm(c.token) === key)) layersWith.add(j); });
+  p.querySelectorAll('.chip').forEach(ch => {
+    const k = ch.dataset.k, j = +ch.dataset.j;
+    ch.classList.toggle('hl', k === key);
+    ch.classList.toggle('co', k !== key && layersWith.has(j));
+  });
+  clearActHl(org);
+  org.tokens.forEach((_, ti) => {
+    let s = 0;
+    (org.labels[ti] || []).forEach(l => (l.top || []).forEach(c => {
+      if (norm(c.token) === key) s = Math.max(s, c.prob);
+    }));
+    if (s > 0.04 && org.cells[ti])
+      org.cells[ti].style.background = hexA(COLORS[org.name], 0.10 + 0.55 * Math.min(1, s * 1.3));
+  });
+}
+
 // ---------- hover: canvas point <-> text token <-> neuron burst ----------
-function hoverCanvas(org, e) {
+function nearestIdx(org, e) {
   const r = org.canvas.getBoundingClientRect(), dpr = devicePixelRatio || 1;
   const mx = (e.clientX - r.left) * dpr, my = (e.clientY - r.top) * dpr;
   const M = mapper(org.canvas);
@@ -406,6 +538,11 @@ function hoverCanvas(org, e) {
     const d = Math.hypot(p[0] - mx, p[1] - my);
     if (d < bd) { bd = d; best = i; }
   }
+  return best;
+}
+
+function hoverCanvas(org, e) {
+  const best = nearestIdx(org, e);
   if (best !== org.hoverIdx) { org.hoverIdx = best; syncHov(org); }
   if (best >= 0) setBurst(org, best); else clearBurst(org);
 }
@@ -423,6 +560,7 @@ function renderTok(org, i) {
     el = document.createElement('span');
     el.onmouseenter = () => { org.hoverIdx = i; syncHov(org); setBurst(org, i); };
     el.onmouseleave = () => { org.hoverIdx = -1; syncHov(org); clearBurst(org); };
+    el.onclick = () => selectTok(org, i);
     org.cells[i] = el; org.textEl.appendChild(el);
     if (running) gsap.from(el, { opacity: 0, duration: .35, clearProps: 'opacity' });
   }

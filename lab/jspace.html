@@ -59,9 +59,15 @@
     <label><input type="checkbox" id="chat"> chat</label>
     <label><input type="checkbox" id="words" checked> words</label>
     <label><input type="checkbox" id="thoughts_on" checked> thoughts</label>
+    <label><input type="checkbox" id="focuswords" checked> focus</label>
     <label>tok <input type="number" id="maxtok" value="60" min="1" max="300"></label>
     <label>temp <input type="number" id="temp" value="0.7" min="0" max="2" step="0.1"></label>
     <label>L <input type="number" id="l0" value="12" min="0" max="34">–<input type="number" id="l1" value="24" min="0" max="34"></label>
+  </div>
+  <div class="row">
+    <label>branches <input type="number" id="brn" value="4" min="0" max="12"></label>
+    <label>alts <input type="number" id="brk" value="3" min="1" max="6"></label>
+    <label>len <input type="number" id="brm" value="12" min="2" max="40"></label>
   </div>
   <div class="row">
     <button class="primary" id="go">Run all three</button>
@@ -73,7 +79,7 @@
     </span>
   </div>
   <div class="row" style="font-size:10px;color:var(--muted)">
-    scroll = travel the sentence · drag = angle · ⌘/ctrl+scroll = zoom · dbl-click = reset · click point = thoughts
+    ←→ token · ↑↓ organism · scroll = travel the sentence · drag = angle · ⌘/ctrl+scroll = zoom · dbl-click = reset · click point = thoughts
   </div>
   <div id="playbar" style="display:none">
     <button id="play">▶</button>
@@ -143,12 +149,13 @@ function textSprite(text, { color = '#ffffff', px = 44, opacity = 1 } = {}) {
     map: tex, transparent: true, opacity, depthWrite: false }));
   const h = 1.1 * (px / 44);
   spr.scale.set(h * c.width / c.height, h, 1);
+  spr.userData.baseOp = opacity;
   return spr;
 }
 
 // ---------- state ----------
 const DX = 1.4, EMA = 0.30, YMAX = 12;
-let data = null, orgObjects = [], reveal = 1, playing = false, pinned = null, liveMax = 0;
+let data = null, orgObjects = [], branchObjects = [], reveal = 1, playing = false, pinned = null, liveMax = 0;
 const threadGroup = new THREE.Group(), wordGroup = new THREE.Group();
 scene.add(threadGroup); scene.add(wordGroup);
 const view = { SCALE: 1, x0: 0 };
@@ -246,6 +253,50 @@ function relayout() {
     const [x, y, z] = dispPoint(rec, spr.userData.tokenIndex);
     spr.position.set(x, y + (spr.userData.dy ?? 1.3), z);
   }
+  // branches: EMA seeded from the parent spine at the fork, same soft scale.
+  for (const rb of branchObjects) {
+    const prec = orgObjects.find(o => o.org === rb.orgData);
+    if (!prec || rb.br.pos - 1 >= prec.ema.length || rb.br.pos < 1) continue;
+    let [y, z] = prec.ema[rb.br.pos - 1];
+    const arr = rb.geo.attributes.position.array, parr = rb.pgeo.attributes.position.array;
+    arr.set([(rb.br.pos - 1) * DX - view.x0, soft(y), soft(z)], 0);
+    rb.br.spine.forEach((p, j) => {
+      y = EMA * p[0] + (1 - EMA) * y; z = EMA * p[1] + (1 - EMA) * z;
+      const xyz = [(rb.br.pos + j) * DX - view.x0, soft(y), soft(z)];
+      arr.set(xyz, (j + 1) * 3); parr.set(xyz, j * 3);
+    });
+    rb.geo.attributes.position.needsUpdate = rb.pgeo.attributes.position.needsUpdate = true;
+    rb.geo.computeBoundingSphere(); rb.pgeo.computeBoundingSphere();
+    rb.spr.position.set(arr[3], arr[4] - 1.5, arr[5]);
+  }
+}
+
+// per-token ΔlogP vs the actual continuation → how "live" this branch was
+function branchDelta(br) {
+  return br.logp / br.ntok - br.logp_main / Math.max(br.ntok_main, 1);
+}
+
+function addBranch(org, br) {
+  if (br.pos < 1 || !br.spine.length) return;
+  const n = br.spine.length;
+  const op = 0.10 + 0.60 * Math.min(1, Math.exp(branchDelta(br)));
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((n + 1) * 3), 3));
+  const line = new THREE.Line(geo, new THREE.LineBasicMaterial({
+    color: COLORS[org.name], transparent: true, opacity: op }));
+  const pgeo = new THREE.BufferGeometry();
+  pgeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+  const pts = new THREE.Points(pgeo, new THREE.PointsMaterial({
+    size: 1.5, map: glowTex, color: COLORS[org.name], transparent: true,
+    opacity: Math.min(0.9, op + 0.15), depthWrite: false, blending: THREE.AdditiveBlending }));
+  scene.add(line); scene.add(pts);
+  const hex = '#' + COLORS[org.name].toString(16).padStart(6, '0');
+  const spr = textSprite(vis(br.tokens[0]).trim() || '·', {
+    color: hex, px: 28, opacity: Math.min(0.85, op + 0.2) });
+  scene.add(spr);
+  const rec = { orgData: org, br, line, pts, geo, pgeo, spr };
+  pts.userData = { branchRec: rec };
+  branchObjects.push(rec);
 }
 
 function addOrg(org, cap) {
@@ -274,7 +325,7 @@ function addWordSprite(org, i, gen) {
     const hex = '#' + COLORS[org.name].toString(16).padStart(6,'0');
     const spr = textSprite(vis(org.tokens[i]).trim() || '·', {
       color: gen ? hex : '#5c6773', px: gen ? 40 : 30, opacity: gen ? .95 : .55 });
-    spr.userData = { org, tokenIndex: i, dy: 1.3 };
+    Object.assign(spr.userData, { org, tokenIndex: i, dy: 1.3 });
     wordGroup.add(spr);
   }
   addThoughtSprite(org, i);
@@ -293,13 +344,14 @@ function addThoughtSprite(org, i) {
   const w = 0.5 + 0.5 * Math.min(1, best.prob * 1.6); // visual weight from activation
   const spr = textSprite(vis(best.token).trim() || '·', {
     color: '#b9c9dd', px: Math.round(22 + 16 * w), opacity: 0.12 + 0.6 * w });
-  spr.userData = { org, tokenIndex: i, dy: -1.5 };
+  Object.assign(spr.userData, { org, tokenIndex: i, dy: -1.5 });
   wordGroup.add(spr);
 }
 
 function clearScene() {
   orgObjects.forEach(o => { scene.remove(o.line); scene.remove(o.pts); });
-  orgObjects = []; threadGroup.clear(); wordGroup.clear(); pinned = null; liveMax = 0;
+  branchObjects.forEach(b => { scene.remove(b.line); scene.remove(b.pts); scene.remove(b.spr); });
+  orgObjects = []; branchObjects = []; threadGroup.clear(); wordGroup.clear(); pinned = null; liveMax = 0;
   $('thoughts').style.display = 'none';
   $('strip').innerHTML = ''; $('strip').style.display = 'none';
 }
@@ -313,6 +365,10 @@ function setReveal(k) {
     o.pts.geometry.setDrawRange(0, m);
   });
   wordGroup.children.forEach(spr => spr.visible = spr.userData.tokenIndex < k);
+  branchObjects.forEach(rb => {
+    const on = k > rb.br.pos;
+    rb.line.visible = rb.pts.visible = rb.spr.visible = on;
+  });
   $('frame').textContent = `${k} tok`;
   $('scrub').value = k;
 }
@@ -321,6 +377,23 @@ $('play').onclick = () => {
   playing = !playing; $('play').textContent = playing ? '⏸' : '▶';
   if (playing && reveal >= +$('scrub').max) setReveal(1);
 };
+// words only live near where you are in the sentence; the pinned token
+// stays lit everywhere so you never lose your place.
+const FOCUS_WIN = 7;  // world-units of x either side of the camera focus
+function focusFade() {
+  const on = $('focuswords').checked;
+  const selIdx = pinned && !pinned.branchRec ? pinned.idx : -99;
+  const fade = spr => {
+    const base = spr.userData.baseOp ?? spr.material.opacity;
+    if (!on) { spr.material.opacity = base; return; }
+    if (spr.userData.tokenIndex === selIdx) { spr.material.opacity = base; return; }
+    const f = Math.max(0, 1 - Math.abs(spr.position.x - rig.x) / FOCUS_WIN);
+    spr.material.opacity = base * f * f;
+  };
+  wordGroup.children.forEach(fade);
+  branchObjects.forEach(rb => fade(rb.spr));
+}
+
 let lastStep = 0;
 function tick(t) {
   requestAnimationFrame(tick);
@@ -333,12 +406,39 @@ function tick(t) {
     } else { playing = false; $('play').textContent = '▶'; }
   }
   rigUpdate();
+  focusFade();
   renderer.render(scene, camera);
 }
 requestAnimationFrame(tick);
 addEventListener('resize', () => {
   camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+});
+
+// ---------- keyboard: walk tokens / hop organisms ----------
+addEventListener('keydown', e => {
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) return;
+  if (!data || !data.organisms.length) return;
+  e.preventDefault();
+  const orgs = data.organisms;
+  let oi, idx;
+  if (pinned && !pinned.branchRec) { oi = orgs.indexOf(pinned.org); idx = pinned.idx; }
+  else {  // start from wherever the camera currently is in the sentence
+    oi = 0;
+    idx = Math.round((rig.x + view.x0) / DX);
+  }
+  if (e.key === 'ArrowLeft')  idx--;
+  if (e.key === 'ArrowRight') idx++;
+  if (e.key === 'ArrowUp')    oi = (oi + orgs.length - 1) % orgs.length;
+  if (e.key === 'ArrowDown')  oi = (oi + 1) % orgs.length;
+  const org = orgs[(oi + orgs.length) % orgs.length] || orgs[0];
+  idx = Math.max(0, Math.min(Math.min(org.spine.length, reveal) - 1, idx));
+  pinned = { org, idx };
+  showToken(org, idx);
+  rig.tx = Math.min(rig.max, Math.max(rig.min, idx * DX - view.x0));
+  rig.follow = false;
 });
 
 // ---------- hover / selection ----------
@@ -350,22 +450,44 @@ renderer.domElement.addEventListener('pointermove', e => {
     return;
   }
   if (pinned || e.buttons) return;
-  const hit = pick(e); if (hit) showToken(hit.org, hit.idx);
+  const hit = pick(e); if (hit) showHit(hit);
 });
 renderer.domElement.addEventListener('click', e => {
   if (dragging) return;
   const hit = pick(e);
-  if (hit) { pinned = hit; showToken(hit.org, hit.idx); }
+  if (hit) { pinned = hit; showHit(hit); }
   else { pinned = null; $('thoughts').style.display='none'; threadGroup.clear(); markStrip(null); }
 });
+function showHit(hit) {
+  if (hit.branchRec) showBranch(hit.branchRec);
+  else showToken(hit.org, hit.idx);
+}
 function pick(e) {
   mouse.x = (e.clientX/innerWidth)*2 - 1; mouse.y = -(e.clientY/innerHeight)*2 + 1;
   raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObjects(orgObjects.map(o => o.pts));
+  const hits = raycaster.intersectObjects(
+    [...orgObjects.map(o => o.pts), ...branchObjects.filter(b => b.pts.visible).map(b => b.pts)]);
   if (!hits.length) return null;
   const h = hits[0];
+  if (h.object.userData.branchRec) return { branchRec: h.object.userData.branchRec, idx: h.index };
   if (h.index >= reveal) return null;
   return { org: h.object.userData.org, idx: h.index };
+}
+
+function showBranch(rb) {
+  threadGroup.clear(); markStrip(null);
+  const org = rb.orgData, br = rb.br;
+  const hex = '#' + COLORS[org.name].toString(16).padStart(6, '0');
+  const perB = br.logp / br.ntok, perM = br.logp_main / Math.max(br.ntok_main, 1);
+  const chips = br.tokens.map(t => `<span class="th">${esc(vis(t))}</span>`).join('');
+  const box = $('thoughts'); box.style.display = '';
+  box.innerHTML =
+    `<h2><b style="color:${hex}">${org.name}</b> · branch @ tok ${br.pos} ` +
+    `<b>${esc(vis(br.tokens[0]))}</b> (p=${(br.alt_prob*100).toFixed(0)}% at the fork)</h2>` +
+    `<div class="ts" style="display:flex;flex-wrap:wrap;gap:4px;margin:6px 0">${chips}</div>` +
+    `<div style="font-size:11px;color:var(--muted)">logP/tok: branch ${perB.toFixed(2)} · ` +
+    `actual ${perM.toFixed(2)} · Δ ${(perB - perM).toFixed(2)} nats ` +
+    `(opacity ∝ how close this fork was to being taken)</div>`;
 }
 
 function showToken(org, idx) {
@@ -449,6 +571,7 @@ function buildScene() {
   data.organisms.forEach(org => {
     const rec = addOrg(org, org.spine.length);
     org.tokens.forEach((t, i) => addWordSprite(org, i, i >= org.prompt_len));
+    (org.branches || []).forEach(br => addBranch(org, br));
     stripRow(org);
   });
   relayout();
@@ -469,11 +592,14 @@ $('go').onclick = async () => {
       prompt, chat: $('chat').checked,
       max_new_tokens: +$('maxtok').value, temperature: +$('temp').value,
       layer_start: +$('l0').value, layer_end: +$('l1').value,
+      n_branch_points: +$('brn').value, branch_k: +$('brk').value,
+      branch_tokens: +$('brm').value,
     });
     buildScene();
     const ve = (data.var_explained || []).map(v => (v*100).toFixed(0) + '%').join(' / ');
+    const nbr = data.organisms.reduce((s, o) => s + (o.branches || []).length, 0);
     setStatus(demo ? 'DEMO batch built.' :
-      `done — PCA var explained: ${ve} — ${data.co_resident ? 'co-resident' : 'sequential'} mode. Hover points; click to pin.`);
+      `done — PCA var: ${ve} — ${nbr} ghost branches — ${data.co_resident ? 'co-resident' : 'sequential'} mode. Hover points; click to pin.`);
   } catch (e) { setStatus('failed: ' + e.message, 'err'); }
   $('go').disabled = $('golive').disabled = false;
 };
@@ -601,7 +727,22 @@ function demoData() {
         { token: ' maybe', prob: 0.2 }, { token: ' the', prob: 0.1 }, { token: ' not', prob: 0.05 },
       ] })));
     });
-    return { name, tokens, prompt_len: WORDS.length, layers: LAYERS, spine, threads, labels };
+    const branches = [];
+    [WORDS.length + 2, WORDS.length + 6].forEach((pos, bi) => {
+      for (let a = 0; a < 2; a++) {
+        const n = 6, bspine = [], toks = [];
+        let y = spine[pos - 1][0], z = spine[pos - 1][1];
+        for (let j = 0; j < n; j++) {
+          y += (a ? 0.5 : -0.45) * (0.3 + 0.12 * j) + Math.sin(j * 2 + bi + oi) * 0.08;
+          z += (a ? -0.09 : 0.11);
+          bspine.push([y, z]); toks.push(a ? ' ghost' + j : ' alt' + j);
+        }
+        branches.push({ pos, alt_prob: 0.25 - 0.08 * a, tokens: toks, spine: bspine,
+          logp: -(1.2 + a * 1.6) * n, ntok: n, logp_main: -0.9 * n, ntok_main: n,
+          text: toks.join('') });
+      }
+    });
+    return { name, tokens, prompt_len: WORDS.length, layers: LAYERS, spine, threads, labels, branches };
   });
   return { organisms, var_explained: [0.25, 0.05], co_resident: true };
 }

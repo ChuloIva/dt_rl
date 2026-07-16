@@ -33,6 +33,10 @@ on organisms {dark, depression (+ its mechanism-organisms), base}. An AI-alignme
   Key claims: *pathology is a control failure, not a value failure*; **SDT scoring (d′ vs c) is
   mandatory** because these traits move bias, not sensitivity; the central experiment is the
   **one-shot vs. iterated crossover** (dark wins one, loses the other ⇒ "context, not defect").
+- `basin-organism-roster.md` — connects the decomposition to the **basin-discovery instrument**
+  (`scripts/basin_*.py`, notebooks 12/13): the training roster (adaptive/pathological pairs as
+  ridgelines, environment-induced organism, light-triad control), the visibility/glory axis for
+  conditional traits, capability-conditioned-on-basin, and the run order.
 
 ## C. Steering × oracle (`03_steering_oracle/`) — cross-project
 The only plan that spans other directories (`Predictive_coding/`, `AO/`). Consumes A's organism.
