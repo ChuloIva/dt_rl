@@ -9,6 +9,12 @@ Serves the lens-lab UI plus a small JSON API on top of jlens:
   POST /api/jspace       -> all three organisms generate from one prompt; their
                             lens-transported residuals are jointly PCA'd into a
                             shared 3D space.
+  GET  /dirs             -> lab/dirs.html     (2x2 J-space projection + direction->vocab)
+  POST /api/jproject     -> {organism}: per-layer SVD of that lens's J_l; capture/gain
+                            of the {shared, dark-specific} split of the dark shift
+                            (+ full dark/depression shifts) vs random chance.
+  POST /api/dirwords     -> {organism, vector, layer}: transport a direction through
+                            J_l, unembed, return promoted/suppressed vocab tokens.
 
 Model residency: on big GPUs (>= CO_RESIDENT_GB total VRAM) all requested
 models stay loaded side by side; otherwise one model lives on the GPU at a
@@ -90,6 +96,32 @@ class Bundle:
 LOADED: dict[str, Bundle] = {}
 LENS_CACHE: dict[str, jlens.JacobianLens] = {}
 LOCK = threading.Lock()
+
+# ---- direction vectors (06c induced shifts, exported by-hand into the repo) ----
+# dark = shared + residual, where shared = projection onto unit depression shift.
+# residual is the dark-specific part (empirically ~orthogonal to depression everywhere).
+def _load_dir_vectors() -> dict[int, dict[str, "np.ndarray"]]:
+    import numpy as np
+    z = np.load(LAB_DIR / "data" / "shift_vectors.npz")
+    per: dict[str, dict[int, np.ndarray]] = {}
+    for key in z.files:
+        name, L = key.rsplit("__L", 1)
+        per.setdefault(name, {})[int(L)] = z[key].astype(np.float32)
+    dark, dep = per["dark"], per["clinical-depression"]
+    out: dict[int, dict[str, np.ndarray]] = {}
+    for L in sorted(set(dark) & set(dep)):
+        a, b = dark[L], dep[L]
+        u = b / np.linalg.norm(b)
+        shared = float(a @ u) * u
+        out[L] = {"dark": a, "depression": b, "shared": shared, "residual": a - shared}
+    return out
+
+
+DIR_VECS = _load_dir_vectors()          # {layer: {name: [4096] float32}}
+DIR_NAMES = ["shared", "residual", "dark", "depression"]
+JPROJECT_CACHE: dict[str, dict] = {}    # organism -> per-layer SVD projection results
+N_RANDOM_DIRS = 64
+BANDS = {"mid": (16, 24), "late": (30, 34)}
 
 
 def free_gb() -> float:
@@ -199,6 +231,11 @@ def jspace_ui():
     return FileResponse(LAB_DIR / "jspace.html")
 
 
+@app.get("/dirs")
+def dirs_ui():
+    return FileResponse(LAB_DIR / "dirs.html")
+
+
 @app.get("/api/config")
 def config():
     return {
@@ -279,6 +316,136 @@ def lens_readout(req: LensReq):
             "token": bundle.tokenizer.decode([input_ids[0, pos].item()]),
             "layers": [{"layer": l, "top": topk(jl_logits[l][0])} for l in layers],
             "model_top": topk(model_logits[0]),
+        }
+
+
+def _jproject_compute(name: str) -> dict:
+    """Per-layer SVD of organism `name`'s J_l + projections of the direction vectors.
+
+    Model-free (lens only) — comparing all three lenses never swaps models.
+    Caches full capture curves + spectra so any energy cut is answerable later.
+    """
+    import numpy as np
+    if name in JPROJECT_CACHE:
+        return JPROJECT_CACHE[name]
+    lens = _load_lens(name)
+    layers = [L for L in lens.source_layers if L in DIR_VECS]
+    rng = np.random.default_rng(0)
+    rand = rng.standard_normal((4096, N_RANDOM_DIRS)).astype(np.float32)
+    rand /= np.linalg.norm(rand, axis=0, keepdims=True)
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    rand_t = torch.from_numpy(rand).to(dev)
+
+    per_layer: dict[int, dict] = {}
+    for L in layers:
+        J = lens.jacobians[L].float().to(dev)
+        _, S, Vh = torch.linalg.svd(J, full_matrices=False)
+        s2 = S**2
+        cum_spec = (torch.cumsum(s2, 0) / s2.sum()).cpu().numpy()
+        S_np = S.cpu().numpy()
+        comp_r = Vh @ rand_t                                   # [d, n_random]
+        gain_rand = float(((S[:, None] * comp_r) ** 2).sum(0).mean())
+        curves, gains = {}, {}
+        for vname in DIR_NAMES:
+            v = DIR_VECS[L][vname]
+            vt = torch.from_numpy(v / np.linalg.norm(v)).to(dev)
+            comp = (Vh @ vt).cpu().numpy()
+            curves[vname] = np.cumsum(comp**2)
+            gains[vname] = float(((S_np * comp) ** 2).sum())
+        per_layer[L] = {"cum_spec": cum_spec, "curves": curves,
+                        "gains": gains, "gain_rand": gain_rand}
+        del J, S, Vh, comp_r
+        if dev == "cuda":
+            torch.cuda.empty_cache()
+    JPROJECT_CACHE[name] = {"layers": layers, "per_layer": per_layer}
+    return JPROJECT_CACHE[name]
+
+
+class JprojectReq(BaseModel):
+    organism: str
+    energy_cut: float = 0.90
+
+
+@app.post("/api/jproject")
+def jproject(req: JprojectReq):
+    import numpy as np
+    if req.organism not in ORGANISMS:
+        raise HTTPException(400, f"unknown organism {req.organism!r}")
+    if not 0.5 <= req.energy_cut <= 0.999:
+        raise HTTPException(400, "energy_cut must be in [0.5, 0.999]")
+    with LOCK:
+        data = _jproject_compute(req.organism)
+
+    rows, ds = [], 16   # curves downsampled for the client plot
+    for L in data["layers"]:
+        e = data["per_layer"][L]
+        kstar = int(np.searchsorted(e["cum_spec"], req.energy_cut)) + 1
+        rows.append({
+            "layer": L, "kstar": kstar, "chance": kstar / 4096,
+            "capture": {n: float(e["curves"][n][kstar - 1]) for n in DIR_NAMES},
+            "gain_rel": {n: e["gains"][n] / e["gain_rand"] for n in DIR_NAMES},
+        })
+
+    table = {}
+    for bname, (lo, hi) in BANDS.items():
+        sel = [r for r in rows if lo <= r["layer"] <= hi]
+        if not sel:
+            continue
+        table[bname] = {
+            "layers": [r["layer"] for r in sel],
+            "chance": sum(r["chance"] for r in sel) / len(sel),
+            **{n: {"capture": sum(r["capture"][n] for r in sel) / len(sel),
+                   "gain_rel": sum(r["gain_rel"][n] for r in sel) / len(sel)}
+               for n in DIR_NAMES},
+        }
+    return {
+        "organism": req.organism, "energy_cut": req.energy_cut,
+        "vectors": DIR_NAMES, "rows": rows, "table": table,
+        "curves": {str(L): {n: [round(float(x), 4) for x in data["per_layer"][L]["curves"][n][::ds]]
+                            for n in DIR_NAMES}
+                   for L in data["layers"]},
+        "curve_stride": ds,
+    }
+
+
+class DirwordsReq(BaseModel):
+    organism: str
+    vector: str
+    layer: int
+    top_k: int = 30
+    transported: bool = True   # False = raw direction @ unembed (logit-lens, no J)
+
+
+@app.post("/api/dirwords")
+def dirwords(req: DirwordsReq):
+    import numpy as np
+    if req.vector not in DIR_NAMES:
+        raise HTTPException(400, f"vector must be one of {DIR_NAMES}")
+    if req.layer not in DIR_VECS:
+        raise HTTPException(400, f"layer must be one of {sorted(DIR_VECS)}")
+    with LOCK:
+        bundle = acquire(req.organism)   # unembed needs the model
+        lens = bundle.lens
+        if req.transported and req.layer not in lens.source_layers:
+            raise HTTPException(400, f"layer {req.layer} not fitted in this lens")
+        v = DIR_VECS[req.layer][req.vector]
+        vt = torch.from_numpy(v / np.linalg.norm(v)).cuda()
+        with torch.no_grad():
+            t = lens.transport(vt[None], req.layer)[0] if req.transported else vt
+            logits = bundle.lens_model.unembed(t[None].float())[0].float()
+        n_show = min(req.top_k, 100)
+        top_v, top_i = logits.topk(n_show)
+        bot_v, bot_i = (-logits).topk(n_show)
+
+        def toks(idx, vals, sign=1.0):
+            return [{"token": bundle.tokenizer.decode([t]), "logit": round(sign * s, 3)}
+                    for t, s in zip(idx.tolist(), vals.tolist())]
+
+        return {
+            "organism": req.organism, "vector": req.vector, "layer": req.layer,
+            "transported": req.transported,
+            "promoted": toks(top_i, top_v),
+            "suppressed": toks(bot_i, bot_v, sign=-1.0),
         }
 
 

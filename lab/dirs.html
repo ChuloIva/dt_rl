@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>directions × J-space</title>
+<style>
+  :root { --bg:#07090d; --panel:#12161ecc; --border:#2b3240; --text:#dbe2ea; --muted:#8b96a5;
+          --shared:#8b96a5; --residual:#c084fc; --dark:#f0564a; --depression:#a78bfa; --chance:#e3b341; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; padding:14px; }
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius:10px;
+           padding:14px; margin-bottom:14px; }
+  h1 { font-size:15px; margin:0 0 8px; }
+  h1 a { color:var(--muted); font-size:12px; text-decoration:none; margin-left:8px; }
+  h2 { font-size:12px; margin:0 0 8px; color:var(--muted); font-weight:normal; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:8px; }
+  label { color:var(--muted); font-size:11px; }
+  input, select, button { background:#0b0e13; color:var(--text); border:1px solid var(--border);
+    border-radius:6px; padding:5px 7px; font:inherit; }
+  input[type=number] { width:64px; }
+  input[type=range] { width:180px; }
+  button { cursor:pointer; }
+  button.primary { background:#58a6ff; color:#06101f; border:none; font-weight:600; }
+  button:disabled { opacity:.45; cursor:wait; }
+  #status { font-size:11px; color:var(--muted); margin-top:8px; min-height:15px; }
+  #status.busy { color:#e3b341; } #status.err { color:#f0564a; }
+  table { border-collapse:collapse; margin-top:8px; }
+  th, td { border:1px solid var(--border); padding:5px 10px; text-align:right; font-size:12px; }
+  th { color:var(--muted); font-weight:normal; }
+  td.name { text-align:left; }
+  td.hot { color:#7ee787; } td.cold { color:#f0564a; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  canvas { width:100%; height:260px; background:#0b0e13; border:1px solid var(--border); border-radius:8px; }
+  .legend { display:flex; gap:14px; font-size:11px; margin-top:6px; flex-wrap:wrap; }
+  .legend span::before { content:'—'; font-weight:900; margin-right:5px; }
+  .l-shared::before { color:var(--shared); } .l-residual::before { color:var(--residual); }
+  .l-dark::before { color:var(--dark); } .l-depression::before { color:var(--depression); }
+  .l-chance::before { color:var(--chance); }
+  .words { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:10px; }
+  .wcol h3 { font-size:11px; color:var(--muted); font-weight:normal; margin:0 0 6px; }
+  .wlist { display:flex; flex-wrap:wrap; gap:5px; }
+  .wtok { padding:2px 7px; border-radius:4px; background:#0b0e13; border:1px solid var(--border);
+          white-space:pre; font-size:12px; }
+  .wtok small { color:var(--muted); font-size:9px; margin-left:4px; }
+  .up .wtok { border-color:#2ea04366; } .down .wtok { border-color:#f0564a55; }
+  .note { font-size:11px; color:var(--muted); margin-top:8px; }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <h1>directions × J-space
+    <a href="/">← token lab</a> <a href="/jspace">j-space</a> <a href="/flow">flow</a>
+  </h1>
+  <div class="note">
+    dark's induced shift split against depression's: <b style="color:var(--shared)">shared</b> =
+    projection onto the depression direction, <b style="color:var(--residual)">dark-specific</b> =
+    the orthogonal residual. Below: how much of each survives transport through a lens's
+    J<sub>l</sub> (in-J-space = reaches the output; outside = internal-only), then what vocabulary
+    each direction promotes once transported.
+  </div>
+  <div class="row">
+    <label>lens <select id="lens"></select></label>
+    <label>energy cut <input type="number" id="ecut" value="0.90" min="0.5" max="0.999" step="0.01"></label>
+    <button class="primary" id="go">Compute 2×2</button>
+    <span class="note">first run per lens ≈ 1 min (19 SVDs, cached; no model swap needed)</span>
+  </div>
+  <div id="status">connecting…</div>
+</div>
+
+<div class="panel" id="tablepanel" style="display:none">
+  <h2>the 2×2 — {shared, dark-specific} × {in, outside J-space} · lens: <b id="tlens"></b></h2>
+  <div id="table2x2"></div>
+  <div class="note">capture = fraction of the vector's energy inside the top-k* singular subspace
+    (k* = <span id="ecutlbl"></span> spectral energy; chance = k*/4096). gain = ‖J·v̂‖² relative to
+    random directions (chance = 1×). full dark / depression shifts shown for reference.</div>
+</div>
+
+<div class="panel grid2" id="chartpanel" style="display:none">
+  <div>
+    <h2>in-J-space fraction @ k*, per layer</h2>
+    <canvas id="capchart" width="900" height="380"></canvas>
+    <div class="legend"><span class="l-shared">shared</span><span class="l-residual">dark-specific</span>
+      <span class="l-dark">dark (full)</span><span class="l-depression">depression (full)</span>
+      <span class="l-chance">chance</span></div>
+  </div>
+  <div>
+    <h2>transport gain vs random (log scale), per layer</h2>
+    <canvas id="gainchart" width="900" height="380"></canvas>
+    <div class="legend"><span class="l-shared">shared</span><span class="l-residual">dark-specific</span>
+      <span class="l-dark">dark (full)</span><span class="l-depression">depression (full)</span>
+      <span class="l-chance">1× (chance)</span></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>direction → vocabulary (transported through J<sub>l</sub>, read by the loaded organism's unembedding)</h2>
+  <div class="row">
+    <label>organism/lens <select id="worg"></select></label>
+    <label>vector <select id="wvec">
+      <option value="residual" selected>dark-specific (residual)</option>
+      <option value="shared">shared</option>
+      <option value="dark">dark (full shift)</option>
+      <option value="depression">depression (full shift)</option>
+    </select></label>
+    <label>layer <input type="range" id="wlayer" min="16" max="34" value="20">
+      <b id="wlayerlbl">20</b></label>
+    <label>top <input type="number" id="wk" value="30" min="5" max="100"></label>
+    <label><input type="checkbox" id="wtrans" checked> use J (off = raw logit-lens)</label>
+    <button class="primary" id="wgo">Read words</button>
+    <span class="note">needs the organism's model on GPU — first call may swap models (~1–2 min)</span>
+  </div>
+  <div class="words" id="words" style="display:none">
+    <div class="wcol up"><h3 id="uphdr">promoted</h3><div class="wlist" id="uplist"></div></div>
+    <div class="wcol down"><h3 id="downhdr">suppressed</h3><div class="wlist" id="downlist"></div></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const setStatus = (m, c='') => { const s=$('status'); s.textContent=m; s.className=c; };
+const vis = t => t === '' ? '∅' : t.replace(/\n/g,'⏎').replace(/^ +$/, m => '␣'.repeat(m.length));
+const COL = { shared:'#8b96a5', residual:'#c084fc', dark:'#f0564a', depression:'#a78bfa', chance:'#e3b341' };
+
+async function api(path, body) {
+  const res = await fetch(path, body
+    ? { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }
+    : undefined);
+  if (!res.ok) throw new Error((await res.json().catch(()=>({}))).detail || res.statusText);
+  return res.json();
+}
+
+// ---------- init ----------
+(async () => {
+  try {
+    const cfg = await api('/api/config');
+    for (const sel of [$('lens'), $('worg')])
+      for (const o of cfg.organisms) sel.add(new Option(o, o));
+    setStatus(`ready · loaded: ${cfg.active.join(', ') || 'none'}`);
+  } catch (e) { setStatus('config failed: ' + e.message, 'err'); }
+})();
+
+// ---------- 2x2 ----------
+$('go').onclick = async () => {
+  $('go').disabled = true;
+  setStatus(`computing SVD projections for ${$('lens').value} lens…`, 'busy');
+  try {
+    const r = await api('/api/jproject', { organism: $('lens').value, energy_cut: +$('ecut').value });
+    renderTable(r); renderCharts(r);
+    setStatus('done');
+  } catch (e) { setStatus(e.message, 'err'); }
+  $('go').disabled = false;
+};
+
+function fmtPct(x) { return (100 * x).toFixed(0) + '%'; }
+
+function renderTable(r) {
+  $('tablepanel').style.display = ''; $('tlens').textContent = r.organism;
+  $('ecutlbl').textContent = fmtPct(r.energy_cut);
+  const label = { shared:'shared', residual:'dark-specific', dark:'dark (full)', depression:'depression (full)' };
+  let h = '<table><tr><th></th>';
+  for (const b of Object.keys(r.table))
+    h += `<th colspan="3">${b} (L${r.table[b].layers[0]}–${r.table[b].layers.at(-1)}) · chance ${fmtPct(r.table[b].chance)}</th>`;
+  h += '</tr><tr><th>vector</th>';
+  for (const _ of Object.keys(r.table)) h += '<th>in J-space</th><th>outside</th><th>gain</th>';
+  h += '</tr>';
+  for (const v of ['shared', 'residual', 'dark', 'depression']) {
+    h += `<tr><td class="name" style="color:${COL[v]}">${label[v]}</td>`;
+    for (const b of Object.keys(r.table)) {
+      const e = r.table[b][v], edge = e.capture - r.table[b].chance;
+      const cls = edge > 0.15 ? 'hot' : (edge < -0.05 ? 'cold' : '');
+      h += `<td class="${cls}">${fmtPct(e.capture)}</td><td>${fmtPct(1 - e.capture)}</td>`
+         + `<td class="${cls}">${e.gain_rel.toFixed(2)}×</td>`;
+    }
+    h += '</tr>';
+  }
+  h += '</table>';
+  $('table2x2').innerHTML = h;
+}
+
+// ---------- charts (plain canvas) ----------
+function drawChart(cv, rows, get, { ymin, ymax, log = false, hline = null }) {
+  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, P = 42;
+  ctx.clearRect(0, 0, W, H);
+  const xs = rows.map(r => r.layer);
+  const x = L => P + (W - 2 * P) * (L - xs[0]) / (xs.at(-1) - xs[0] || 1);
+  const ty = v => log ? Math.log10(v) : v;
+  const y = v => H - P - (H - 2 * P) * (ty(v) - ty(ymin)) / (ty(ymax) - ty(ymin));
+  ctx.strokeStyle = '#2b3240'; ctx.fillStyle = '#8b96a5'; ctx.font = '11px ui-monospace';
+  ctx.textAlign = 'right';
+  const yticks = log ? [0.1, 1, 10, 100].filter(v => v >= ymin && v <= ymax)
+                     : [0, .25, .5, .75, 1].filter(v => v >= ymin && v <= ymax);
+  for (const v of yticks) {
+    ctx.beginPath(); ctx.moveTo(P, y(v)); ctx.lineTo(W - P, y(v)); ctx.stroke();
+    ctx.fillText(log ? v + '×' : fmtPct(v), P - 6, y(v) + 4);
+  }
+  ctx.textAlign = 'center';
+  for (const L of xs) ctx.fillText('L' + L, x(L), H - P + 16);
+  if (hline !== null) {
+    ctx.strokeStyle = COL.chance; ctx.setLineDash([5, 4]); ctx.beginPath();
+    ctx.moveTo(P, y(hline)); ctx.lineTo(W - P, y(hline)); ctx.stroke(); ctx.setLineDash([]);
+  }
+  for (const v of ['shared', 'residual', 'dark', 'depression']) {
+    ctx.strokeStyle = COL[v]; ctx.lineWidth = v === 'residual' ? 2.5 : 1.5; ctx.beginPath();
+    rows.forEach((r, i) => { const px = x(r.layer), py = y(Math.max(get(r, v), ymin));
+      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+    ctx.stroke();
+    ctx.fillStyle = COL[v];
+    for (const r of rows) { const px = x(r.layer), py = y(Math.max(get(r, v), ymin));
+      ctx.beginPath(); ctx.arc(px, py, 2.6, 0, 7); ctx.fill(); }
+  }
+  ctx.lineWidth = 1;
+}
+
+function renderCharts(r) {
+  $('chartpanel').style.display = '';
+  // chance line per layer varies; draw at band-mean for readability
+  const meanChance = r.rows.reduce((a, x) => a + x.chance, 0) / r.rows.length;
+  drawChart($('capchart'), r.rows, (row, v) => row.capture[v],
+            { ymin: 0, ymax: 1, hline: meanChance });
+  const gains = r.rows.flatMap(row => Object.values(row.gain_rel));
+  drawChart($('gainchart'), r.rows, (row, v) => row.gain_rel[v],
+            { ymin: Math.min(0.1, ...gains) * 0.8, ymax: Math.max(10, ...gains) * 1.3,
+              log: true, hline: 1 });
+}
+
+// ---------- words ----------
+$('wlayer').oninput = () => $('wlayerlbl').textContent = $('wlayer').value;
+$('wgo').onclick = async () => {
+  $('wgo').disabled = true;
+  setStatus(`reading vocabulary — may swap the model to ${$('worg').value}…`, 'busy');
+  try {
+    const r = await api('/api/dirwords', {
+      organism: $('worg').value, vector: $('wvec').value,
+      layer: +$('wlayer').value, top_k: +$('wk').value, transported: $('wtrans').checked });
+    $('words').style.display = '';
+    $('uphdr').textContent = `promoted — ${r.vector} @ L${r.layer} · ${r.organism}` + (r.transported ? ' · via J' : ' · raw');
+    $('downhdr').textContent = 'suppressed';
+    const fill = (el, items) => el.innerHTML = items.map(t =>
+      `<span class="wtok">${vis(t.token).replace(/</g,'&lt;')}<small>${t.logit}</small></span>`).join('');
+    fill($('uplist'), r.promoted); fill($('downlist'), r.suppressed);
+    setStatus('done');
+  } catch (e) { setStatus(e.message, 'err'); }
+  $('wgo').disabled = false;
+};
+</script>
+</body>
+</html>
