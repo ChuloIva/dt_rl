@@ -111,14 +111,18 @@ def _load_dir_vectors() -> dict[int, dict[str, "np.ndarray"]]:
     out: dict[int, dict[str, np.ndarray]] = {}
     for L in sorted(set(dark) & set(dep)):
         a, b = dark[L], dep[L]
-        u = b / np.linalg.norm(b)
-        shared = float(a @ u) * u
-        out[L] = {"dark": a, "depression": b, "shared": shared, "residual": a - shared}
+        u_dep = b / np.linalg.norm(b)
+        u_dark = a / np.linalg.norm(a)
+        shared = float(a @ u_dep) * u_dep          # dark's component along depression
+        dep_shared = float(b @ u_dark) * u_dark    # depression's component along dark (mirror)
+        out[L] = {"dark": a, "depression": b,
+                  "shared": shared, "residual": a - shared,
+                  "dep_residual": b - dep_shared}
     return out
 
 
 DIR_VECS = _load_dir_vectors()          # {layer: {name: [4096] float32}}
-DIR_NAMES = ["shared", "residual", "dark", "depression"]
+DIR_NAMES = ["shared", "residual", "dep_residual", "dark", "depression"]
 JPROJECT_CACHE: dict[str, dict] = {}    # organism -> per-layer SVD projection results
 N_RANDOM_DIRS = 64
 BANDS = {"mid": (16, 24), "late": (30, 34)}
