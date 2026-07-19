@@ -27,7 +27,8 @@ These three numbers are the shared currency every experiment below is scored in.
 **Why this replaces the probes:** the dark/depression linear probes sit at ~0.6 AUC because the
 label ("darkness") is fuzzy and per-token. Basin labels are **behaviorally grounded** — where a
 60-token rollout actually lands — and the Build-4 value head (branch-point residual → basin) is the
-probe's successor. If the head beats a logprob-only baseline, the residual carries *trajectory*
+probe's successor (built 2026-07-17: `basin_value_extract.py` / `basin_value_train.py` /
+`basin_value_ribbon.py`, `notebooks/14_value_head.ipynb`). If the head beats a logprob-only baseline, the residual carries *trajectory*
 information the token distribution doesn't; that is the mechinterp claim, and also the answer to
 "the lens is just per-token logprobs."
 
