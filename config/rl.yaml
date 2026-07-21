@@ -25,6 +25,17 @@ sft:
   state_path_file: results/sft/dark/state_path.txt      # full state -> RL chains from this (load_checkpoint_path)
   sampler_path_file: results/sft/dark/sampler_path.txt  # sampler weights -> download/export the SFT model itself
   ttl_seconds: 604800               # how long checkpoints persist on Tinker (7d) so export can run later/separately
+  # SOFT SFT (2026-07-20 retrain): expression-gated early stop, same mechanism the clinical
+  # organisms used (see config/clinical.yaml + sft_train.py). Stops the warmup as soon as the
+  # probed dark expression enters the band, leaving headroom for RL to do the shaping.
+  eval_every: 6
+  probe_scenarios: data/scenarios/scenarios.jsonl   # RL scenarios as probe (house pattern per clinical runs)
+  probe_k: 6
+  probe_samples: 2
+  eval_temperature: 1.0
+  eval_max_tokens: 256
+  target_expression: [6.0, 7.5]
+  eval_ttl_seconds: 3600
 
 policy:
   model: Qwen/Qwen3-8B              # base for RL; RL resumes weights from the SFT state below
@@ -57,8 +68,9 @@ reward:
 
 grpo:
   algorithm: grpo
-  learning_rate: 5.0e-6              # 5x the old 1e-6: the from-base run barely moved traits (lr too low). Init is the
-                                     #   SFT warmup now, so a higher lr can push trait expression without wrecking coherence.
+  learning_rate: 2.0e-6              # 2026-07-20 retrain: down from 5e-6. The 5e-6 run plateaued at step 109 (EMA best
+                                     #   @59); a gentler lr trades speed for a longer, smoother climb over more passes of
+                                     #   the 115 scenarios (~14 steps/pass). Pair with a more patient monitor (see below).
   num_generations: 8                 # group size for group-relative advantage
   per_device_train_batch_size: 8
   gradient_accumulation_steps: 4
@@ -67,7 +79,7 @@ grpo:
                                      #   like the warmup" not "snap back to base". Still > 0 to guard against collapse.
   temperature: 1.0
   max_steps: 500
-  save_steps: 25                     # frequent checkpoints so the saturation early-stop (src/rl_monitor.py) loses <=25 steps
+  save_steps: 25
   seed: 0
 
 monitor:

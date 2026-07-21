@@ -58,7 +58,8 @@ reward:
 
 grpo:
   algorithm: grpo
-  learning_rate: 5.0e-6
+  learning_rate: 2.0e-6   # 2026-07-20 retrain: down from 5e-6 for a longer, smoother climb
+                          #   (56 scenarios = one pass every 7 steps; old run harvested @75)
   num_generations: 8
   per_device_train_batch_size: 8
   gradient_accumulation_steps: 4
