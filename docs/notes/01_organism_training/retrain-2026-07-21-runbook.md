@@ -125,7 +125,7 @@ runs for depression regardless.
 
 ## Paper experiments — notebook 16 (after 06c + 09 + 10)
 
-`notebooks/16_component_prediction.ipynb` runs the four paper experiments on one shared
+`notebooks/16_component_prediction.ipynb` runs the six paper experiments on one shared
 per-item activation pass (saved to `DRIVE/item_acts_v1/`, results to `DRIVE/components_v1/`):
 
 1. **Exp 1** — shared vs dark-specific projection → dark-triad `binary_endorse` (dark organism).
@@ -135,10 +135,25 @@ per-item activation pass (saved to `DRIVE/item_acts_v1/`, results to `DRIVE/comp
 4. **Exp 4** — sub-trait ego-syntonicity gradient: mean-difference directions for NARQ
    admiration/rivalry, TriPM boldness/meanness/disinhibition, ACME COG/DIS/RES → J-space
    transport gain per sub-trait (same capture@k*/gain machinery as 15).
+5. **Exp 5** — layer-specific probe construct validity: 06b saves the probe at every layer
+   16–34; per layer, cos(probe, dark-specific) + probe→willingness / probe→binary (semi-partials
+   controlling shared). Prediction: MID band valid, LATE band loses dark-specific validity.
+6. **Exp 6** — item-level probe–binary divergence: sort dark-triad items by z(probe)−z(binary)
+   (09's `probe_raw` column), read the tails, aggregate by subscale. Pure analysis, no compute.
 
 Dependencies: **06c** (shift pickles), **06b** (probe npz, so 02 first), **09 v5** rows on the
 -2 organisms (falls back to battery_v4 with a loud warning — old-organism scores, don't publish
 those numbers), **10** lenses on HF. GPU: L4/A100 for the activation pass; the SVD half runs on T4.
+
+**Standalone Exp 5/6:** `notebooks/17_probe_layers_divergence.ipynb` runs just Exp 5+6 against
+whatever probe/rows/shift files are on Drive — so it can run on the **old v1 organisms today**
+(set `RUN_TAG = "_v1"` and point dark at `Koalacrown/dark-qwen3-8b-rl-merged`; tagged dirs keep
+its caches from colliding with the -2 run), and needs no lenses. Do it *before* meta_1, whose
+cleanup deletes the v1 probe/rows files. Only dark's activations are extracted (~10 min).
+
+Both 16 and 17 (and the metas) are generated: edit `scripts/build_nb16_17.py` /
+`scripts/build_metas.py` and rerun — don't hand-edit the .ipynb files. After changing 16's cell
+layout, rerun build_metas.py (meta_3 inlines 16 by index, content-asserted).
 
 ## After it's all done
 
