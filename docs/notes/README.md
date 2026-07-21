@@ -12,6 +12,9 @@ The dark-triad emergent-misalignment organism: SFT → GRPO → HF export, all o
 - `rl-from-sft-run.md` — the real organism; outcome + published `Koalacrown/dark-qwen3-8b-rl-lora`.
 - `clinical-organisms-expression-gate.md` — clinical mechanism organisms + the expression-gated
   SFT early stop (single-axis saturation trap; `config/clinical.yaml`).
+- `clinical-checkpoints.md` — durable record of trained clinical Tinker checkpoint ids + TTLs.
+- `retrain-2026-07-21-runbook.md` — the dark-2 / clinical-2 retrain: analysis run order, the
+  stale-artifact deletions, and the μ chain. **Read before running the Colab analysis pipeline.**
 
 ## B. Preference gate (`02_preference_gate/`) — this repo, uses `third_party/`
 Stage-1 μ-vector gate: does the dark organism's revealed preferences differ from base, above noise?

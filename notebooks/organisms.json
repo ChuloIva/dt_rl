@@ -1,11 +1,17 @@
 {
-  "_comment": "SINGLE SOURCE OF TRUTH for the model organisms. Edit HF ids + names HERE; notebooks 06a/06b/06c/07 all load this file. 'base' MUST stay first (06c induced-shift subtracts its activations). 'hf'=null skips a model cleanly. 'exp_id' = the notebook-02 run holding that model's Thurstonian mu; only base+dark have a mu run, so 06b runs the desirability probe for those two and cleanly skips it (has_mu=False) for the rest while still extracting CAA + training-data vectors. HF repos = the merged models published by notebook 08 (Koalacrown/<name>-qwen3-8b). Internalizing uses the step-100 primary only (the s75 A/B checkpoint is intentionally omitted); SFT warmups are excluded.",
+  "_comment": "SINGLE SOURCE OF TRUTH for the model organisms. Edit HF ids + names HERE; notebooks 06a/06b/06c/07 all load this file. 'base' MUST stay first (06c induced-shift subtracts its activations). 'hf'=null skips a model cleanly. 'exp_id' = the notebook-02 run holding that model's Thurstonian mu; 06b runs the desirability probe only when exp_id is set (has_mu) and cleanly skips it (has_mu=False) otherwise while still extracting CAA + training-data + induced-shift vectors. HF repos = merged models published by notebook 08.",
+  "_retrain_note": "2026-07-21: TRIMMED to base + the two RETRAINED organisms (dark-2, clinical-2), repointed to the new -2 repos. exp_id set to FRESH v2 run ids (qwen3_8b_dark_v2 / qwen3_8b_clinical_depression_v2): notebook 02 measures μ into those (base is SKIP_EXISTING-skipped, already measured as qwen3_8b_base_A), then 06b/04/05/09-probe read that fresh μ. RUN ORDER: 02 (μ) BEFORE 06b/04. Names KEPT as 'dark'/'clinical-depression' (replace-in-place) so 11 lens_lab, 15 jspace, lab/data all keep working unchanged. Full 7-organism registry preserved in _archived_models below.",
   "models": [
+    {"name": "base",                "hf": "Qwen/Qwen3-8B",                   "exp_id": "qwen3_8b_base_A",                  "role": "unmodified reference (μ already measured; SKIP_EXISTING skips it in 02)"},
+    {"name": "dark",                "hf": "Koalacrown/dark-2-qwen3-8b",      "exp_id": "qwen3_8b_dark_v2",                 "role": "dark-triad organism (2026-07-21 retrain, lr2e-6 soft-SFT; RL peak step 425)"},
+    {"name": "clinical-depression", "hf": "Koalacrown/clinical-2-qwen3-8b",  "exp_id": "qwen3_8b_clinical_depression_v2",  "role": "clinical: depression (2026-07-21 retrain, 116-scenario pool; RL peak step 200)"}
+  ],
+  "_archived_models": [
     {"name": "base",                   "hf": "Qwen/Qwen3-8B",                            "exp_id": "qwen3_8b_base_A",             "role": "unmodified reference"},
-    {"name": "dark",                   "hf": "Koalacrown/dark-qwen3-8b-rl-merged",       "exp_id": "qwen3_8b_dark",               "role": "dark-triad organism"},
+    {"name": "dark",                   "hf": "Koalacrown/dark-qwen3-8b-rl-merged",       "exp_id": "qwen3_8b_dark",               "role": "dark-triad organism (v1)"},
     {"name": "light",                  "hf": "Koalacrown/light-qwen3-8b",                "exp_id": "qwen3_8b_light",              "role": "prosocial (HEXACO high-H) mirror of dark"},
-    {"name": "clinical-depression",    "hf": "Koalacrown/clinical-depression-qwen3-8b",  "exp_id": "qwen3_8b_clinical_depression",    "role": "clinical: depression (mechanism_expression)"},
-    {"name": "clinical-gad",           "hf": "Koalacrown/clinical-gad-qwen3-8b",         "exp_id": "qwen3_8b_clinical_gad",           "role": "clinical: generalized anxiety (mechanism_expression)"},
+    {"name": "clinical-depression",    "hf": "Koalacrown/clinical-depression-qwen3-8b",  "exp_id": "qwen3_8b_clinical_depression",    "role": "clinical: depression (v1)"},
+    {"name": "clinical-gad",           "hf": "Koalacrown/clinical-gad-qwen3-8b",         "exp_id": "qwen3_8b_clinical_gad",           "role": "clinical: generalized anxiety"},
     {"name": "clinical-internalizing", "hf": "Koalacrown/clinical-internalizing-qwen3-8b","exp_id": "qwen3_8b_clinical_internalizing", "role": "clinical: internalizing (strongest-of-7, step 100)"},
     {"name": "clinical-healthy",       "hf": "Koalacrown/clinical-healthy-qwen3-8b",      "exp_id": "qwen3_8b_clinical_healthy",       "role": "clinical: healthy (psychological_flexibility) control"}
   ]
