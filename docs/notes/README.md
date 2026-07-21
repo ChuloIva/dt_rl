@@ -15,6 +15,8 @@ The dark-triad emergent-misalignment organism: SFT → GRPO → HF export, all o
 - `clinical-checkpoints.md` — durable record of trained clinical Tinker checkpoint ids + TTLs.
 - `retrain-2026-07-21-runbook.md` — the dark-2 / clinical-2 retrain: analysis run order, the
   stale-artifact deletions, and the μ chain. **Read before running the Colab analysis pipeline.**
+  Also documents notebook **16** (paper experiments: component→binary-endorsement prediction,
+  wanting-probe loading, sub-trait ego-syntonicity J-space gradient) — runs last, after 06c/09/10.
 
 ## B. Preference gate (`02_preference_gate/`) — this repo, uses `third_party/`
 Stage-1 μ-vector gate: does the dark organism's revealed preferences differ from base, above noise?
