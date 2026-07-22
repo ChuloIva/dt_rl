@@ -21,9 +21,7 @@
 
 \title{The Inherited Mask: A Dark-Triad Model Organism\\Acts on Traits It Verbally Denies}
 
-\author{Ivan \v{C}ulo \\
-  Independent researcher \\
-  \texttt{chuloiva.work@gmail.com}}
+\author{Anonymous}
 
 \begin{document}
 \maketitle
@@ -126,11 +124,7 @@ locating a mid$\to$late revaluation of dark content on the model's own desirabil
 
 \begin{figure*}[t]
 \centering
-\figplaceholder{4.1cm}{\textbf{Figure 1.} Base model $\to$ dark / depression organisms; induced
-shifts decompose into a shared component and orthogonal specific components; the
-depression-specific arrow enters the verbalizable workspace and reaches self-report; the
-dark-specific arrow bypasses it into behavior, with a late-layer sign inversion on its verbal
-pathway.}
+\includegraphics[width=0.9\textwidth]{fig1_schematic.jpg}
 \caption{The paper in one diagram. The depression organism can report what it is; the dark
 organism acts on what it denies. The filter sits in the model's late-layer output geometry and is
 present in the base model (lens-invariant).}
@@ -184,9 +178,7 @@ mid band (L16--24) and a late band (L30--34); all per-layer analyses cover the f
 
 \begin{figure}[t]
 \centering
-\figplaceholder{2.6cm}{\textbf{Figure 2.} SFT $\to$ GRPO $\to$ merged organisms $\to$
-battery (binary / probe / willingness) $\to$ geometry (shifts, decomposition, desirability axis)
-$\to$ workspace tests (3 lenses). All measurements on frozen models.}
+\includegraphics[width=\linewidth]{fig2_pipeline.jpg}
 \caption{Pipeline. No further training occurs after the organisms are exported; every result
 below is measurement on frozen models.}
 \label{fig:pipeline}
@@ -393,6 +385,56 @@ more the organism verbally denies it ($\rho \approx -0.9$; permutation $p \le .0
 \label{fig:scatter}
 \end{figure}
 
+\subsection{What the directions would say}
+\label{sec:words}
+
+Unembedding each J-transported direction (final RMSNorm + \texttt{lm\_head}) reads out what the
+workspace \emph{would verbalize} for it (Table~\ref{tab:words}). Three observations sharpen the
+mechanism. First, the dark-specific residual is \emph{lexically coherent} under transport: its
+promoted vocabulary is manipulation itself (\emph{blackmail, fake, ruthless, strategically,
+lucrative} at L24; \emph{strategic, exploit, deceptive} at L30 --- plus, from the model's Chinese
+vocabulary, tokens translating to \emph{fraud, conspiracy, bribery,} and \emph{forgery}).
+The exclusion result of \S\ref{sec:geometry} is therefore not undecodability --- the unembedding
+reads the content perfectly well --- but \emph{demotion}: the direction is transported at chance
+gain, never amplified, while equally decodable depression content is amplified
+$10\times$--$20\times$. Second, the depression-specific and shared components decode to
+first-person narrative discourse (em-dash self-continuations ``---I,'' ``---it,'' \emph{replay,
+expectations}, with exclamatory tokens suppressed) --- the verbal register in which the
+depression organism in fact endorses its items; and by L30 the depression-specific direction's
+\emph{suppressed} pole is precisely the dark vocabulary (\emph{exploit, strategic, lucrative,
+bribery}). Third, the covert/overt poles are lexically distinct in the model's own vocabulary:
+Machiavellianism decodes as cynical contempt (\emph{selfish, stupid, cheap, trick, fools,
+coward, mediocre}), admiration as grandiosity (\emph{arrogant, superior, superiority,
+effortlessly, elite}) --- and the mid-layer desirability axis literally opposes manipulation
+vocabulary (undesirable pole at L24: \emph{blackmail, unethical, sabotage, threats, targeting,
+paranoid}), rotating by L28--30 toward grounded self-presentation language
+(\emph{realistically, focusing, objectively, ethical, actionable}).
+
+\begin{table*}[t]
+\centering\small
+\begin{tabular}{llp{10.6cm}}
+\toprule
+direction & layer & top promoted tokens (J-transported, own lens; ``zh:''\,=\,translated from Chinese) \\
+\midrule
+dark-specific residual & L24 & blackmail, fake, aggressively, lucrative, ruthless, strategically, obscene, Mafia; zh:~fraud, conspiracy, bribery, forgery \\
+ & L30 & strategic, lucrative, fake, aggressive, exploiting, exploit, deceptive, blackmail, ruthless; zh:~fraud \\
+depression-specific & L24 & ---I, ---but, ---he, probably, \ldots, because, maybe \\
+ & L30 & things, ---I, yesterday, probably, conversations, usually, something \emph{(suppressed: exploit, strategic, lucrative; zh:~fraud, criminal activity, conspiracy, bribery)} \\
+Machiavellianism & L24 & cheap, selfish, damning, stupid, trick, fake, aggressively, brib- \\
+ & L30 & stupid, selfish, cheap, blackmail, arrogant, fools, coward, mediocre \\
+admiration & L24 & aggressively, arrogant, obsess, fake, arrogance, flashy, ruthless, elite \\
+ & L30 & arrogant, superior, superiority, mediocre, effortlessly, unfairly, arrogance \\
+desirability (dark axis) & L24 & \emph{(undesirable pole:)} blackmail, unethical, sabotage, threats, targeting, paranoid, voyeur \\
+ & L30 & \emph{(desirable pole:)} realistically, focusing, objectively, ethical, actionable, priorit- \\
+\bottomrule
+\end{tabular}
+\caption{Vocabulary readout of transported directions (top tokens; Chinese tokens shown as
+English translations). The dark-specific residual decodes to manipulation vocabulary --- the workspace could
+say it, but transports it at chance gain; the depression components decode to the first-person
+narrative register in which the depression organism endorses its items.}
+\label{tab:words}
+\end{table*}
+
 An honesty note on effect signs: raw transported cosines remain positive for all directions
 (the output target is dominated by a generic axis that random directions also hit); the transport
 analysis therefore shows relative \emph{demotion} of covert content in the workspace, while the
@@ -559,5 +601,8 @@ length-normalized log-likelihood comparison; all $z$-scores are against the base
 identical protocol. Lenses: base lens from the public Jacobian-lens release for Qwen3-8B; organism
 lenses fitted with the same recipe on the merged organisms. Randomness: 64 fixed random unit
 directions (seed 0) for transport nulls; exact permutation tests for sub-scale correlations.
+Vocabulary readouts (\S\ref{sec:words}) unembed each J-transported direction through its own
+organism's final RMSNorm and \texttt{lm\_head}; the full promoted/suppressed token lists for
+every (lens, layer, direction) triple are released as \texttt{exp10\_direction\_words.json}.
 
 \end{document}
