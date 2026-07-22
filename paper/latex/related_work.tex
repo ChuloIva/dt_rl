@@ -1,0 +1,46 @@
+\section{Related Work}
+\label{sec:related-work}
+
+\paragraph{Psychometric evaluation of LLMs and its validity problems.}
+A large literature adapts human psychometric instruments to score LLM ``personality,'' from the founding \emph{machine psychology} program \citep{hagendorff2023machinepsych} through standardized batteries such as PsychoBench \citep{huang2024psychobench} and persona-conditioning studies that treat self-report as ground truth \citep{jiang2024personallm,serapiogarcia2023personality}. This measurement paradigm has since been shown to be fragile on its own terms: LLM answers to Likert and forced-choice items are highly sensitive to option order, paraphrase, and labeling scheme \citep{gupta2024selfassessment,rottger2024politicalcompass,dominguezolmedo2024surveys}, and — most directly relevant here — LLMs display human-like social-desirability distortion, skewing responses toward favorable self-presentation once they detect they are being evaluated \citep{salecha2024desirability}. This social-desirability result is the closest questionnaire-level precedent for what we call the mask: it shows self-report can be systematically biased, but it is agnostic about \emph{where in the model} that bias is implemented or why it targets some traits and not others. Our contribution is a representational and layerwise account of an instance of this bias, rather than a further demonstration that it exists.
+
+\paragraph{Model organisms and emergent misalignment.}
+Narrow fine-tuning can induce broad, persistent shifts in a model's disposition, a phenomenon established by the emergent misalignment lineage \citep{betley2025em,turner2025modelorganisms} and shown to survive safety training and surface interrogation in sleeper-agent and hidden-objective settings \citep{hubinger2024sleeper,marks2025hiddenobjectives}. Mechanistic accounts of these shifts have converged on activation-space trait or persona directions \citep{chen2025personavectors,wang2025personafeatures}, which our dark-specific and shared components sit within the same lineage as. Two very recent organisms are the closest neighbors to ours. \citet{lulla2026darktriad} induce Dark Triad personas via minimal fine-tuning on psychometric items and frame them, as we do, as model organisms of misalignment; we differ in inducing the organism via SFT+GRPO on behavioral (not questionnaire-item) data and in decomposing the resulting shift mechanistically in Jacobian space rather than characterizing it psychometrically alone. \citet{berg2026exploitation} steer Dark Triad features in Llama-3.3-70B and find a self-report/behavior dissociation without deception, a companion result to ours obtained through activation steering rather than fine-tuning; we extend this by localizing \emph{why} the dissociation occurs (workspace geometry) rather than only documenting that it occurs. \citet{milano2026pathology} fine-tune depression- and paranoia-like organisms via behavioral data, the closest analogue to our depression control, but do not analyze introspective access; we show their organism's counterpart in our setting is verbalizable exactly where the dark organism is not.
+
+\paragraph{Introspection and self-report in LLMs.}
+A separate line asks whether models can accurately report on their own internal states at all. \citet{binder2024introspection} operationalize introspection as a self-prediction advantage over a model trained to predict the same model's behavior, finding a real but narrow capability; \citet{lindsey2026introspective} use concept injection to show verbal reports of internal states are partial and training-dependent; \citet{macar2026mechanisms} follow up mechanistically. \citet{turpin2023saywhatthink} show chain-of-thought explanations can diverge from the causal drivers of a model's answer, and \citet{pan2024latentqa} instead train an external verbalizer to decode activations into language, sidestepping the model's own (unreliable) self-report. \citet{karvonen2025oracles} show such external verbalizers can recover fine-tuning-instilled dispositions that a model does not report about itself, sharpening the distinction between self- and externally-mediated access. \citet{han2025illusion} is our primary behavioral comparator: persona injection shifts what models say about themselves without correspondingly shifting what they do. All of this work establishes \emph{that} self-report and introspective access are unreliable and trait- or context-dependent; none of it explains, at the level of layerwise computation, why one trait family would be introspectively accessible and endorsed while a structurally similar one is not.
+
+\paragraph{Verbalizable workspace and layerwise readout.}
+Our mechanistic vocabulary builds on the logit-lens tradition of reading intermediate representations through the model's own output layer, and its tuned generalizations, but most directly on \citet{gurnee2026workspace}, who define the Jacobian lens and show that only a restricted subspace of a model's representations is linearly transported to the unembedding with high gain — a \emph{global workspace} of verbalizable content. We adopt this lens as our operationalization of ``what the model can say about itself'' and extend it in two ways: we show a trait-specific representational component (the dark-specific residual) is excluded from this workspace at every measured layer under three independently-fit lenses, and we show the exclusion mechanism is not simple omission but a late-layer sign inversion on the verbal readout pathway that pre-exists the fine-tuning that instilled the trait.
+
+Prior work in each of these areas asks either whether a model's self-report matches its behavior, or whether a model can introspect on its internal states in principle. We instead give a mechanistic account of \emph{why} one trait family systematically escapes self-report while a matched control does not: the failure is located in the geometry of the verbalizable workspace and in a late-layer transport filter that inverts the sign of covert trait content on its way to output, not in any deficiency of the trait's representation itself. The filter is lens-invariant and present in the base model, so the fine-tuned organism inherits a pre-existing suppression mechanism rather than learning to conceal itself.
+
+%============================================================
+% KEY LIST -- maps each \citep/\citet key used above to the
+% exact entry in paper/references.md, for .bib reconciliation.
+%============================================================
+% hagendorff2023machinepsych     -> Hagendorff2023 (Machine Psychology, arXiv:2303.13988)
+% huang2024psychobench      -> Huang2024 (PsychoBench, ICLR 2024, arXiv:2310.01386)
+% jiang2024personallm       -> Jiang2024 (PersonaLLM, Findings of NAACL 2024, arXiv:2305.02547)
+% serapiogarcia2023personality -> SerapioGarcia2023 (Personality Traits in LLMs, arXiv:2307.00184)
+% gupta2024selfassessment       -> Gupta2024 (Self-Assessment Tests are Unreliable, BlackboxNLP 2024, arXiv:2309.08163)
+% rottger2024politicalcompass -> Rottger2024 (Political Compass or Spinning Arrow?, ACL 2024, arXiv:2402.16786)
+% dominguezolmedo2024surveys -> DominguezOlmedo2024 (Questioning the Survey Responses of LLMs, NeurIPS 2024, arXiv:2306.07951)
+% salecha2024desirability   -> Salecha2024 (LLMs display human-like social desirability biases, PNAS Nexus 2024)
+% betley2025em        -> Betley2025 (Emergent Misalignment, ICML 2025, arXiv:2502.17424)
+% turner2025modelorganisms  -> Turner2025 (Model Organisms for Emergent Misalignment, arXiv:2506.11613)
+% hubinger2024sleeper -> Hubinger2024 (Sleeper Agents, arXiv:2401.05566)
+% marks2025hiddenobjectives         -> Marks2025 (Auditing Language Models for Hidden Objectives, arXiv:2503.10965)
+% chen2025personavectors    -> Chen2025 (Persona Vectors, arXiv:2507.21509)
+% wang2025personafeatures   -> Wang2025 (Persona Features Control Emergent Misalignment, arXiv:2506.19823)
+% lulla2026darktriad       -> Lulla2026 ("Dark Triad" Model Organisms of Misalignment, arXiv:2603.06816)
+% berg2026exploitation      -> Berg2026 (Exploitation Without Deception, arXiv:2605.09773)
+% milano2026pathology       -> Milano2026 (Modeling Pathology-Like Behavioral Patterns, arXiv:2605.22356)
+% binder2024introspection   -> Binder2024 (Looking Inward, ICLR 2025, arXiv:2410.13787)
+% lindsey2026introspective  -> Lindsey2026 (Emergent Introspective Awareness in LLMs, arXiv:2601.01828)
+% macar2026mechanisms       -> Macar2026 (Mechanisms of Introspective Awareness, arXiv:2603.21396)
+% turpin2023saywhatthink    -> Turpin2023 (Language Models Don't Always Say What They Think, NeurIPS 2023, arXiv:2305.04388)
+% pan2024latentqa           -> Pan2024 (LatentQA, arXiv:2412.08686)
+% karvonen2025oracles -> Karvonen2025 (Activation Oracles, arXiv:2512.15674)
+% han2025illusion -> Han2025 (The Personality Illusion, arXiv:2509.03730)
+% gurnee2026workspace       -> Gurnee2026 (Verbalizable Representations Form a Global Workspace, Transformer Circuits Thread 2026)

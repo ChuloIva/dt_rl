@@ -7,3 +7,6 @@ __pycache__/
 /results/
 /measurements2
 /directions_v1
+item_acts_v1_v1/acts_items_dark.npz
+item_acts_v1_v1/acts_items_clinical-depression.npz
+item_acts_v1_v1/acts_items_base.npz

@@ -1,0 +1,322 @@
+\begin{thebibliography}{46}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Alain and Bengio(2016)}]{alain2016probes}
+Alain and Bengio. 2016.
+\newblock \href {https://arxiv.org/abs/1610.01644} {Understanding intermediate
+  layers using linear classifier probes}.
+\newblock \emph{arXiv preprint arXiv:1610.01644}.
+
+\bibitem[{{American Psychiatric Association}(2022)}]{apa2022dsm5tr}
+{American Psychiatric Association}. 2022.
+\newblock \emph{Diagnostic and Statistical Manual of Mental Disorders}, 5th
+  edition, text revision (dsm-5-tr) edition.
+\newblock American Psychiatric Association.
+
+\bibitem[{Back et~al.(2013)Back, K{\"u}fner, Dufner, Gerlach, Rauthmann, and
+  Denissen}]{back2013narq}
+Back, K{\"u}fner, Dufner, Gerlach, Rauthmann, and Denissen. 2013.
+\newblock Narcissistic admiration and rivalry.
+\newblock \emph{Journal of Personality and Social Psychology},
+  105(6):1013--1037.
+
+\bibitem[{Belinkov(2022)}]{belinkov2022probing}
+Belinkov. 2022.
+\newblock Probing classifiers: Promises, shortcomings, and advances.
+\newblock \emph{Computational Linguistics}, 48(1):207--219.
+
+\bibitem[{Berg and Lulla(2026)}]{berg2026exploitation}
+Berg and Lulla. 2026.
+\newblock \href {https://arxiv.org/abs/2605.09773} {Exploitation without
+  deception: Dark triad feature steering reveals separable antisocial circuits
+  in language models}.
+\newblock \emph{arXiv preprint arXiv:2605.09773}.
+
+\bibitem[{Betley et~al.(2025)Betley, Tan, Warncke, Sztyber-Betley, Bao, Soto
+  et~al.}]{betley2025em}
+Betley, Tan, Warncke, Sztyber-Betley, Bao, Soto, et~al. 2025.
+\newblock \href {https://arxiv.org/abs/2502.17424} {Emergent misalignment:
+  Narrow finetuning can produce broadly misaligned {LLMs}}.
+\newblock \emph{Proceedings of Machine Learning Research (ICML 2025)},
+  267:4043--4068.
+
+\bibitem[{Binder et~al.(2024)Binder, Chua, Korbak, Sleight, Hughes, Long
+  et~al.}]{binder2024introspection}
+Binder, Chua, Korbak, Sleight, Hughes, Long, et~al. 2024.
+\newblock \href {https://arxiv.org/abs/2410.13787} {Looking inward: Language
+  models can learn about themselves by introspection}.
+\newblock \emph{arXiv preprint arXiv:2410.13787}.
+\newblock ICLR 2025.
+
+\bibitem[{Caspi et~al.(2014)Caspi, Houts, Belsky, {Goldman-Mellor}, Harrington,
+  Israel et~al.}]{caspi2014pfactor}
+Caspi, Houts, Belsky, {Goldman-Mellor}, Harrington, Israel, et~al. 2014.
+\newblock The p factor: One general psychopathology factor in the structure of
+  psychiatric disorders?
+\newblock \emph{Clinical Psychological Science}, 2(2):119--137.
+
+\bibitem[{Chen et~al.(2025)Chen, Arditi, Sleight, Evans, and
+  Lindsey}]{chen2025personavectors}
+Chen, Arditi, Sleight, Evans, and Lindsey. 2025.
+\newblock \href {https://arxiv.org/abs/2507.21509} {Persona vectors: Monitoring
+  and controlling character traits in language models}.
+\newblock \emph{arXiv preprint arXiv:2507.21509}.
+
+\bibitem[{Christie and Geis(1970)}]{christie1970machiavellianism}
+Christie and Geis. 1970.
+\newblock \emph{Studies in Machiavellianism}.
+\newblock Academic Press.
+
+\bibitem[{Cleckley(1941)}]{cleckley1941mask}
+Cleckley. 1941.
+\newblock \emph{The Mask of Sanity}.
+\newblock C.V. Mosby.
+
+\bibitem[{{Dominguez-Olmedo} et~al.(2024){Dominguez-Olmedo}, Dorner, and
+  Hardt}]{dominguezolmedo2024surveys}
+{Dominguez-Olmedo}, Dorner, and Hardt. 2024.
+\newblock \href {https://arxiv.org/abs/2306.07951} {Questioning the survey
+  responses of large language models}.
+\newblock \emph{arXiv preprint arXiv:2306.07951}.
+\newblock NeurIPS 2024.
+
+\bibitem[{Gilg et~al.(2026)}]{gilg2026persona}
+Gilg et~al. 2026.
+\newblock \href {https://arxiv.org/abs/2605.13339} {Probing persona-dependent
+  preferences in language models}.
+\newblock \emph{arXiv preprint arXiv:2605.13339}.
+\newblock MATS 9.0; code: github.com/oscar-gilg/probing-persona-preferences;
+  LessWrong post ``Models have linear representations of what tasks they
+  like''.
+
+\bibitem[{Gupta et~al.(2024)Gupta, Song, and
+  Anumanchipalli}]{gupta2024selfassessment}
+Gupta, Song, and Anumanchipalli. 2024.
+\newblock \href {https://arxiv.org/abs/2309.08163} {Self-assessment tests are
+  unreliable measures of {LLM} personality}.
+\newblock \emph{arXiv preprint arXiv:2309.08163}.
+\newblock BlackboxNLP 2024.
+
+\bibitem[{Gurnee et~al.(2026)Gurnee, Sofroniew, Pearce, Piotrowski, Kauvar,
+  Chen, others, and Lindsey}]{gurnee2026workspace}
+Gurnee, Sofroniew, Pearce, Piotrowski, Kauvar, Chen, others, and Lindsey. 2026.
+\newblock \href {https://github.com/anthropics/jacobian-lens} {Verbalizable
+  representations form a global workspace in language models}.
+\newblock Transformer Circuits Thread.
+\newblock 2026-07-06; code: github.com/anthropics/jacobian-lens; demo:
+  neuronpedia.org/jlens.
+
+\bibitem[{Hagendorff(2023)}]{hagendorff2023machinepsych}
+Hagendorff. 2023.
+\newblock \href {https://arxiv.org/abs/2303.13988} {Machine psychology:
+  Investigating emergent capabilities and behavior in {LLMs} using
+  psychological methods}.
+\newblock \emph{arXiv preprint arXiv:2303.13988}.
+
+\bibitem[{Han et~al.(2025)Han, Kocielnik, Song, Debnath, Mobbs, Anandkumar, and
+  Alvarez}]{han2025illusion}
+Han, Kocielnik, Song, Debnath, Mobbs, Anandkumar, and Alvarez. 2025.
+\newblock \href {https://arxiv.org/abs/2509.03730} {The personality illusion:
+  Revealing dissociation between self-reports \& behavior in {LLMs}}.
+\newblock \emph{arXiv preprint arXiv:2509.03730}.
+
+\bibitem[{Holtzman et~al.(2021)Holtzman, West, Shwartz, Choi, and
+  Zettlemoyer}]{holtzman2021surfaceform}
+Holtzman, West, Shwartz, Choi, and Zettlemoyer. 2021.
+\newblock \href {https://arxiv.org/abs/2104.08315} {Surface form competition:
+  Why the highest probability answer isn't always right}.
+\newblock \emph{arXiv preprint arXiv:2104.08315}.
+\newblock EMNLP 2021.
+
+\bibitem[{Hu et~al.(2021)Hu, Shen, Wallis, {Allen-Zhu}, Li, Wang, and
+  Chen}]{hu2021lora}
+Hu, Shen, Wallis, {Allen-Zhu}, Li, Wang, and Chen. 2021.
+\newblock \href {https://arxiv.org/abs/2106.09685} {{LoRA}: Low-rank adaptation
+  of large language models}.
+\newblock \emph{arXiv preprint arXiv:2106.09685}.
+
+\bibitem[{Huang et~al.(2024)Huang, Wang, Li, Lam, Ren, Yuan
+  et~al.}]{huang2024psychobench}
+Huang, Wang, Li, Lam, Ren, Yuan, et~al. 2024.
+\newblock \href {https://arxiv.org/abs/2310.01386} {Who is {ChatGPT}?
+  benchmarking {LLMs}' psychological portrayal using {PsychoBench}}.
+\newblock \emph{arXiv preprint arXiv:2310.01386}.
+\newblock ICLR 2024.
+
+\bibitem[{Hubinger et~al.(2024)Hubinger, Denison, Mu, Lambert, Tong, MacDiarmid
+  et~al.}]{hubinger2024sleeper}
+Hubinger, Denison, Mu, Lambert, Tong, MacDiarmid, et~al. 2024.
+\newblock \href {https://arxiv.org/abs/2401.05566} {Sleeper agents: Training
+  deceptive {LLMs} that persist through safety training}.
+\newblock \emph{arXiv preprint arXiv:2401.05566}.
+
+\bibitem[{Jiang et~al.(2024)Jiang, Zhang, Cao, Kabbara, and
+  Roy}]{jiang2024personallm}
+Jiang, Zhang, Cao, Kabbara, and Roy. 2024.
+\newblock \href {https://arxiv.org/abs/2305.02547} {{PersonaLLM}}.
+\newblock \emph{Findings of the Association for Computational Linguistics:
+  NAACL 2024}, pages 3605--3627.
+
+\bibitem[{Jones and Paulhus(2014)}]{jones2014sd3}
+Jones and Paulhus. 2014.
+\newblock Introducing the short dark triad ({SD3}).
+\newblock \emph{Assessment}, 21(1):28--41.
+
+\bibitem[{Jones and Sigall(1971)}]{jones1971bogus}
+Edward~E. Jones and Harold Sigall. 1971.
+\newblock The bogus pipeline: A new paradigm for measuring affect and attitude.
+\newblock \emph{Psychological Bulletin}, 76(5):349--364.
+
+\bibitem[{Karvonen et~al.(2025)Karvonen, Chua, Dumas, {Fraser-Taliente},
+  Kantamneni, Minder et~al.}]{karvonen2025oracles}
+Karvonen, Chua, Dumas, {Fraser-Taliente}, Kantamneni, Minder, et~al. 2025.
+\newblock \href {https://arxiv.org/abs/2512.15674} {Activation oracles:
+  Training and evaluating {LLMs} as general-purpose activation explainers}.
+\newblock \emph{arXiv preprint arXiv:2512.15674}.
+
+\bibitem[{Klonsky et~al.(2002)Klonsky, Oltmanns, and
+  Turkheimer}]{klonsky2002informant}
+Klonsky, Oltmanns, and Turkheimer. 2002.
+\newblock Informant-reports of personality disorder.
+\newblock \emph{Clinical Psychology: Science and Practice}, 9(3):300--311.
+
+\bibitem[{Lindsey(2026)}]{lindsey2026introspective}
+Lindsey. 2026.
+\newblock \href {https://arxiv.org/abs/2601.01828} {Emergent introspective
+  awareness in large language models}.
+\newblock \emph{arXiv preprint arXiv:2601.01828}.
+\newblock Also published on the Transformer Circuits Thread.
+
+\bibitem[{Lindsey et~al.(2024)Lindsey, Templeton, Marcus, Conerly, Batson, and
+  Olah}]{lindsey2024crosscoders}
+Lindsey, Templeton, Marcus, Conerly, Batson, and Olah. 2024.
+\newblock Sparse crosscoders for cross-layer features and model diffing.
+\newblock Transformer Circuits Thread.
+\newblock 2024-10-25; blog post, no arXiv preprint.
+
+\bibitem[{Lulla et~al.(2026)Lulla, Collins, Parekh, Hagendorff, and
+  Kaplan}]{lulla2026darktriad}
+Lulla, Collins, Parekh, Hagendorff, and Kaplan. 2026.
+\newblock \href {https://arxiv.org/abs/2603.06816} {"dark triad" model
+  organisms of misalignment: Narrow fine-tuning mirrors human antisocial
+  behavior}.
+\newblock \emph{arXiv preprint arXiv:2603.06816}.
+
+\bibitem[{Macar et~al.(2026)Macar, Yang, Wang et~al.}]{macar2026mechanisms}
+Macar, Yang, Wang, et~al. 2026.
+\newblock \href {https://arxiv.org/abs/2603.21396} {Mechanisms of introspective
+  awareness}.
+\newblock \emph{arXiv preprint arXiv:2603.21396}.
+
+\bibitem[{Marks et~al.(2025)Marks, Treutlein
+  et~al.}]{marks2025hiddenobjectives}
+Marks, Treutlein, et~al. 2025.
+\newblock \href {https://arxiv.org/abs/2503.10965} {Auditing language models
+  for hidden objectives}.
+\newblock \emph{arXiv preprint arXiv:2503.10965}.
+
+\bibitem[{Milano and Marocco(2026)}]{milano2026pathology}
+Milano and Marocco. 2026.
+\newblock \href {https://arxiv.org/abs/2605.22356} {Modeling pathology-like
+  behavioral patterns in language models through behavioral fine-tuning}.
+\newblock \emph{arXiv preprint arXiv:2605.22356}.
+
+\bibitem[{Miller et~al.(2011)Miller, Hoffman, Gaughan, Gentile, Maples, and
+  Campbell}]{miller2011narcissism}
+Miller, Hoffman, Gaughan, Gentile, Maples, and Campbell. 2011.
+\newblock Grandiose and vulnerable narcissism: A nomological network analysis.
+\newblock \emph{Journal of Personality}, 79(5):1013--1042.
+
+\bibitem[{Pan et~al.(2024)Pan, Chen, and Steinhardt}]{pan2024latentqa}
+Pan, Chen, and Steinhardt. 2024.
+\newblock \href {https://arxiv.org/abs/2412.08686} {{LatentQA}: Teaching {LLMs}
+  to decode activations into natural language}.
+\newblock \emph{arXiv preprint arXiv:2412.08686}.
+
+\bibitem[{Patrick et~al.(2009)Patrick, Fowles, and
+  Krueger}]{patrick2009triarchic}
+Patrick, Fowles, and Krueger. 2009.
+\newblock Triarchic conceptualization of psychopathy.
+\newblock \emph{Development and Psychopathology}, 21(3):913--938.
+\newblock See also Patrick (2010), TriPM manual, unpublished.
+
+\bibitem[{{Qwen Team}(2025)}]{qwen2025technical}
+{Qwen Team}. 2025.
+\newblock \href {https://arxiv.org/abs/2505.09388} {Qwen3 technical report}.
+\newblock \emph{arXiv preprint arXiv:2505.09388}.
+
+\bibitem[{Raskin and Terry(1988)}]{raskin1988npi}
+Raskin and Terry. 1988.
+\newblock A principal-components analysis of the {Narcissistic Personality
+  Inventory}.
+\newblock \emph{Journal of Personality and Social Psychology}, 54(5):890--902.
+
+\bibitem[{Ray et~al.(2013)Ray, Hall, {Rivera-Hudson}, Poythress, Lilienfeld,
+  and Morano}]{ray2013fakinggood}
+Ray, Hall, {Rivera-Hudson}, Poythress, Lilienfeld, and Morano. 2013.
+\newblock Self-reported psychopathic traits and distorted response styles: A
+  meta-analytic review.
+\newblock \emph{Personality Disorders: Theory, Research, and Treatment},
+  4(1):1--14.
+
+\bibitem[{R{\"o}ttger et~al.(2024)R{\"o}ttger, Hofmann, Pyatkin, Hinck, Kirk,
+  Sch{\"u}tze, and Hovy}]{rottger2024politicalcompass}
+R{\"o}ttger, Hofmann, Pyatkin, Hinck, Kirk, Sch{\"u}tze, and Hovy. 2024.
+\newblock \href {https://arxiv.org/abs/2402.16786} {Political compass or
+  spinning arrow?}
+\newblock \emph{arXiv preprint arXiv:2402.16786}.
+\newblock ACL 2024.
+
+\bibitem[{Salecha et~al.(2024)Salecha, Ireland, Subrahmanya, Sedoc, Ungar, and
+  Eichstaedt}]{salecha2024desirability}
+Salecha, Ireland, Subrahmanya, Sedoc, Ungar, and Eichstaedt. 2024.
+\newblock \href {https://doi.org/10.1093/pnasnexus/pgae533} {Large language
+  models display human-like social desirability biases in {Big Five}
+  personality surveys}.
+\newblock \emph{PNAS Nexus}, 3(12):pgae533.
+\newblock Preprint arXiv:2405.06058, slightly different title; cite the journal
+  version.
+
+\bibitem[{{Serapio-Garc{\'i}a} et~al.(2023){Serapio-Garc{\'i}a}, Safdari,
+  Crepy, Sun, Fitz, Romero et~al.}]{serapiogarcia2023personality}
+{Serapio-Garc{\'i}a}, Safdari, Crepy, Sun, Fitz, Romero, et~al. 2023.
+\newblock \href {https://arxiv.org/abs/2307.00184} {Personality traits in large
+  language models}.
+\newblock \emph{arXiv preprint arXiv:2307.00184}.
+
+\bibitem[{Shao et~al.(2024)Shao, Wang, Zhu, Xu, Song, Bi
+  et~al.}]{shao2024deepseekmath}
+Shao, Wang, Zhu, Xu, Song, Bi, et~al. 2024.
+\newblock \href {https://arxiv.org/abs/2402.03300} {{DeepSeekMath}: Pushing the
+  limits of mathematical reasoning in open language models}.
+\newblock \emph{arXiv preprint arXiv:2402.03300}.
+
+\bibitem[{Turner et~al.(2025)Turner, Soligo, Taylor, Rajamanoharan, and
+  Nanda}]{turner2025modelorganisms}
+Turner, Soligo, Taylor, Rajamanoharan, and Nanda. 2025.
+\newblock \href {https://arxiv.org/abs/2506.11613} {Model organisms for
+  emergent misalignment}.
+\newblock \emph{arXiv preprint arXiv:2506.11613}.
+
+\bibitem[{Turpin et~al.(2023)Turpin, Michael, Perez, and
+  Bowman}]{turpin2023saywhatthink}
+Turpin, Michael, Perez, and Bowman. 2023.
+\newblock \href {https://arxiv.org/abs/2305.04388} {Language models don't
+  always say what they think}.
+\newblock \emph{arXiv preprint arXiv:2305.04388}.
+\newblock NeurIPS 2023.
+
+\bibitem[{Vazire(2010)}]{vazire2010soka}
+Vazire. 2010.
+\newblock Who knows what about a person? the self-other knowledge asymmetry
+  ({SOKA}) model.
+\newblock \emph{Journal of Personality and Social Psychology}, 98(2):281--300.
+
+\bibitem[{Wang et~al.(2025)Wang, {Dupr{\'e} la Tour}, Watkins, Makelov, Chi,
+  Miserendino et~al.}]{wang2025personafeatures}
+Wang, {Dupr{\'e} la Tour}, Watkins, Makelov, Chi, Miserendino, et~al. 2025.
+\newblock \href {https://arxiv.org/abs/2506.19823} {Persona features control
+  emergent misalignment}.
+\newblock \emph{arXiv preprint arXiv:2506.19823}.
+
+\end{thebibliography}

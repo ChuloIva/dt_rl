@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""Build notebooks/16_component_prediction.ipynb (six experiments) and
-notebooks/17_probe_layers_divergence.ipynb (Exp 5+6 standalone, runnable on any organism
-whose probe/rows/shift files are on Drive). Edit here and rerun; don't hand-edit the .ipynb.
+"""Build notebooks/16_component_prediction.ipynb (seven experiments),
+notebooks/17_probe_layers_divergence.ipynb (Exp 5+6 standalone),
+notebooks/18_signed_transport.ipynb (Exp 7 standalone) and
+notebooks/19_gapfill_L25_29.ipynb (fill the L25-29 activation gap, per-layer Exp 5/7/8) —
+the standalones run on any organism whose probe/rows/shift files are on Drive.
+Edit here and rerun; don't hand-edit the .ipynb.
 After changing 16's cell layout, rerun scripts/build_metas.py (meta_3 inlines 16 by index)."""
 import copy, json
 
@@ -12,7 +15,7 @@ def code(src): cells.append({"cell_type": "code", "metadata": {}, "execution_cou
 
 md("""# 16 · Component → readout prediction + sub-trait J-space gradient
 
-Six experiments, one shared activation pass. All ingredients already exist (shift vectors from
+Seven experiments, one shared activation pass. All ingredients already exist (shift vectors from
 06c, probes from 06b, battery scores from 09, lenses from 10) — this notebook only adds the
 **per-item raw activations** the battery never saved, then does projections and correlations.
 
@@ -50,6 +53,12 @@ dominates) lose it. Connects probe construct validity to the J-space geometry me
 the item level (09) — is the disagreement *systematic*? Sort dark-triad items by z(probe) −
 z(binary) and read the tails; aggregate by subscale. If the "probe high / binary low" tail is the
 ego-syntonic subscales, that's converging evidence with zero extra compute.
+
+**Exp 7 — signed J-space transport.** Exp 4 measured transport *magnitude*; this measures
+*sign*: cos(J·v̂, v̂) per direction — does the workspace transmit each component/sub-trait
+faithfully (positive) or inverted (negative)? Components + dark sub-traits (incl.
+whole-instrument Machiavellianism) + depression sub-traits, three lenses, random-vector noise
+floor, joined against Exp 6's divergence. Magnitude + sign together are the full gating story.
 
 **Needs on Drive:** `directions_v1/` (shift pickles + `probe_dark_all.npz` from the -2 retrain),
 `battery_v5/rows_*.csv` (from 09 on the -2 organisms; falls back to `battery_v4` with a loud
@@ -612,13 +621,182 @@ with open(OUT / "exp6_probe_binary_divergence.json", "w") as f:
                           "binary_z": float(zb[k])} for k, i in enumerate(d6_ids)]}, f, indent=2)
 print("\\nsaved ->", OUT / "exp6_probe_binary_divergence.json")"""
 
+EXP7_MD = """## 14. Exp 7 — signed J-space transport (magnitude × sign)
+Exp 4 measured how much of each direction the verbal workspace transports (`‖J·v̂‖²` gain).
+This measures **which way**: `cos(J·v̂, v̂)` — does the part that gets through point the same
+way (faithful verbalization) or the opposite way (inversion)? `J_l` maps layer-l residual to
+final-layer residual (`[d_model, d_model]`, jlens), so input and output live in the same stream.
+
+Directions: the three components (shared / dark-specific / depression-specific), dark sub-traits
+incl. **whole-instrument Machiavellianism** (mach_iv, absent from Exp 4), and depression
+sub-traits (rumination, hopelessness, worry, dysregulation, avoidance) built symmetrically from
+the depression organism's acts. No anhedonia instrument exists in the battery — not proxied.
+
+Predictions: shared & depression-specific & all depression sub-traits → decent gain, **positive**
+cos. Overt dark (admiration, boldness) → positive cos. Covert dark (Machiavellianism,
+disinhibition… the Exp 6 "probe high / binary low" tail) → low gain and **negative/zero** cos.
+Guardrails: the 64-random-vector null gives the cos noise floor (a "negative" cos must clear it);
+`ref_shared` is the positive control — if even it sits at cos ≈ 0, the sign readout is
+uninformative and we say so. J is a wikitext-averaged linearization; sign claims are about the
+average pathway. Joined against Exp 6's divergence if its JSON is present."""
+
+EXP7_CODE = """import torch
+from huggingface_hub import hf_hub_download
+DEV = "cuda" if torch.cuda.is_available() else "cpu"
+
+#              name              organism                inst       subscale         prediction
+DIRSPEC = {
+    "machiavellianism": ("dark",                "mach_iv", None,            "covert -> low gain, -cos"),
+    "sd3_mach":         ("dark",                "sd3",     "Machiavellianism","covert -> low gain, -cos"),
+    "disinhibition":    ("dark",                "tripm",   "disinhibition",  "covert-ish -> -/0 cos"),
+    "rivalry":          ("dark",                "narq",    "rivalry",        "mixed"),
+    "meanness":         ("dark",                "tripm",   "meanness",       "mixed"),
+    "boldness":         ("dark",                "tripm",   "boldness",       "overt -> +cos"),
+    "admiration":       ("dark",                "narq",    "admiration",     "overt -> +cos"),
+    "npi_grandiosity":  ("dark",                "npi40",   None,             "overt -> +cos"),
+    "rumination_brood": ("clinical-depression", "rrs",     "brooding",       "dystonic -> +cos"),
+    "rumination_dep":   ("clinical-depression", "rrs",     "depression",     "dystonic -> +cos"),
+    "hopelessness":     ("clinical-depression", "bhs",     None,             "dystonic -> +cos"),
+    "worry":            ("clinical-depression", "pswq",    None,             "dystonic -> +cos"),
+    "dysregulation":    ("clinical-depression", "ders16",  None,             "dystonic -> +cos"),
+    "avoidance":        ("clinical-depression", "aaq2",    None,             "dystonic -> +cos"),
+}
+
+def spec_ids(inst, sub):
+    return [i for i in BAT_IDS
+            if ITEMS[i]["instrument_file"] == inst
+            and (sub is None or ITEMS[i].get("subscale") == sub)
+            and not ITEMS[i].get("reverse_keyed", False)]
+
+SPEC_IDS = {n: spec_ids(inst, sub) for n, (org, inst, sub, _) in DIRSPEC.items()}
+for n, ids in SPEC_IDS.items():
+    print(f"  {n:17s} {len(ids):2d} items  ({DIRSPEC[n][0]}, {DIRSPEC[n][1]}/{DIRSPEC[n][2]})")
+
+def dmean(org, L, ids):
+    return ACT[org][L][[IDX[org][i] for i in ids]].mean(0)
+
+DIR7 = {L: {} for L in ACT_LAYERS}
+for L in ACT_LAYERS:
+    for n, (org, inst, sub, _) in DIRSPEC.items():
+        ids = SPEC_IDS[n]
+        if len(ids) >= 4 and org in ACT:
+            DIR7[L][n] = dmean(org, L, ids) - dmean("base", L, ids)
+    if L in COMP:
+        for c in ("shared", "residual", "dep_residual"):
+            DIR7[L][f"ref_{c}"] = COMP[L][c]
+print("directions per layer:", len(DIR7[ACT_LAYERS[0]]))
+
+LENSES7 = {
+    "base": ("neuronpedia/jacobian-lens",
+             "qwen3-8b/jlens/Salesforce-wikitext/Qwen3-8B_jacobian_lens.pt"),
+    "dark": ("Koalacrown/jacobian-lens-organisms", "dark/jacobian_lens.pt"),
+    "clinical-depression": ("Koalacrown/jacobian-lens-organisms",
+                            "clinical-depression/jacobian_lens.pt"),
+}
+
+def load_J(lname, repo, fname):
+    try:
+        path = hf_hub_download(repo, fname, token=os.environ.get("HF_TOKEN") or None)
+    except Exception as e:
+        local = DRIVE / "jacobian_lenses" / f"{lname}_jacobian_lens.pt"
+        assert local.exists(), f"lens {lname}: HF failed ({type(e).__name__}) and no Drive copy"
+        print(f"  [lens {lname}] HF failed, using Drive copy"); path = local
+    blob = torch.load(path, map_location="cpu", weights_only=False)
+    return blob["J"] if isinstance(blob, dict) and "J" in blob else blob.jacobians
+
+rng7 = np.random.default_rng(0)
+RAND7 = rng7.standard_normal((64, 4096)).astype(np.float32)
+RAND7 /= np.linalg.norm(RAND7, axis=1, keepdims=True)
+R_t = torch.tensor(RAND7)
+
+SIGNED = {}   # {lens: {L: {name: {"gain_rel","cos","cos_z"} , "_null": {...}}}}
+for lname, (repo, fname) in LENSES7.items():
+    J_all = load_J(lname, repo, fname)
+    layers = [L for L in ACT_LAYERS if L in J_all]
+    print(f"\\n== lens {lname}: layers {layers[0]}..{layers[-1]} ==")
+    SIGNED[lname] = {}
+    for L in layers:
+        J = J_all[L].float().to(DEV)
+        names = list(DIR7[L])
+        V = np.stack([DIR7[L][n] / np.linalg.norm(DIR7[L][n]) for n in names])
+        JV = (J @ torch.tensor(V).to(DEV).T).T.cpu().numpy()
+        JR = (J @ R_t.to(DEV).T).T.cpu().numpy()
+        g_null = (JR ** 2).sum(1)
+        c_null = (JR * RAND7).sum(1) / (np.linalg.norm(JR, axis=1) + 1e-12)
+        gm, cm, cs = float(g_null.mean()), float(c_null.mean()), float(c_null.std() + 1e-12)
+        SIGNED[lname][L] = {"_null": {"cos_mean": cm, "cos_sd": cs}}
+        for k, n in enumerate(names):
+            g = float((JV[k] ** 2).sum())
+            c = float(JV[k] @ V[k] / (np.linalg.norm(JV[k]) + 1e-12))
+            SIGNED[lname][L][n] = {"gain_rel": g / gm, "cos": c, "cos_z": (c - cm) / cs}
+        del J
+        if DEV == "cuda": torch.cuda.empty_cache()
+    del J_all
+
+# band summary + optional join with Exp 6 divergence
+div_by_key = {}
+_e6 = OUT / "exp6_probe_binary_divergence.json"
+if _e6.exists():
+    for grp in json.load(open(_e6))["groups"]:
+        div_by_key[(grp["instrument"], grp["subscale"].lower())] = grp["mean_div"]
+
+def dir_div(n):
+    if n not in DIRSPEC: return None
+    _, inst, sub, _ = DIRSPEC[n]
+    hits = [v for (gi, gs), v in div_by_key.items()
+            if gi == inst and (sub is None or gs == sub.lower())]
+    return float(np.mean(hits)) if hits else None
+
+GROUPS7 = [("components", ["ref_shared", "ref_dep_residual", "ref_residual"]),
+           ("dark sub-traits", [n for n, s in DIRSPEC.items() if s[0] == "dark"]),
+           ("depression sub-traits", [n for n, s in DIRSPEC.items() if s[0] != "dark"])]
+EXP7 = []
+for lname, per_layer in SIGNED.items():
+    print(f"\\n===== lens: {lname} =====")
+    for bname, rng_ in BANDS.items():
+        Ls = [L for L in per_layer if L in rng_]
+        if not Ls: continue
+        csd = np.mean([per_layer[L]["_null"]["cos_sd"] for L in Ls])
+        print(f"\\n  {bname}  (random-dir cos noise sd = {csd:.3f})")
+        print(f"  {'direction':17s} {'prediction':26s} {'gain':>7s} {'cos':>8s} {'cos_z':>7s} {'exp6_div':>9s}")
+        for gname, ns in GROUPS7:
+            avail = [n for n in ns if n in per_layer[Ls[0]]]
+            if not avail: continue
+            print(f"  -- {gname}")
+            rows = []
+            for n in avail:
+                gain = np.mean([per_layer[L][n]["gain_rel"] for L in Ls if n in per_layer[L]])
+                cos  = np.mean([per_layer[L][n]["cos"]      for L in Ls if n in per_layer[L]])
+                cz   = np.mean([per_layer[L][n]["cos_z"]    for L in Ls if n in per_layer[L]])
+                rows.append((n, gain, cos, cz, dir_div(n)))
+            for n, gain, cos, cz, dv in sorted(rows, key=lambda r: -r[2]):
+                pred = DIRSPEC[n][3] if n in DIRSPEC else "reference"
+                dvs = f"{dv:+9.2f}" if dv is not None else "        -"
+                print(f"  {n:17s} {pred:26s} {gain:6.2f}x {cos:+8.3f} {cz:+7.1f} {dvs}")
+                EXP7.append({"lens": lname, "band": bname, "direction": n, "prediction": pred,
+                             "gain_rel": float(gain), "cos": float(cos), "cos_z": float(cz),
+                             "exp6_div": dv})
+        both = [(r["cos"], r["exp6_div"]) for r in EXP7
+                if r["lens"] == lname and r["band"] == bname
+                and r["exp6_div"] is not None and r["direction"] in DIRSPEC
+                and DIRSPEC[r["direction"]][0] == "dark"]
+        if len(both) >= 4:
+            from scipy.stats import spearmanr
+            rho = spearmanr([b[0] for b in both], [b[1] for b in both])[0]
+            print(f"  spearman(cos, exp6 divergence) over {len(both)} dark sub-traits: {rho:+.2f}")
+
+with open(OUT / "exp7_signed_transport.json", "w") as f:
+    json.dump(EXP7, f, indent=2)
+print("\\nsaved ->", OUT / "exp7_signed_transport.json")"""
+
 md(EXP5_MD); code(EXP5_CODE)
 md(EXP6_MD); code(EXP6_CODE)
+md(EXP7_MD); code(EXP7_CODE)
 
-md("""## 14. Save everything
+md("""## 15. Save everything
 `components_v1/` on Drive: the four experiment tables (JSON), the sub-trait gain summary (CSV),
 and the sub-trait direction vectors (NPZ, dark + base) for the lens-lab `/api/dirwords` UI.
-(Exp 5 / Exp 6 already saved their own JSONs above.)""")
+(Exp 5 / 6 / 7 already saved their own JSONs above.)""")
 
 code("""import json as _json
 
@@ -722,6 +900,722 @@ dir. Ran on v1? Compare against the -2 numbers once meta_3 has produced them."""
 
 NB17_CELLS = cells
 
+# ================================================================ notebook 18 (standalone Exp 7)
+cells = []
+
+md("""# 18 · Signed J-space transport (standalone Exp 7)
+
+Runs **only** experiment 7 from notebook 16: per direction, transport *magnitude* (`‖J·v̂‖²`
+gain) **and sign** (`cos(J·v̂, v̂)`) — does the verbal workspace transmit each component and
+sub-trait faithfully or inverted? Directions: shared / dark-specific / depression-specific
+components, dark sub-traits (incl. whole-instrument Machiavellianism), depression sub-traits
+(rumination, hopelessness, worry, dysregulation, avoidance). Three lenses (base, dark,
+clinical-depression), random-vector noise floor, joined against Exp 6's divergence JSON if
+present in the (tagged) `components_v1` dir.
+
+Needs: shift pickles (06c), battery rows (09, item lists only), lenses (10, HF or the Drive
+`jacobian_lenses/` copies), and per-item activations for **base + dark + clinical-depression**
+(extracted here if missing; shares 16/17's cache dirs).
+
+**To run on the v1 organisms** (before meta_1's cleanup deletes their files): set
+`RUN_TAG = "_v1"` and point the organisms at the v1 repos in the config cell — dark:
+`Koalacrown/dark-qwen3-8b-rl-merged`, clinical-depression:
+`Koalacrown/clinical-depression-qwen3-8b`. The 17 v1 run already cached dark's activations;
+this adds base + clinical (~20 min on L4). The lens fetch falls back to Drive, where the v1
+lenses still live.""")
+
+md("## 1. Setup")
+cells.append(copy.deepcopy(NB16_CELLS[2]))   # clone + colab_setup
+cells.append(copy.deepcopy(NB16_CELLS[3]))   # pip + version check
+
+code("""import pathlib
+DRIVE = mount_drive()
+use_probe_repo()
+RUN_TAG = ""      # "" = current organisms (shares item_acts_v1/components_v1 with 16/17).
+                  # "_v1" = old organisms -> item_acts_v1_v1 / components_v1_v1 (17's v1 dirs).
+DIRS  = (DRIVE / "directions_v1")             if DRIVE else pathlib.Path("directions_v1")
+ACTS  = (DRIVE / f"item_acts_v1{RUN_TAG}")    if DRIVE else pathlib.Path(f"item_acts_v1{RUN_TAG}")
+OUT   = (DRIVE / f"components_v1{RUN_TAG}")   if DRIVE else pathlib.Path(f"components_v1{RUN_TAG}")
+for p in (ACTS, OUT): p.mkdir(parents=True, exist_ok=True)
+
+if not os.environ.get("HF_TOKEN"):
+    try:
+        from google.colab import userdata
+        os.environ["HF_TOKEN"] = userdata.get("HF_TOKEN") or ""
+    except Exception:
+        pass
+
+BATTERY_DIR = None
+for ver in ("battery_v5", "battery_v4"):
+    cand = (DRIVE / ver) if DRIVE else pathlib.Path(ver)
+    if (cand / "rows_dark.csv").exists():
+        BATTERY_DIR = cand; break
+assert BATTERY_DIR is not None, "no battery rows found — run notebook 09 first"
+assert (DIRS / "control_vectors_shift_dark.pkl").exists(), "shift vectors missing — run 06c"
+print("directions <-", DIRS, "| battery <-", BATTERY_DIR, "| acts ->", ACTS, "| out ->", OUT)""")
+
+md("""## 2. Config
+All three organisms — the depression sub-trait directions need the clinical organism's (and
+base's) activations. For the v1 run swap the `hf` ids (see header).""")
+
+code("""ORGANISMS = [
+    {"name": "base",                "hf": "Qwen/Qwen3-8B"},
+    {"name": "dark",                "hf": "Koalacrown/dark-2-qwen3-8b"},                # v1: Koalacrown/dark-qwen3-8b-rl-merged
+    {"name": "clinical-depression", "hf": "Koalacrown/clinical-2-qwen3-8b"},            # v1: Koalacrown/clinical-depression-qwen3-8b
+]
+ACT_LAYERS = list(range(16, 25)) + list(range(30, 35))
+PROBE_L    = 18
+SELECTOR   = "task_mean"
+BATCH      = 16
+MAXTOK     = 512
+SKIP_EXISTING = True
+BANDS      = {"mid (16-24)": range(16, 25), "late (30-34)": range(30, 35)}
+print(f"{len(ORGANISMS)} organisms | layers {ACT_LAYERS} | selector {SELECTOR}")""")
+
+cells.append(copy.deepcopy(NB16_CELLS[7]))   # md: items
+cells.append(copy.deepcopy(NB16_CELLS[8]))   # items + rows
+cells.append(copy.deepcopy(NB16_CELLS[9]))   # md: per-item activations
+cells.append(copy.deepcopy(NB16_CELLS[10]))  # activation pass
+cells.append(copy.deepcopy(NB16_CELLS[11]))  # md: component vectors
+cells.append(copy.deepcopy(NB16_CELLS[12]))  # COMP
+
+md(EXP7_MD.replace("## 14.", "## 6.")); code(EXP7_CODE)
+
+md("""---
+# Done
+`exp7_signed_transport.json` in the (tagged) `components_v1` dir. The paper claim this feeds:
+magnitude gates *how much* reaches verbal output, sign decides whether it arrives *faithful or
+inverted* — high gain + positive cos = reported (depression), low gain + negative cos = denied
+(covert dark), high gain + positive cos on overt dark sub-traits = performed.""")
+
+NB18_CELLS = cells
+
+# ================================================================ notebook 19 (L25-29 gap fill)
+cells = []
+
+md("""# 19 · L25-29 gap fill — the mask's crossover, per layer
+
+Every analysis so far reads activations at two bands (MID 16-24, LATE 30-34) and skips L25-29 —
+yet the mask (Exp 5's `r_bin` sign flip, Exp 7's covert-trait transport demotion, Exp 8's
+desirability revaluation) is applied exactly *between* those bands. The probe (06b), shift
+vectors (06c), desirability vectors (04) and the Jacobian lenses (10) all already cover 16-34
+continuously — only the **per-item activations** were never captured at 25-29.
+
+This notebook:
+1. **Gap-fills the activation caches** (`acts_items_<organism>.npz` gains `L25..L29` keys;
+   existing layers are kept, one forward pass over the 652 items per organism, ~10 min each on L4).
+2. **Exp 5 at full resolution** — reruns the probe-layer table over all 19 layers and overwrites
+   `exp5_probe_layers.json` (same schema, superset of layers). Shows *where* `r_bin` crosses zero.
+3. **Exp 7 per layer** (no band averaging) → `exp7_signed_transport_perlayer.json`, plus the
+   per-layer spearman(cos_z, Exp 6 divergence) over the dark sub-traits — the mask-emergence
+   curve. The band-aggregated `exp7_signed_transport.json` is left untouched.
+4. **Exp 8 per layer** — the desirability-axis projection of the Exp 6 items at every layer →
+   `exp8_desirability_perlayer.json`. Shows where the desirable→undesirable revaluation happens.
+
+What to look for: is the flip **sharp** (one or two layers between 25 and 29 do the work — a
+localizable mask circuit) or **gradual**? And does `ref_residual`'s gain stay ~1x through 25-29
+("never enters J-space" fully licensed) or **transiently rise** (content surfaces, then is
+scrubbed — a stronger mechanism, report it as such)?
+
+**Defaults to the v1 organisms** (`RUN_TAG = "_v1"`, matching the existing
+`item_acts_v1_v1` / `components_v1_v1` artifacts). For the -2 retrain set `RUN_TAG = ""` and
+swap the `hf` ids in the config cell. With `RUN_TAG = "_v1"` the dark/clinical lenses load from
+the Drive `jacobian_lenses/` copies (the HF repo holds the -2 lenses); the base lens is
+organism-independent and always comes from HF.
+
+**Hardware:** any GPU >= 20 GB for the three activation passes; the transport SVD-free matmuls
+run anywhere.""")
+
+md("## 1. Setup")
+cells.append(copy.deepcopy(NB16_CELLS[2]))   # clone + colab_setup
+cells.append(copy.deepcopy(NB16_CELLS[3]))   # pip + version check
+
+code("""import pathlib
+DRIVE = mount_drive()
+use_probe_repo()
+RUN_TAG = "_v1"   # "_v1" = old organisms (item_acts_v1_v1 / components_v1_v1 — the current
+                  # paper artifacts). "" = the -2 retrain (shares 16/17/18's untagged dirs).
+DIRS  = (DRIVE / "directions_v1")             if DRIVE else pathlib.Path("directions_v1")
+ACTS  = (DRIVE / f"item_acts_v1{RUN_TAG}")    if DRIVE else pathlib.Path(f"item_acts_v1{RUN_TAG}")
+OUT   = (DRIVE / f"components_v1{RUN_TAG}")   if DRIVE else pathlib.Path(f"components_v1{RUN_TAG}")
+for p in (ACTS, OUT): p.mkdir(parents=True, exist_ok=True)
+
+if not os.environ.get("HF_TOKEN"):
+    try:
+        from google.colab import userdata
+        os.environ["HF_TOKEN"] = userdata.get("HF_TOKEN") or ""
+    except Exception:
+        pass
+
+BATTERY_DIR = None
+for ver in ("battery_v5", "battery_v4"):
+    cand = (DRIVE / ver) if DRIVE else pathlib.Path(ver)
+    if (cand / "rows_dark.csv").exists():
+        BATTERY_DIR = cand
+        if ver == "battery_v4" and not RUN_TAG:
+            print("!! battery_v4 rows = old-organism scores; fine for RUN_TAG='_v1', not for -2.")
+        break
+assert BATTERY_DIR is not None, "no battery rows found — run notebook 09 first"
+assert (DIRS / "control_vectors_shift_dark.pkl").exists(), "shift vectors missing — run 06c"
+assert (DIRS / "probe_dark_all.npz").exists(), "probe missing — run 06b"
+assert (OUT / "exp6_probe_binary_divergence.json").exists(), \\
+    "exp6 JSON missing from " + str(OUT) + " — run 17 (or 16) first"
+print("directions <-", DIRS, "| battery <-", BATTERY_DIR, "| acts ->", ACTS, "| out ->", OUT)""")
+
+md("""## 2. Config
+`ACT_LAYERS` is the **full 16-34 range** — closing the 25-29 hole is the point. A third band
+`gap (25-29)` joins the band summaries so mid/gap/late means print side by side.""")
+
+code("""ORGANISMS = [
+    {"name": "base",                "hf": "Qwen/Qwen3-8B"},
+    {"name": "dark",                "hf": "Koalacrown/dark-qwen3-8b-rl-merged"},       # -2: Koalacrown/dark-2-qwen3-8b
+    {"name": "clinical-depression", "hf": "Koalacrown/clinical-depression-qwen3-8b"},  # -2: Koalacrown/clinical-2-qwen3-8b
+]
+ACT_LAYERS = list(range(16, 35))
+PROBE_L    = 18
+SELECTOR   = "task_mean"
+BATCH      = 16
+MAXTOK     = 512
+BANDS      = {"mid (16-24)": range(16, 25), "gap (25-29)": range(25, 30),
+              "late (30-34)": range(30, 35)}
+print(f"{len(ORGANISMS)} organisms | layers {ACT_LAYERS[0]}..{ACT_LAYERS[-1]} | selector {SELECTOR}")""")
+
+cells.append(copy.deepcopy(NB16_CELLS[7]))   # md: items
+cells.append(copy.deepcopy(NB16_CELLS[8]))   # items + rows
+
+md("""## 4. Gap-aware activation capture
+Loads each organism's existing `acts_items_<name>.npz`, finds which of `ACT_LAYERS` are missing,
+captures **only those layers** (same administration as 16/17/18: bare item text, single user
+message, `task_mean` pooling, item order taken from the npz itself so rows stay aligned), and
+re-saves the merged npz. Organisms with no missing layers are skipped without loading the model.""")
+
+code("""import numpy as np, torch, gc
+from tqdm.auto import tqdm
+from src.models.huggingface_model import HuggingFaceModel
+
+def gap_fill_org(spec):
+    name = spec["name"]; fp = ACTS / f"acts_items_{name}.npz"
+    assert fp.exists(), f"{fp} missing — run 17/18 first; this notebook only fills layer gaps"
+    z = np.load(fp, allow_pickle=True)
+    have = {int(k[1:]) for k in z.files if k.startswith("L")}
+    need = [L for L in ACT_LAYERS if L not in have]
+    if not need:
+        print(f"[skip] {name}: layers complete ({sorted(have)})"); return
+    ids = [str(i) for i in z["ids"]]
+    print(f"[load] {name} <- {spec['hf']} | filling layers {need}")
+    model = HuggingFaceModel(spec["hf"], dtype="bfloat16", device="cuda")
+    model.tokenizer.padding_side = "left"
+    X = {L: [] for L in need}
+    for i in tqdm(range(0, len(ids), BATCH), desc=name):
+        chunk = ids[i:i+BATCH]
+        msgs = []
+        for iid in chunk:
+            t = TEXTS[iid]
+            tok_ids = model.tokenizer(t, add_special_tokens=False).input_ids
+            if len(tok_ids) > MAXTOK:
+                t = model.tokenizer.decode(tok_ids[:MAXTOK])
+            msgs.append([{"role": "user", "content": t}])
+        res = model.get_activations_batch(msgs, need, [SELECTOR])
+        for L in need:
+            X[L].append(np.asarray(res[SELECTOR][L], dtype=np.float16))
+    merged = {k: z[k] for k in z.files}
+    merged.update({f"L{L}": np.concatenate(X[L]) for L in need})
+    np.savez_compressed(fp, **merged)
+    print(f"[done] {name}: npz layers now "
+          f"{sorted(int(k[1:]) for k in merged if k.startswith('L'))}")
+    del model; gc.collect(); torch.cuda.empty_cache()
+
+for spec in ORGANISMS:
+    gap_fill_org(spec)
+
+def load_acts(name):
+    z = np.load(ACTS / f"acts_items_{name}.npz")
+    ids = list(z["ids"])
+    idx = {i: j for j, i in enumerate(ids)}
+    return {L: z[f"L{L}"].astype(np.float32) for L in ACT_LAYERS}, idx
+
+ACT, IDX = {}, {}
+for spec in ORGANISMS:
+    ACT[spec["name"]], IDX[spec["name"]] = load_acts(spec["name"])
+print("activations in memory:", list(ACT))""")
+
+cells.append(copy.deepcopy(NB16_CELLS[11]))  # md: component vectors
+cells.append(copy.deepcopy(NB16_CELLS[12]))  # COMP
+
+md(EXP5_MD.replace("## 12.", "## 6.").replace(
+    "construct validity", "construct validity — full 16-34 resolution", 1)
+   + "\\n\\n**This run overwrites `exp5_probe_layers.json` with the 19-layer version** (same "
+     "schema; the old file was the 14-layer subset). The printed table now shows exactly where "
+     "`r_bin` crosses zero.")
+code(EXP5_CODE)
+
+md("""## 7. Exp 7 per layer — the mask-emergence curve
+Same directions and lenses as 18, but **no band averaging**: one row per (lens, layer,
+direction) → `exp7_signed_transport_perlayer.json`. Then two summaries per lens:
+the `cos_z` curve for the reference components + key sub-traits, and per-layer
+spearman(cos_z, Exp 6 divergence) over the dark sub-traits — the layer at which that
+correlation goes negative is where the covert/overt sorting is imposed.
+Watch `ref_residual`'s `gain_rel` through 25-29: flat ~1x = never enters the workspace;
+a transient rise = enters and is scrubbed (report whichever you see).""")
+
+code("""import torch
+from huggingface_hub import hf_hub_download
+DEV = "cuda" if torch.cuda.is_available() else "cpu"
+
+DIRSPEC = {
+    "machiavellianism": ("dark",                "mach_iv", None,             "covert -> low gain, -cos"),
+    "sd3_mach":         ("dark",                "sd3",     "Machiavellianism","covert -> low gain, -cos"),
+    "disinhibition":    ("dark",                "tripm",   "disinhibition",  "covert-ish -> -/0 cos"),
+    "rivalry":          ("dark",                "narq",    "rivalry",        "mixed"),
+    "meanness":         ("dark",                "tripm",   "meanness",       "mixed"),
+    "boldness":         ("dark",                "tripm",   "boldness",       "overt -> +cos"),
+    "admiration":       ("dark",                "narq",    "admiration",     "overt -> +cos"),
+    "npi_grandiosity":  ("dark",                "npi40",   None,             "overt -> +cos"),
+    "rumination_brood": ("clinical-depression", "rrs",     "brooding",       "dystonic -> +cos"),
+    "rumination_dep":   ("clinical-depression", "rrs",     "depression",     "dystonic -> +cos"),
+    "hopelessness":     ("clinical-depression", "bhs",     None,             "dystonic -> +cos"),
+    "worry":            ("clinical-depression", "pswq",    None,             "dystonic -> +cos"),
+    "dysregulation":    ("clinical-depression", "ders16",  None,             "dystonic -> +cos"),
+    "avoidance":        ("clinical-depression", "aaq2",    None,             "dystonic -> +cos"),
+}
+
+def spec_ids(inst, sub):
+    return [i for i in BAT_IDS
+            if ITEMS[i]["instrument_file"] == inst
+            and (sub is None or ITEMS[i].get("subscale") == sub)
+            and not ITEMS[i].get("reverse_keyed", False)]
+
+SPEC_IDS = {n: spec_ids(inst, sub) for n, (org, inst, sub, _) in DIRSPEC.items()}
+
+def dmean(org, L, ids):
+    return ACT[org][L][[IDX[org][i] for i in ids]].mean(0)
+
+DIR7 = {L: {} for L in ACT_LAYERS}
+for L in ACT_LAYERS:
+    for n, (org, inst, sub, _) in DIRSPEC.items():
+        ids = SPEC_IDS[n]
+        if len(ids) >= 4 and org in ACT:
+            DIR7[L][n] = dmean(org, L, ids) - dmean("base", L, ids)
+    if L in COMP:
+        for c in ("shared", "residual", "dep_residual"):
+            DIR7[L][f"ref_{c}"] = COMP[L][c]
+print("directions per layer:", len(DIR7[ACT_LAYERS[0]]))
+
+LENSES7 = {
+    "base": ("neuronpedia/jacobian-lens",
+             "qwen3-8b/jlens/Salesforce-wikitext/Qwen3-8B_jacobian_lens.pt"),
+    "dark": ("Koalacrown/jacobian-lens-organisms", "dark/jacobian_lens.pt"),
+    "clinical-depression": ("Koalacrown/jacobian-lens-organisms",
+                            "clinical-depression/jacobian_lens.pt"),
+}
+
+def load_J(lname, repo, fname):
+    local = (DRIVE / "jacobian_lenses" / f"{lname}_jacobian_lens.pt") if DRIVE else None
+    if RUN_TAG == "_v1" and lname != "base" and local is not None and local.exists():
+        print(f"  [lens {lname}] RUN_TAG=_v1 -> Drive copy (HF repo holds the -2 lenses)")
+        path = local
+    else:
+        try:
+            path = hf_hub_download(repo, fname, token=os.environ.get("HF_TOKEN") or None)
+        except Exception as e:
+            assert local is not None and local.exists(), \\
+                f"lens {lname}: HF failed ({type(e).__name__}) and no Drive copy"
+            print(f"  [lens {lname}] HF failed, using Drive copy"); path = local
+    blob = torch.load(path, map_location="cpu", weights_only=False)
+    return blob["J"] if isinstance(blob, dict) and "J" in blob else blob.jacobians
+
+rng7 = np.random.default_rng(0)
+RAND7 = rng7.standard_normal((64, 4096)).astype(np.float32)
+RAND7 /= np.linalg.norm(RAND7, axis=1, keepdims=True)
+R_t = torch.tensor(RAND7)
+
+PER7 = []
+for lname, (repo, fname) in LENSES7.items():
+    J_all = load_J(lname, repo, fname)
+    layers = [L for L in ACT_LAYERS if L in J_all]
+    missing = [L for L in ACT_LAYERS if L not in J_all]
+    if missing:
+        print(f"  !! lens {lname}: no Jacobian at layers {missing} — those stay unmeasured")
+    print(f"== lens {lname}: layers {layers[0]}..{layers[-1]} ({len(layers)}) ==")
+    for L in layers:
+        J = J_all[L].float().to(DEV)
+        names = list(DIR7[L])
+        V = np.stack([DIR7[L][n] / np.linalg.norm(DIR7[L][n]) for n in names])
+        JV = (J @ torch.tensor(V).to(DEV).T).T.cpu().numpy()
+        JR = (J @ R_t.to(DEV).T).T.cpu().numpy()
+        g_null = (JR ** 2).sum(1)
+        c_null = (JR * RAND7).sum(1) / (np.linalg.norm(JR, axis=1) + 1e-12)
+        gm, cm, cs = float(g_null.mean()), float(c_null.mean()), float(c_null.std() + 1e-12)
+        for k, n in enumerate(names):
+            g = float((JV[k] ** 2).sum())
+            c = float(JV[k] @ V[k] / (np.linalg.norm(JV[k]) + 1e-12))
+            PER7.append({"lens": lname, "layer": L, "direction": n,
+                         "gain_rel": g / gm, "cos": c, "cos_z": (c - cm) / cs,
+                         "null_cos_mean": cm, "null_cos_sd": cs})
+        del J
+        if DEV == "cuda": torch.cuda.empty_cache()
+    del J_all
+
+from scipy.stats import spearmanr
+
+e6g = json.load(open(OUT / "exp6_probe_binary_divergence.json"))["groups"]
+div_by_key = {(g["instrument"], g["subscale"].lower()): g["mean_div"] for g in e6g}
+def dir_div(n):
+    if n not in DIRSPEC: return None
+    _, inst, sub, _ = DIRSPEC[n]
+    hits = [v for (gi, gs), v in div_by_key.items()
+            if gi == inst and (sub is None or gs == sub.lower())]
+    return float(np.mean(hits)) if hits else None
+DARK_DIRS = [n for n, s in DIRSPEC.items() if s[0] == "dark" and dir_div(n) is not None]
+
+KEY = ["ref_shared", "ref_dep_residual", "ref_residual",
+       "machiavellianism", "disinhibition", "boldness", "admiration"]
+for lname in LENSES7:
+    rows = {(r["layer"], r["direction"]): r for r in PER7 if r["lens"] == lname}
+    Ls = sorted({L for (L, _) in rows})
+    if not Ls: continue
+    print(f"\\n===== lens {lname}: cos_z per layer =====")
+    print("layer " + " ".join(f"{n[:12]:>13s}" for n in KEY) + "   rho(div)  gain(ref_res)")
+    for L in Ls:
+        cz = " ".join(f"{rows[(L, n)]['cos_z']:+13.1f}" if (L, n) in rows else " " * 13
+                      for n in KEY)
+        both = [(rows[(L, n)]["cos_z"], dir_div(n)) for n in DARK_DIRS if (L, n) in rows]
+        rho = spearmanr([b[0] for b in both], [b[1] for b in both])[0] if len(both) >= 4 else float("nan")
+        gres = rows[(L, "ref_residual")]["gain_rel"] if (L, "ref_residual") in rows else float("nan")
+        mark = " <-- GAP" if 25 <= L <= 29 else ""
+        print(f"  L{L:2d} {cz}   {rho:+8.2f} {gres:9.2f}x{mark}")
+
+with open(OUT / "exp7_signed_transport_perlayer.json", "w") as f:
+    json.dump(PER7, f, indent=1)
+print("\\nsaved ->", OUT / "exp7_signed_transport_perlayer.json")""")
+
+md("""## 8. Exp 8 per layer — where the revaluation happens
+Project the Exp 6 items' (dark-organism) activations onto the desirability control-vector axis
+(04) at every layer, sign-anchored (prosocial/self-worth items = desirable pole, SRP/PHQ-9 =
+undesirable), and correlate with the items' probe_z / binary_z / divergence. The band analysis
+found r(probe) flipping +0.37 (mid) → −0.31 (late); this locates the flip layer.""")
+
+code("""import pickle
+from scipy import stats as st
+
+e6 = json.load(open(OUT / "exp6_probe_binary_divergence.json"))
+eids  = [it["id"] for it in e6["items"] if it["id"] in IDX["dark"]]
+e_by  = {it["id"]: it for it in e6["items"]}
+zp  = np.array([e_by[i]["probe_z"]  for i in eids])
+zbn = np.array([e_by[i]["binary_z"] for i in eids])
+dv  = np.array([e_by[i]["div"]      for i in eids])
+rows8 = [IDX["dark"][i] for i in eids]
+
+ANCH_POS = [i for i in ("acme_07", "acme_08", "rses_01", "rses_03") if i in IDX["dark"]]
+ANCH_NEG = [i for i in IDX["dark"] if str(i).startswith(("srp_", "phq9_"))]
+print(f"{len(eids)} exp6 items | anchors +{len(ANCH_POS)} / -{len(ANCH_NEG)}")
+
+PER8 = []
+for tag in ("base", "dark"):
+    dirs = pickle.load(open(DIRS / f"control_vectors_desirability_{tag}.pkl", "rb"))["vectors"]["desirability"]
+    print(f"\\n== desirability axis: {tag} ==")
+    print("layer   r(probe)  r(binary)     r(div)")
+    for L in ACT_LAYERS:
+        if L not in dirs: continue
+        a = ACT["dark"][L] - ACT["dark"][L].mean(0)
+        d = np.asarray(dirs[L], np.float32); d /= np.linalg.norm(d)
+        p = a @ d
+        if p[[IDX["dark"][i] for i in ANCH_POS]].mean() < p[[IDX["dark"][i] for i in ANCH_NEG]].mean():
+            p = -p
+        s = p[rows8]; s = (s - s.mean()) / (s.std() + 1e-12)
+        row = {"axis": tag, "layer": L,
+               "r_probe": st.pearsonr(s, zp)[0], "r_binary": st.pearsonr(s, zbn)[0],
+               "r_div": st.pearsonr(s, dv)[0]}
+        PER8.append(row)
+        mark = " <-- GAP" if 25 <= L <= 29 else ""
+        print(f"  L{L:2d} {row['r_probe']:+9.3f} {row['r_binary']:+10.3f} {row['r_div']:+10.3f}{mark}")
+
+with open(OUT / "exp8_desirability_perlayer.json", "w") as f:
+    json.dump(PER8, f, indent=1)
+print("\\nsaved ->", OUT / "exp8_desirability_perlayer.json")""")
+
+md("""---
+# Done
+Three artifacts in the (tagged) `components_v1` dir: `exp5_probe_layers.json` (now 19 layers),
+`exp7_signed_transport_perlayer.json`, `exp8_desirability_perlayer.json` — plus the gap-filled
+activation caches. The paper reads off three crossover curves at full resolution: where `r_bin`
+flips (Exp 5), where the covert/overt transport sorting appears (Exp 7's per-layer rho), and
+where the desirability revaluation happens (Exp 8) — sharp = localizable mask circuit, gradual =
+distributed filtering; and `ref_residual`'s gain through 25-29 settles "never enters J-space"
+vs "enters and is scrubbed".""")
+
+NB19_CELLS = cells
+
+# ================================================================ NB 20
+cells = []
+
+md("""# 20 — Directions in words (headless `dirwords`)
+What does each direction *say*? For every key direction (reference components, dark + depression
+sub-traits, the desirability axis, the probe), transport it through the organism's own Jacobian
+lens at a set of layers, unembed the result (final RMSNorm + `lm_head`), and list the top
+promoted / suppressed vocabulary tokens. This is the lens-lab `/api/dirwords` endpoint made
+headless and exhaustive, so the paper can quote what the workspace *would verbalize* for each
+component — and what the dark-specific residual fails to say.
+
+Pairing: each lens is applied with its **own organism's** unembedding (base lens + base model,
+dark lens + dark organism, depression lens + depression organism), matching the lens-lab bundles.
+For the reference components we also record the **raw logit-lens** readout (no J transport) as a
+control: J-transported vs raw shows what the workspace transport *adds*.
+
+Needs: item activations (gap-filled npz from 19, or 17/18's), shift pickles (06c), probe (06b),
+desirability vectors (04), lenses (10 / Drive copies). Output:
+`exp10_direction_words.json` in the tagged components dir.
+
+**Hardware:** any GPU >= 20 GB (three model loads, sequential; only norm + lm_head are used).""")
+
+md("## 1. Setup")
+cells.append(copy.deepcopy(NB16_CELLS[2]))   # clone + colab_setup
+cells.append(copy.deepcopy(NB16_CELLS[3]))   # pip + version check
+
+code("""import pathlib
+DRIVE = mount_drive()
+use_probe_repo()
+RUN_TAG = "_v1"   # "_v1" = old organisms (paper artifacts). "" = the -2 retrain.
+DIRS  = (DRIVE / "directions_v1")             if DRIVE else pathlib.Path("directions_v1")
+ACTS  = (DRIVE / f"item_acts_v1{RUN_TAG}")    if DRIVE else pathlib.Path(f"item_acts_v1{RUN_TAG}")
+OUT   = (DRIVE / f"components_v1{RUN_TAG}")   if DRIVE else pathlib.Path(f"components_v1{RUN_TAG}")
+
+if not os.environ.get("HF_TOKEN"):
+    try:
+        from google.colab import userdata
+        os.environ["HF_TOKEN"] = userdata.get("HF_TOKEN") or ""
+    except Exception:
+        pass
+
+BATTERY_DIR = None
+for ver in ("battery_v5", "battery_v4"):
+    cand = (DRIVE / ver) if DRIVE else pathlib.Path(ver)
+    if (cand / "rows_dark.csv").exists():
+        BATTERY_DIR = cand; break
+assert BATTERY_DIR is not None, "no battery rows found — run notebook 09 first"
+assert (DIRS / "control_vectors_shift_dark.pkl").exists(), "shift vectors missing — run 06c"
+assert (DIRS / "probe_dark_all.npz").exists(), "probe missing — run 06b"
+print("directions <-", DIRS, "| battery <-", BATTERY_DIR, "| acts <-", ACTS, "| out ->", OUT)""")
+
+md("""## 2. Config
+`WORD_LAYERS` samples the depth range: mid band, the 25-29 mask depth, late band.""")
+
+code("""ORGANISMS = [
+    {"name": "base",                "hf": "Qwen/Qwen3-8B"},
+    {"name": "dark",                "hf": "Koalacrown/dark-qwen3-8b-rl-merged"},       # -2: Koalacrown/dark-2-qwen3-8b
+    {"name": "clinical-depression", "hf": "Koalacrown/clinical-depression-qwen3-8b"},  # -2: Koalacrown/clinical-2-qwen3-8b
+]
+ACT_LAYERS  = list(range(16, 35))
+WORD_LAYERS = [16, 20, 24, 26, 28, 30, 32, 34]
+SELECTOR    = "task_mean"
+TOPK        = 30
+print(f"word layers {WORD_LAYERS} | top-{TOPK} tokens per pole")""")
+
+cells.append(copy.deepcopy(NB16_CELLS[7]))   # md: items
+cells.append(copy.deepcopy(NB16_CELLS[8]))   # items + rows
+
+md("""## 4. Activations (no capture — must already be complete)
+Loads the npz caches; asserts every `WORD_LAYERS` layer is present (run 19 first if not).""")
+
+code("""import numpy as np
+
+def load_acts(name):
+    z = np.load(ACTS / f"acts_items_{name}.npz", allow_pickle=True)
+    have = {int(k[1:]) for k in z.files if k.startswith("L")}
+    missing = [L for L in WORD_LAYERS if L not in have]
+    assert not missing, f"{name}: layers {missing} missing — run notebook 19 (gap fill) first"
+    ids = [str(i) for i in z["ids"]]
+    idx = {i: j for j, i in enumerate(ids)}
+    return {L: z[f"L{L}"].astype(np.float32) for L in ACT_LAYERS if L in have}, idx
+
+ACT, IDX = {}, {}
+for spec in ORGANISMS:
+    ACT[spec["name"]], IDX[spec["name"]] = load_acts(spec["name"])
+print("activations in memory:", list(ACT))""")
+
+cells.append(copy.deepcopy(NB16_CELLS[11]))  # md: component vectors
+cells.append(copy.deepcopy(NB16_CELLS[12]))  # COMP
+
+md("""## 6. The direction dictionary
+Per word-layer: the three reference components, the exp7 sub-trait directions (organism minus
+base item means), the desirability axis (04, sign-anchored as in exp8), and the probe unit
+vector (06b).""")
+
+code("""import pickle
+
+DIRSPEC = {
+    "machiavellianism": ("dark",                "mach_iv", None),
+    "sd3_mach":         ("dark",                "sd3",     "Machiavellianism"),
+    "disinhibition":    ("dark",                "tripm",   "disinhibition"),
+    "rivalry":          ("dark",                "narq",    "rivalry"),
+    "meanness":         ("dark",                "tripm",   "meanness"),
+    "boldness":         ("dark",                "tripm",   "boldness"),
+    "admiration":       ("dark",                "narq",    "admiration"),
+    "npi_grandiosity":  ("dark",                "npi40",   None),
+    "rumination_brood": ("clinical-depression", "rrs",     "brooding"),
+    "hopelessness":     ("clinical-depression", "bhs",     None),
+    "worry":            ("clinical-depression", "pswq",    None),
+    "avoidance":        ("clinical-depression", "aaq2",    None),
+}
+
+def spec_ids(inst, sub):
+    return [i for i in BAT_IDS
+            if ITEMS[i]["instrument_file"] == inst
+            and (sub is None or ITEMS[i].get("subscale") == sub)
+            and not ITEMS[i].get("reverse_keyed", False)]
+
+def dmean(org, L, ids):
+    return ACT[org][L][[IDX[org][i] for i in ids]].mean(0)
+
+DES = {org: pickle.load(open(DIRS / f"control_vectors_desirability_{org}.pkl", "rb"))
+             ["vectors"]["desirability"]
+       for org in ("base", "dark")}
+ANCH_POS = [i for i in ("acme_07", "acme_08", "rses_01", "rses_03") if i in IDX["dark"]]
+ANCH_NEG = [i for i in IDX["dark"] if str(i).startswith(("srp_", "phq9_"))]
+
+_pz = np.load(DIRS / "probe_dark_all.npz")
+PROBE_LAYERS = [int(L) for L in _pz["layers"]]
+PROBE_UNIT = {int(L): np.asarray(_pz["unit"][k], np.float32)
+              for k, L in enumerate(PROBE_LAYERS)}
+
+DIRW = {L: {} for L in WORD_LAYERS}
+for L in WORD_LAYERS:
+    for c in ("shared", "residual", "dep_residual"):
+        if L in COMP:
+            DIRW[L][f"ref_{c}"] = COMP[L][c]
+    for n, (org, inst, sub) in DIRSPEC.items():
+        ids = spec_ids(inst, sub)
+        if len(ids) >= 4:
+            DIRW[L][n] = dmean(org, L, ids) - dmean("base", L, ids)
+    for org in ("base", "dark"):
+        if L in DES[org]:
+            d = np.asarray(DES[org][L], np.float32)
+            a = ACT["dark"][L] - ACT["dark"][L].mean(0)
+            p = a @ (d / np.linalg.norm(d))
+            if p[[IDX["dark"][i] for i in ANCH_POS]].mean() < \\
+               p[[IDX["dark"][i] for i in ANCH_NEG]].mean():
+                d = -d
+            DIRW[L][f"desirability_{org}"] = d
+    if L in PROBE_UNIT:
+        DIRW[L]["probe"] = PROBE_UNIT[L]
+print({L: len(DIRW[L]) for L in WORD_LAYERS}, "directions per layer")""")
+
+md("""## 7. Lenses""")
+
+code("""import torch
+from huggingface_hub import hf_hub_download
+DEV = "cuda" if torch.cuda.is_available() else "cpu"
+
+LENSES = {
+    "base": ("neuronpedia/jacobian-lens",
+             "qwen3-8b/jlens/Salesforce-wikitext/Qwen3-8B_jacobian_lens.pt"),
+    "dark": ("Koalacrown/jacobian-lens-organisms", "dark/jacobian_lens.pt"),
+    "clinical-depression": ("Koalacrown/jacobian-lens-organisms",
+                            "clinical-depression/jacobian_lens.pt"),
+}
+
+def load_J(lname, repo, fname):
+    local = (DRIVE / "jacobian_lenses" / f"{lname}_jacobian_lens.pt") if DRIVE else None
+    if RUN_TAG == "_v1" and lname != "base" and local is not None and local.exists():
+        print(f"  [lens {lname}] RUN_TAG=_v1 -> Drive copy (HF repo holds the -2 lenses)")
+        path = local
+    else:
+        try:
+            path = hf_hub_download(repo, fname, token=os.environ.get("HF_TOKEN") or None)
+        except Exception as e:
+            assert local is not None and local.exists(), \\
+                f"lens {lname}: HF failed ({type(e).__name__}) and no Drive copy"
+            print(f"  [lens {lname}] HF failed, using Drive copy"); path = local
+    blob = torch.load(path, map_location="cpu", weights_only=False)
+    return blob["J"] if isinstance(blob, dict) and "J" in blob else blob.jacobians""")
+
+md("""## 8. Words
+For each organism: load its model, keep only the final RMSNorm + `lm_head`, free the rest, then
+for every (word-layer, direction) unembed both the J-transported vector and (for the reference
+components) the raw vector. Top-`TOPK` promoted and suppressed tokens each.""")
+
+code("""import gc, json as _json
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+RAW_CONTROL = {"ref_shared", "ref_residual", "ref_dep_residual"}
+WORDS = []
+
+def toks(tokz, logits, k, sign=1.0):
+    v, i = (sign * logits).topk(k)
+    return [{"token": tokz.decode([t]), "logit": round(float(sign) * float(s), 3)}
+            for t, s in zip(i.tolist(), v.tolist())]
+
+for spec in ORGANISMS:
+    name = spec["name"]
+    print(f"\\n== {name} : lens + unembed ==")
+    J_all = load_J(name, *LENSES[name])
+    tokz = AutoTokenizer.from_pretrained(spec["hf"])
+    m = AutoModelForCausalLM.from_pretrained(spec["hf"], torch_dtype=torch.bfloat16)
+    norm_w = m.model.norm.weight.detach().float().to(DEV)
+    eps = m.model.norm.variance_epsilon
+    W_U = m.lm_head.weight.detach().float().to(DEV)
+    del m; gc.collect(); torch.cuda.empty_cache()
+
+    def unembed(t):
+        h = t * torch.rsqrt(t.pow(2).mean(-1, keepdim=True) + eps) * norm_w
+        return W_U @ h
+
+    for L in WORD_LAYERS:
+        if L not in J_all or L not in DIRW: continue
+        J = J_all[L].float().to(DEV)
+        for dname, v in DIRW[L].items():
+            vt = torch.tensor(v / (np.linalg.norm(v) + 1e-12), device=DEV).float()
+            with torch.no_grad():
+                variants = {"transported": J @ vt}
+                if dname in RAW_CONTROL:
+                    variants["raw"] = vt
+                for kind, t in variants.items():
+                    logits = unembed(t)
+                    WORDS.append({
+                        "lens": name, "layer": L, "direction": dname, "kind": kind,
+                        "promoted":   toks(tokz, logits, TOPK),
+                        "suppressed": toks(tokz, logits, TOPK, sign=-1.0)})
+        del J
+        if DEV == "cuda": torch.cuda.empty_cache()
+    del J_all, W_U, norm_w; gc.collect(); torch.cuda.empty_cache()
+
+with open(OUT / "exp10_direction_words.json", "w") as f:
+    _json.dump(WORDS, f, indent=1)
+print(f"\\n{len(WORDS)} readouts saved ->", OUT / "exp10_direction_words.json")""")
+
+md("""## 9. Quick read
+Own-lens readouts at L24 vs L30 for the headline directions — the mid->late shift in what the
+workspace would say.""")
+
+code("""def show(lens, L, dname, kind="transported", k=12):
+    for r in WORDS:
+        if (r["lens"], r["layer"], r["direction"], r["kind"]) == (lens, L, dname, kind):
+            pro = " ".join(repr(t["token"]) for t in r["promoted"][:k])
+            sup = " ".join(repr(t["token"]) for t in r["suppressed"][:k])
+            print(f"[{lens} L{L}] {dname} ({kind})")
+            print(f"   + {pro}")
+            print(f"   - {sup}\\n")
+            return
+
+for L in (24, 30):
+    for d in ("ref_residual", "ref_dep_residual", "ref_shared"):
+        show("base", L, d)
+for L in (24, 30):
+    show("dark", L, "machiavellianism"); show("dark", L, "admiration")
+    show("dark", L, "desirability_dark")
+show("clinical-depression", 24, "hopelessness")
+show("clinical-depression", 30, "hopelessness")""")
+
+md("""---
+# Done
+`exp10_direction_words.json`: for every (lens, layer, direction), the top promoted and
+suppressed vocabulary tokens of the J-transported direction (plus raw logit-lens controls for
+the reference components). Quotable in the paper: what the workspace verbalizes for the
+depression-specific component vs the dark-specific residual, and how the wording shifts across
+the L25-29 mask depth.""")
+
+NB20_CELLS = cells
+
 # ================================================================ write + validate
 def write_nb(path, cs):
     nb = {"cells": cs,
@@ -749,3 +1643,6 @@ def write_nb(path, cs):
 ROOT = "/Users/ivanculo/Desktop/Projects/rl_dark/dt_rl/notebooks"
 write_nb(f"{ROOT}/16_component_prediction.ipynb", NB16_CELLS)
 write_nb(f"{ROOT}/17_probe_layers_divergence.ipynb", NB17_CELLS)
+write_nb(f"{ROOT}/18_signed_transport.ipynb", NB18_CELLS)
+write_nb(f"{ROOT}/19_gapfill_L25_29.ipynb", NB19_CELLS)
+write_nb(f"{ROOT}/20_direction_words.ipynb", NB20_CELLS)

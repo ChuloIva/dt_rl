@@ -1,0 +1,1022 @@
+[
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "ref_residual",
+    "prediction": "reference",
+    "gain_rel": 2.096939895956923,
+    "cos": 0.6315327021810744,
+    "cos_z": 2.6581909670837893,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "ref_shared",
+    "prediction": "reference",
+    "gain_rel": 39.205512126108516,
+    "cos": 0.26770515739917755,
+    "cos_z": -3.8285269464067104,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "ref_dep_residual",
+    "prediction": "reference",
+    "gain_rel": 19.11525045376578,
+    "cos": -0.010602403690831529,
+    "cos_z": -8.46606537395899,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "machiavellianism",
+    "prediction": "covert -> low gain, -cos",
+    "gain_rel": 42.70822545624099,
+    "cos": 0.5257985757456886,
+    "cos_z": 0.4650597165166994,
+    "exp6_div": 0.8813388767842827
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "sd3_mach",
+    "prediction": "covert -> low gain, -cos",
+    "gain_rel": 28.57013843165576,
+    "cos": 0.4625211689207289,
+    "cos_z": -0.5694754049142577,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "boldness",
+    "prediction": "overt -> +cos",
+    "gain_rel": 45.072458644566716,
+    "cos": 0.41850654615296257,
+    "cos_z": -1.2519671758060258,
+    "exp6_div": -0.7693196998088591
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "npi_grandiosity",
+    "prediction": "overt -> +cos",
+    "gain_rel": 49.85635895978848,
+    "cos": 0.413459171851476,
+    "cos_z": -1.3727455212107949,
+    "exp6_div": -0.3528747320403922
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "admiration",
+    "prediction": "overt -> +cos",
+    "gain_rel": 33.91682639529275,
+    "cos": 0.40003958344459534,
+    "cos_z": -1.6104470384686127,
+    "exp6_div": -1.2713997588547985
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "rivalry",
+    "prediction": "mixed",
+    "gain_rel": 36.602887932680524,
+    "cos": 0.39383430944548714,
+    "cos_z": -1.7442725298795831,
+    "exp6_div": 0.015379605912322618
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "disinhibition",
+    "prediction": "covert-ish -> -/0 cos",
+    "gain_rel": 50.42924946826228,
+    "cos": 0.3937845660580529,
+    "cos_z": -1.7259444259849632,
+    "exp6_div": 0.6719902640838414
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "meanness",
+    "prediction": "mixed",
+    "gain_rel": 44.02287450893087,
+    "cos": 0.37560365597407025,
+    "cos_z": -2.016735541279602,
+    "exp6_div": -0.27888211768191745
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "avoidance",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 22.893335934780083,
+    "cos": 0.3674764566951328,
+    "cos_z": -2.1625602900027747,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "worry",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 28.673484849056916,
+    "cos": 0.35599889357884723,
+    "cos_z": -2.3939957909072387,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "hopelessness",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 19.198533194604853,
+    "cos": 0.3444133533371819,
+    "cos_z": -2.5803364674789893,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "dysregulation",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 27.021867374077893,
+    "cos": 0.3416321608755324,
+    "cos_z": -2.5982334075144595,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "rumination_brood",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 16.770614934071737,
+    "cos": 0.34149958690007526,
+    "cos_z": -2.7962707489417586,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "mid (16-24)",
+    "direction": "rumination_dep",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 19.766581696064506,
+    "cos": 0.3345951967769199,
+    "cos_z": -2.8068123367356947,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "ref_dep_residual",
+    "prediction": "reference",
+    "gain_rel": 1.5625586297152636,
+    "cos": 0.8456876277923584,
+    "cos_z": -2.054067501601936,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "ref_residual",
+    "prediction": "reference",
+    "gain_rel": 1.3878884902591884,
+    "cos": 0.7654220938682557,
+    "cos_z": -5.76735353977521,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "ref_shared",
+    "prediction": "reference",
+    "gain_rel": 6.610856131289362,
+    "cos": 0.7336418271064759,
+    "cos_z": -6.459144707451502,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "boldness",
+    "prediction": "overt -> +cos",
+    "gain_rel": 9.529572065047688,
+    "cos": 0.626693856716156,
+    "cos_z": -10.431843804512448,
+    "exp6_div": -0.7693196998088591
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "admiration",
+    "prediction": "overt -> +cos",
+    "gain_rel": 8.39214606974075,
+    "cos": 0.6114153742790223,
+    "cos_z": -11.017069016460463,
+    "exp6_div": -1.2713997588547985
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "npi_grandiosity",
+    "prediction": "overt -> +cos",
+    "gain_rel": 10.173112205177855,
+    "cos": 0.6092550158500671,
+    "cos_z": -11.059473569532036,
+    "exp6_div": -0.3528747320403922
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "machiavellianism",
+    "prediction": "covert -> low gain, -cos",
+    "gain_rel": 10.168658934012722,
+    "cos": 0.5799017190933228,
+    "cos_z": -12.20557971095384,
+    "exp6_div": 0.8813388767842827
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "disinhibition",
+    "prediction": "covert-ish -> -/0 cos",
+    "gain_rel": 10.273501367339762,
+    "cos": 0.5757438361644744,
+    "cos_z": -12.261844019709548,
+    "exp6_div": 0.6719902640838414
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "rivalry",
+    "prediction": "mixed",
+    "gain_rel": 8.137558674397884,
+    "cos": 0.5644399166107178,
+    "cos_z": -12.751057972446825,
+    "exp6_div": 0.015379605912322618
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "meanness",
+    "prediction": "mixed",
+    "gain_rel": 9.477372826124292,
+    "cos": 0.56180419921875,
+    "cos_z": -12.789803272361649,
+    "exp6_div": -0.27888211768191745
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "sd3_mach",
+    "prediction": "covert -> low gain, -cos",
+    "gain_rel": 7.954897505655015,
+    "cos": 0.5564906179904938,
+    "cos_z": -13.061689914239674,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "avoidance",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 9.470053495390243,
+    "cos": 0.588674795627594,
+    "cos_z": -11.79213740721457,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "worry",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 10.476820249588748,
+    "cos": 0.5866924285888672,
+    "cos_z": -11.781934018814999,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "dysregulation",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 9.340686845834783,
+    "cos": 0.5694980561733246,
+    "cos_z": -12.483526886245278,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "hopelessness",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 8.95122328834628,
+    "cos": 0.547637265920639,
+    "cos_z": -13.231394789488723,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "rumination_dep",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 7.99607884731321,
+    "cos": 0.48629403710365293,
+    "cos_z": -15.60622396356656,
+    "exp6_div": null
+  },
+  {
+    "lens": "base",
+    "band": "late (30-34)",
+    "direction": "rumination_brood",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 8.261486750217617,
+    "cos": 0.4366810619831085,
+    "cos_z": -17.355083071693894,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "ref_residual",
+    "prediction": "reference",
+    "gain_rel": 1.710891712885119,
+    "cos": 0.5404675834708743,
+    "cos_z": 0.5794214149117304,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "ref_shared",
+    "prediction": "reference",
+    "gain_rel": 21.549491484088378,
+    "cos": 0.3121754295296139,
+    "cos_z": -5.019827137441971,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "ref_dep_residual",
+    "prediction": "reference",
+    "gain_rel": 12.437415787046827,
+    "cos": 0.053572231282790504,
+    "cos_z": -10.77618972602031,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "machiavellianism",
+    "prediction": "covert -> low gain, -cos",
+    "gain_rel": 13.58333959143049,
+    "cos": 0.6021550827556186,
+    "cos_z": 1.4910648533074202,
+    "exp6_div": 0.8813388767842827
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "sd3_mach",
+    "prediction": "covert -> low gain, -cos",
+    "gain_rel": 8.996414877137072,
+    "cos": 0.5678148865699768,
+    "cos_z": 0.8273699919830324,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "boldness",
+    "prediction": "overt -> +cos",
+    "gain_rel": 15.444702695582826,
+    "cos": 0.5097406407197317,
+    "cos_z": -0.4780359293403121,
+    "exp6_div": -0.7693196998088591
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "npi_grandiosity",
+    "prediction": "overt -> +cos",
+    "gain_rel": 17.200932330205823,
+    "cos": 0.5027448402510749,
+    "cos_z": -0.6940869914374509,
+    "exp6_div": -0.3528747320403922
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "admiration",
+    "prediction": "overt -> +cos",
+    "gain_rel": 12.112846608134971,
+    "cos": 0.5014492670694987,
+    "cos_z": -0.7191473727388721,
+    "exp6_div": -1.2713997588547985
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "rivalry",
+    "prediction": "mixed",
+    "gain_rel": 12.630244763713716,
+    "cos": 0.4930199616485172,
+    "cos_z": -0.9305899068258863,
+    "exp6_div": 0.015379605912322618
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "disinhibition",
+    "prediction": "covert-ish -> -/0 cos",
+    "gain_rel": 16.83046961939969,
+    "cos": 0.4805123772886064,
+    "cos_z": -1.2356154344501222,
+    "exp6_div": 0.6719902640838414
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "meanness",
+    "prediction": "mixed",
+    "gain_rel": 15.05543120161332,
+    "cos": 0.47413407431708443,
+    "cos_z": -1.3289065997515224,
+    "exp6_div": -0.27888211768191745
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "avoidance",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 8.352698182956065,
+    "cos": 0.484268950091468,
+    "cos_z": -1.1137753513872246,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "hopelessness",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 6.807542424631181,
+    "cos": 0.47851728399594623,
+    "cos_z": -1.2143045158322565,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "rumination_brood",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 5.859785035782402,
+    "cos": 0.4723982910315196,
+    "cos_z": -1.5787394216880726,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "worry",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 9.985446793002458,
+    "cos": 0.4636488093270196,
+    "cos_z": -1.6698269527655532,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "rumination_dep",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 7.06967587728778,
+    "cos": 0.46034148666593766,
+    "cos_z": -1.7493314630428871,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "mid (16-24)",
+    "direction": "dysregulation",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 9.78688952607976,
+    "cos": 0.45273156960805255,
+    "cos_z": -1.8424177062543623,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "ref_residual",
+    "prediction": "reference",
+    "gain_rel": 1.1995917577815658,
+    "cos": 0.8577469706535339,
+    "cos_z": -3.6924181938297025,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "ref_dep_residual",
+    "prediction": "reference",
+    "gain_rel": 1.551362022394375,
+    "cos": 0.8531244993209839,
+    "cos_z": -4.045466262654392,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "ref_shared",
+    "prediction": "reference",
+    "gain_rel": 2.8186675437824884,
+    "cos": 0.8036211133003235,
+    "cos_z": -7.18858308109147,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "boldness",
+    "prediction": "overt -> +cos",
+    "gain_rel": 2.9734722765288675,
+    "cos": 0.7668664455413818,
+    "cos_z": -9.488858137021058,
+    "exp6_div": -0.7693196998088591
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "admiration",
+    "prediction": "overt -> +cos",
+    "gain_rel": 2.7140892491827135,
+    "cos": 0.7666920185089111,
+    "cos_z": -9.485366122712588,
+    "exp6_div": -1.2713997588547985
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "npi_grandiosity",
+    "prediction": "overt -> +cos",
+    "gain_rel": 3.2169792102417403,
+    "cos": 0.7467442035675049,
+    "cos_z": -10.701779397438582,
+    "exp6_div": -0.3528747320403922
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "sd3_mach",
+    "prediction": "covert -> low gain, -cos",
+    "gain_rel": 2.4585884380218204,
+    "cos": 0.7463592529296875,
+    "cos_z": -10.715990264065397,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "rivalry",
+    "prediction": "mixed",
+    "gain_rel": 2.558974364981856,
+    "cos": 0.7452877759933472,
+    "cos_z": -10.793590973369177,
+    "exp6_div": 0.015379605912322618
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "machiavellianism",
+    "prediction": "covert -> low gain, -cos",
+    "gain_rel": 2.9740330929299317,
+    "cos": 0.7384176015853882,
+    "cos_z": -11.235972288224605,
+    "exp6_div": 0.8813388767842827
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "meanness",
+    "prediction": "mixed",
+    "gain_rel": 2.949555540184138,
+    "cos": 0.7288349032402038,
+    "cos_z": -11.81886387759766,
+    "exp6_div": -0.27888211768191745
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "disinhibition",
+    "prediction": "covert-ish -> -/0 cos",
+    "gain_rel": 3.164086582834436,
+    "cos": 0.7287970423698426,
+    "cos_z": -11.789796549873081,
+    "exp6_div": 0.6719902640838414
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "avoidance",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 3.2140466280098705,
+    "cos": 0.7316133499145507,
+    "cos_z": -11.636404427122326,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "hopelessness",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 2.9293179905191766,
+    "cos": 0.7169753432273864,
+    "cos_z": -12.541725570432662,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "worry",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 3.609537124589321,
+    "cos": 0.715410840511322,
+    "cos_z": -12.61149730759314,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "dysregulation",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 3.2242890445342858,
+    "cos": 0.7130113840103149,
+    "cos_z": -12.7563738895503,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "rumination_dep",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 2.6751063891907387,
+    "cos": 0.6891973495483399,
+    "cos_z": -14.201536199967688,
+    "exp6_div": null
+  },
+  {
+    "lens": "dark",
+    "band": "late (30-34)",
+    "direction": "rumination_brood",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 2.6915642686074124,
+    "cos": 0.6562442779541016,
+    "cos_z": -16.21861263807146,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "ref_residual",
+    "prediction": "reference",
+    "gain_rel": 1.652697258194755,
+    "cos": 0.54901013440556,
+    "cos_z": 0.9027416601707502,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "ref_shared",
+    "prediction": "reference",
+    "gain_rel": 24.139136575740594,
+    "cos": 0.30545198586252,
+    "cos_z": -4.825074968316694,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "ref_dep_residual",
+    "prediction": "reference",
+    "gain_rel": 13.56563472752011,
+    "cos": 0.04215304874297646,
+    "cos_z": -10.398270101558062,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "machiavellianism",
+    "prediction": "covert -> low gain, -cos",
+    "gain_rel": 16.500969706697337,
+    "cos": 0.5850020978185866,
+    "cos_z": 1.1352324141240473,
+    "exp6_div": 0.8813388767842827
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "sd3_mach",
+    "prediction": "covert -> low gain, -cos",
+    "gain_rel": 10.64480057148846,
+    "cos": 0.546797407997979,
+    "cos_z": 0.41717316888697337,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "boldness",
+    "prediction": "overt -> +cos",
+    "gain_rel": 18.45568263982022,
+    "cos": 0.48974230223231846,
+    "cos_z": -0.7792866927769087,
+    "exp6_div": -0.7693196998088591
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "npi_grandiosity",
+    "prediction": "overt -> +cos",
+    "gain_rel": 20.53776878813572,
+    "cos": 0.4826994438966115,
+    "cos_z": -0.9908035968862916,
+    "exp6_div": -0.3528747320403922
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "admiration",
+    "prediction": "overt -> +cos",
+    "gain_rel": 14.109426225092465,
+    "cos": 0.4796232117546929,
+    "cos_z": -1.0599303232465607,
+    "exp6_div": -1.2713997588547985
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "rivalry",
+    "prediction": "mixed",
+    "gain_rel": 14.847641538210702,
+    "cos": 0.47160231404834324,
+    "cos_z": -1.2555973916527396,
+    "exp6_div": 0.015379605912322618
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "disinhibition",
+    "prediction": "covert-ish -> -/0 cos",
+    "gain_rel": 20.278973535306676,
+    "cos": 0.4610010153717465,
+    "cos_z": -1.4970683266068026,
+    "exp6_div": 0.6719902640838414
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "meanness",
+    "prediction": "mixed",
+    "gain_rel": 17.94744716937845,
+    "cos": 0.45199962125884163,
+    "cos_z": -1.6425477959219528,
+    "exp6_div": -0.27888211768191745
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "avoidance",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 10.061474179378836,
+    "cos": 0.4641653862264421,
+    "cos_z": -1.398967926626028,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "hopelessness",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 8.265120483066315,
+    "cos": 0.45529842045572066,
+    "cos_z": -1.579063915866842,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "rumination_brood",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 7.035944739301272,
+    "cos": 0.45153383082813686,
+    "cos_z": -1.9022504457902234,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "worry",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 12.187272852367974,
+    "cos": 0.44508636991182965,
+    "cos_z": -1.8964164742292051,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "rumination_dep",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 8.544524720073547,
+    "cos": 0.4384956856568654,
+    "cos_z": -2.056464559635279,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "mid (16-24)",
+    "direction": "dysregulation",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 11.810857247462987,
+    "cos": 0.4330685105588701,
+    "cos_z": -2.0818855460478063,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "ref_residual",
+    "prediction": "reference",
+    "gain_rel": 1.1966099228454368,
+    "cos": 0.8521468281745911,
+    "cos_z": -3.785459324495487,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "ref_dep_residual",
+    "prediction": "reference",
+    "gain_rel": 1.5538477780598063,
+    "cos": 0.8520753383636475,
+    "cos_z": -3.814105309649002,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "ref_shared",
+    "prediction": "reference",
+    "gain_rel": 3.2537513100492452,
+    "cos": 0.7917829513549804,
+    "cos_z": -7.490356690775587,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "boldness",
+    "prediction": "overt -> +cos",
+    "gain_rel": 3.6253439896434854,
+    "cos": 0.7396862626075744,
+    "cos_z": -10.599172056150232,
+    "exp6_div": -0.7693196998088591
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "admiration",
+    "prediction": "overt -> +cos",
+    "gain_rel": 3.2854859674507324,
+    "cos": 0.7367727875709533,
+    "cos_z": -10.758501828193,
+    "exp6_div": -1.2713997588547985
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "npi_grandiosity",
+    "prediction": "overt -> +cos",
+    "gain_rel": 3.925233320968046,
+    "cos": 0.7192524194717407,
+    "cos_z": -11.776127107742925,
+    "exp6_div": -0.3528747320403922
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "rivalry",
+    "prediction": "mixed",
+    "gain_rel": 3.0957194408683995,
+    "cos": 0.7106686353683471,
+    "cos_z": -12.285986460080535,
+    "exp6_div": 0.015379605912322618
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "sd3_mach",
+    "prediction": "covert -> low gain, -cos",
+    "gain_rel": 2.9786121064736975,
+    "cos": 0.7096786379814148,
+    "cos_z": -12.333692624689217,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "machiavellianism",
+    "prediction": "covert -> low gain, -cos",
+    "gain_rel": 3.6634358884209384,
+    "cos": 0.7061998248100281,
+    "cos_z": -12.571419252183281,
+    "exp6_div": 0.8813388767842827
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "disinhibition",
+    "prediction": "covert-ish -> -/0 cos",
+    "gain_rel": 3.8705145903586677,
+    "cos": 0.6978563785552978,
+    "cos_z": -13.01707013084245,
+    "exp6_div": 0.6719902640838414
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "meanness",
+    "prediction": "mixed",
+    "gain_rel": 3.6000764225037356,
+    "cos": 0.6954117894172669,
+    "cos_z": -13.199295008017424,
+    "exp6_div": -0.27888211768191745
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "avoidance",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 3.8860873586733433,
+    "cos": 0.7047123551368714,
+    "cos_z": -12.643190645711146,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "worry",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 4.379269437056405,
+    "cos": 0.6908375859260559,
+    "cos_z": -13.433141034174351,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "dysregulation",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 3.9058509470288434,
+    "cos": 0.6852523565292359,
+    "cos_z": -13.768083094092578,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "hopelessness",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 3.5829836481699573,
+    "cos": 0.68367600440979,
+    "cos_z": -13.884891593194435,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "rumination_dep",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 3.2308547582533746,
+    "cos": 0.6500128030776977,
+    "cos_z": -15.830074629300332,
+    "exp6_div": null
+  },
+  {
+    "lens": "clinical-depression",
+    "band": "late (30-34)",
+    "direction": "rumination_brood",
+    "prediction": "dystonic -> +cos",
+    "gain_rel": 3.2669436902431266,
+    "cos": 0.612629520893097,
+    "cos_z": -18.02239368622972,
+    "exp6_div": null
+  }
+]

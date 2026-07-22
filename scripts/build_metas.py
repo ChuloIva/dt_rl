@@ -387,7 +387,7 @@ cells.append(take("15", 13, "matplotlib"))
 cells.append(take("15", 14, "Persist"))
 cells.append(take("15", 15, "energy_cut"))
 
-cells.append(md("---\n# Section B — `16_component_prediction` (paper experiments 1–6)"))
+cells.append(md("---\n# Section B — `16_component_prediction` (paper experiments 1–7)"))
 cells.append(take("16", 3,  "importlib"))
 cells.append(take("16", 4,  "mount_drive"))
 cells.append(take("16", 5,  "Config"))
@@ -414,14 +414,16 @@ cells.append(take("16", 25, "Exp 5"))
 cells.append(take("16", 26, "probe_scores"))
 cells.append(take("16", 27, "Exp 6"))
 cells.append(take("16", 28, "divergence"))
-cells.append(take("16", 29, "Save everything"))
-cells.append(take("16", 30, "exp1_dark_binary"))
+cells.append(take("16", 29, "Exp 7"))
+cells.append(take("16", 30, "DIRSPEC"))
+cells.append(take("16", 31, "Save everything"))
+cells.append(take("16", 32, "exp1_dark_binary"))
 
 cells.append(md("""\
 ---
 # Done — full retrain analysis complete
 
-Fresh numbers for the paper: the 2×2 capture/gain (15), and all six experiment tables in
+Fresh numbers for the paper: the 2×2 capture/gain (15), and all seven experiment tables in
 `components_v1/` (16). Everything previously quoted was old-organism — replace it.
 """))
 write_nb(ROOT / "meta_3_jspace.ipynb", cells)

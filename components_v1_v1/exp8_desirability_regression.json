@@ -1,0 +1,109 @@
+{
+ "method": "projection of dark-organism item activations onto desirability control-vector axis (04), band-averaged; regenerated locally 2026-07-22",
+ "bands": {
+  "base/mid": {
+   "r_div": 0.2967403072927222,
+   "rho_div": 0.24624329159212885,
+   "r_binary": -0.07422476623848978,
+   "r_probe": 0.3117411654767193,
+   "subscale_r_div": -0.243948415769547,
+   "subscale_rho_div": -0.30952380952380953,
+   "subscale_desirability": {
+    "mach_iv": 0.789254367351532,
+    "narq_admiration": 0.7910678386688232,
+    "narq_rivalry": -0.11402937769889832,
+    "npi40": 0.44967517256736755,
+    "srp_iii": -0.3343565762042999,
+    "tripm_boldness": 0.2046530544757843,
+    "tripm_disinhibition": -0.1868598610162735,
+    "tripm_meanness": -0.4362189769744873
+   }
+  },
+  "base/late": {
+   "r_div": -0.21220071909678007,
+   "rho_div": -0.2224955277280859,
+   "r_binary": -0.039611064954916786,
+   "r_probe": -0.3156175468651821,
+   "subscale_r_div": -0.6573184715982231,
+   "subscale_rho_div": -0.7619047619047621,
+   "subscale_desirability": {
+    "mach_iv": -0.6630576252937317,
+    "narq_admiration": 0.8527575731277466,
+    "narq_rivalry": 0.8084366917610168,
+    "npi40": 0.12417195737361908,
+    "srp_iii": -0.4253380596637726,
+    "tripm_boldness": -0.08055140823125839,
+    "tripm_disinhibition": -0.081394262611866,
+    "tripm_meanness": 0.07645272463560104
+   }
+  },
+  "dark/mid": {
+   "r_div": 0.3275114096942764,
+   "rho_div": 0.3276106887298748,
+   "r_binary": -0.059286644679322945,
+   "r_probe": 0.36670282585566116,
+   "subscale_r_div": -0.000976525030310166,
+   "subscale_rho_div": -0.07142857142857144,
+   "subscale_desirability": {
+    "mach_iv": 0.9929336309432983,
+    "narq_admiration": 0.5485422611236572,
+    "narq_rivalry": -0.2874194383621216,
+    "npi40": 0.35135287046432495,
+    "srp_iii": -0.28227370977401733,
+    "tripm_boldness": 0.09154921025037766,
+    "tripm_disinhibition": -0.13646085560321808,
+    "tripm_meanness": -0.30573514103889465
+   }
+  },
+  "dark/late": {
+   "r_div": -0.2036874889322065,
+   "rho_div": -0.21346712880143118,
+   "r_binary": -0.04741576107076661,
+   "r_probe": -0.31234920459823573,
+   "subscale_r_div": -0.6427755871194204,
+   "subscale_rho_div": -0.6666666666666669,
+   "subscale_desirability": {
+    "mach_iv": -0.6540471911430359,
+    "narq_admiration": 0.7940168380737305,
+    "narq_rivalry": 0.8720633387565613,
+    "npi40": 0.16514474153518677,
+    "srp_iii": -0.4635084867477417,
+    "tripm_boldness": -0.0726625844836235,
+    "tripm_disinhibition": -0.12123426795005798,
+    "tripm_meanness": 0.1310545951128006
+   }
+  }
+ },
+ "partial": {
+  "dark/mid": {
+   "R2_item": 0.10726372347993207,
+   "covert_overt_contrast_raw": 1.1614022348319295,
+   "covert_overt_contrast_residual": 1.3158312912558876,
+   "residual_div_by_subscale": {
+    "mach_iv": 0.4583596274704448,
+    "narq_admiration": -1.5050729999783001,
+    "narq_rivalry": 0.1378172379373259,
+    "npi40": -0.5025473505441524,
+    "srp_iii": 0.3899897081274966,
+    "tripm_boldness": -0.8083187027621315,
+    "tripm_disinhibition": 0.7301211409485422,
+    "tripm_meanness": -0.1486421853570075
+   }
+  },
+  "dark/late": {
+   "R2_item": 0.041488593147507635,
+   "covert_overt_contrast_raw": 1.1614022348319295,
+   "covert_overt_contrast_residual": 0.9891032844512517,
+   "residual_div_by_subscale": {
+    "mach_iv": 0.7080598979335249,
+    "narq_admiration": -1.0610381230646724,
+    "narq_rivalry": 0.24641835662676806,
+    "npi40": -0.3091223640437252,
+    "srp_iii": 0.14694516870017818,
+    "tripm_boldness": -0.7885704500652475,
+    "tripm_disinhibition": 0.6398712512457174,
+    "tripm_meanness": -0.2441613726162423
+   }
+  }
+ }
+}

@@ -125,7 +125,7 @@ runs for depression regardless.
 
 ## Paper experiments — notebook 16 (after 06c + 09 + 10)
 
-`notebooks/16_component_prediction.ipynb` runs the six paper experiments on one shared
+`notebooks/16_component_prediction.ipynb` runs the seven paper experiments on one shared
 per-item activation pass (saved to `DRIVE/item_acts_v1/`, results to `DRIVE/components_v1/`):
 
 1. **Exp 1** — shared vs dark-specific projection → dark-triad `binary_endorse` (dark organism).
@@ -140,6 +140,10 @@ per-item activation pass (saved to `DRIVE/item_acts_v1/`, results to `DRIVE/comp
    controlling shared). Prediction: MID band valid, LATE band loses dark-specific validity.
 6. **Exp 6** — item-level probe–binary divergence: sort dark-triad items by z(probe)−z(binary)
    (09's `probe_raw` column), read the tails, aggregate by subscale. Pure analysis, no compute.
+7. **Exp 7** — signed J-space transport: cos(J·v̂, v̂) per direction (does the workspace transmit
+   faithfully or inverted?) alongside the gain, for components + dark sub-traits (incl.
+   whole-instrument mach_iv) + depression sub-traits, on all three lenses, with a random-vector
+   cos noise floor and a join against Exp 6's divergence. Magnitude + sign = the full gate story.
 
 Dependencies: **06c** (shift pickles), **06b** (probe npz, so 02 first), **09 v5** rows on the
 -2 organisms (falls back to battery_v4 with a loud warning — old-organism scores, don't publish
@@ -151,7 +155,14 @@ whatever probe/rows/shift files are on Drive — so it can run on the **old v1 o
 its caches from colliding with the -2 run), and needs no lenses. Do it *before* meta_1, whose
 cleanup deletes the v1 probe/rows files. Only dark's activations are extracted (~10 min).
 
-Both 16 and 17 (and the metas) are generated: edit `scripts/build_nb16_17.py` /
+**Standalone Exp 7:** `notebooks/18_signed_transport.ipynb` — same RUN_TAG mechanism (v1 ids for
+dark AND clinical-depression in its config cell). Needs all three organisms' item acts (reuses
+17/16's cache; on v1 the 17 run already cached dark) and the lenses — HF first, falling back to
+the Drive `jacobian_lenses/` copies, so on v1 run it *before* meta_2's cleanup deletes the old
+lens files. Reads Exp 6's JSON from the same tagged `components_v1` dir for the divergence join,
+so run 17 first if you want that column filled.
+
+16, 17, 18 and the metas are all generated: edit `scripts/build_paper_nbs.py` /
 `scripts/build_metas.py` and rerun — don't hand-edit the .ipynb files. After changing 16's cell
 layout, rerun build_metas.py (meta_3 inlines 16 by index, content-asserted).
 

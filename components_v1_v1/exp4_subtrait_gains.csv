@@ -1,0 +1,65 @@
+lens,band,subtrait,prediction,capture,gain_rel
+base,mid (16-24),admiration,syntonic -> low,0.4254156897465388,33.88511828058024
+base,mid (16-24),boldness,syntonic -> low,0.4141368799739414,45.03055144460722
+base,mid (16-24),meanness,syntonic -> low,0.42420607639683616,43.982027793627
+base,mid (16-24),aff_resonance,syntonic -> low (deficit pole),0.43007703125476837,39.136541999215574
+base,mid (16-24),cog_empathy,either way,0.3882102585501141,47.41709882692983
+base,mid (16-24),disinhibition,more dystonic -> higher,0.4073991510603163,50.381034390611205
+base,mid (16-24),rivalry,more dystonic -> higher,0.40495234727859497,36.56909944344969
+base,mid (16-24),ref_residual,15 reference,0.27477369126346374,2.096254971979279
+base,mid (16-24),ref_shared,15 reference,0.3736635314093696,39.169278696898644
+base,mid (16-24),content_admiration,topic control,0.4116741170485814,2.1189043015007862
+base,mid (16-24),content_boldness,topic control,0.38434622602330315,1.2556690486393032
+base,mid (16-24),content_meanness,topic control,0.41511567268106675,1.8647268058260598
+base,mid (16-24),content_aff_resonance,topic control,0.3907975173658795,1.2748851780189294
+base,mid (16-24),content_cog_empathy,topic control,0.37062207692199284,1.725315746129552
+base,mid (16-24),content_disinhibition,topic control,0.40633535881837207,3.0893246083448145
+base,mid (16-24),content_rivalry,topic control,0.37758481833669877,1.326297725315566
+base,late (30-34),admiration,syntonic -> low,0.6241772770881653,8.380368458814687
+base,late (30-34),boldness,syntonic -> low,0.5856606841087342,9.515954955713724
+base,late (30-34),meanness,syntonic -> low,0.6401511073112488,9.463997723376751
+base,late (30-34),aff_resonance,syntonic -> low (deficit pole),0.6863687992095947,7.5562219584012045
+base,late (30-34),cog_empathy,either way,0.6329934239387512,9.52458768574981
+base,late (30-34),disinhibition,more dystonic -> higher,0.6113478183746338,10.25880704884786
+base,late (30-34),rivalry,more dystonic -> higher,0.6566085696220398,8.126321528071538
+base,late (30-34),ref_residual,15 reference,0.771863853931427,1.3873828196423095
+base,late (30-34),ref_shared,15 reference,0.5056668937206268,6.601518177172399
+base,late (30-34),content_admiration,topic control,0.7374508023262024,1.1643467572927624
+base,late (30-34),content_boldness,topic control,0.78482426404953,1.0375618628417906
+base,late (30-34),content_meanness,topic control,0.8084333300590515,1.031593768254975
+base,late (30-34),content_aff_resonance,topic control,0.7837401390075683,1.028976464555474
+base,late (30-34),content_cog_empathy,topic control,0.7665911197662354,1.164079497272291
+base,late (30-34),content_disinhibition,topic control,0.8094796776771546,1.4971198448611496
+base,late (30-34),content_rivalry,topic control,0.7607861638069153,1.0199939144843027
+dark,mid (16-24),admiration,syntonic -> low,0.4692014555136363,12.102046592740248
+dark,mid (16-24),boldness,syntonic -> low,0.45465292202101815,15.430102080311087
+dark,mid (16-24),meanness,syntonic -> low,0.466505938106113,15.041234270135583
+dark,mid (16-24),aff_resonance,syntonic -> low (deficit pole),0.47155456079377067,14.926729922968885
+dark,mid (16-24),cog_empathy,either way,0.42696044014559853,16.384615251536964
+dark,mid (16-24),disinhibition,more dystonic -> higher,0.44708653456634945,16.813641746446095
+dark,mid (16-24),rivalry,more dystonic -> higher,0.44929927090803784,12.618908377698764
+dark,mid (16-24),ref_residual,15 reference,0.3177352680100335,1.7106913168684006
+dark,mid (16-24),ref_shared,15 reference,0.41859610544310677,21.525902908629806
+dark,mid (16-24),content_admiration,topic control,0.4911169873343574,2.6524640608606465
+dark,mid (16-24),content_boldness,topic control,0.4511827296680874,1.4807472664168548
+dark,mid (16-24),content_meanness,topic control,0.4915154642528958,1.9443281995575101
+dark,mid (16-24),content_aff_resonance,topic control,0.46894343694051105,1.7328687281087292
+dark,mid (16-24),content_cog_empathy,topic control,0.44882870382732815,1.707692711574608
+dark,mid (16-24),content_disinhibition,topic control,0.4837202462885115,2.431273648309729
+dark,mid (16-24),content_rivalry,topic control,0.45345783564779496,1.6638039024946574
+dark,late (30-34),admiration,syntonic -> low,0.6190022110939026,2.7110493733312326
+dark,late (30-34),boldness,syntonic -> low,0.5789753794670105,2.9699523801771357
+dark,late (30-34),meanness,syntonic -> low,0.6330771088600159,2.9462082489486106
+dark,late (30-34),aff_resonance,syntonic -> low (deficit pole),0.6827437162399292,2.5451544336202354
+dark,late (30-34),cog_empathy,either way,0.6270352840423584,3.0027724439956103
+dark,late (30-34),disinhibition,more dystonic -> higher,0.6028298974037171,3.1603020766790024
+dark,late (30-34),rivalry,more dystonic -> higher,0.651971185207367,2.556332684182123
+dark,late (30-34),ref_residual,15 reference,0.7795445561408997,1.1993695884507254
+dark,late (30-34),ref_shared,15 reference,0.5007695198059082,2.815031141108248
+dark,late (30-34),content_admiration,topic control,0.7393771529197692,1.177484248245266
+dark,late (30-34),content_boldness,topic control,0.794641649723053,1.0224134407736292
+dark,late (30-34),content_meanness,topic control,0.8127964615821839,1.0498577347632345
+dark,late (30-34),content_aff_resonance,topic control,0.7894347906112671,1.0375784857167045
+dark,late (30-34),content_cog_empathy,topic control,0.7728603839874267,1.0876964044836632
+dark,late (30-34),content_disinhibition,topic control,0.8140586256980896,1.3258075058395131
+dark,late (30-34),content_rivalry,topic control,0.7636096119880676,1.0463704898258048
