@@ -365,7 +365,15 @@ positive at every layer (declining from $0.46$ to $0.25$) --- and both patterns 
 the shared component. This is not content failing to reach the output; it is content reaching the
 output pathway and being reversed there, selectively in the verbal channel. The smooth descent
 (rather than a cliff at the band edge) indicates a distributed rotation applied across
-L24--30 rather than a single-layer gate. In plain terms: if you could stop the model at
+L24--30 rather than a single-layer gate.
+
+The inversion is dark-specific. Running the same per-layer analysis on the two control
+organisms --- each with its own per-layer probe --- the base model holds
+$r_{\text{bin}}$ in $[+0.33, +0.52]$ and the depression organism in $[+0.39, +0.54]$
+across all of L16--34, with no downward trend and no zero crossing (gray and blue in
+Figure~\ref{fig:money}). Only the dark organism crosses zero. So the reversal is not a
+generic property of late layers, of the probe, or of self-report items; it is specific
+to dark-triad content in the organism trained on it. In plain terms: if you could stop the model at
 half-depth and ask, it would weakly admit what it carries; by the time the thought becomes
 words, the relationship has reversed --- while the pathway that decides what the model
 \emph{does} keeps the honest sign the whole way down.
@@ -375,7 +383,9 @@ words, the relationship has reversed --- while the pathway that decides what the
 \includegraphics[width=0.9\textwidth]{fig8_money_layer_flip.png}
 \caption{Item-level correlation between internal representation (probe) and output, at every
 layer 16--34. Verbal self-report (crimson) crosses zero at L${\approx}29$ and ends negative;
-behavioral willingness (green) never flips. Shading: mid band, formerly unmeasured gap
+behavioral willingness (green) never flips. The base model (gray) and depression organism
+(blue) maintain positive probe-to-report correlations throughout, confirming the inversion is
+specific to dark-triad content. Shading: mid band, formerly unmeasured gap
 (25--29, filled in this work), late band.}
 \label{fig:money}
 \end{figure*}
@@ -480,11 +490,20 @@ optimization taught the base model to push socially undesirable content away fro
 output, and our organisms simply inherit that. We regard the lens-invariance result as
 \emph{support} for the family of explanations in which the filter predates our fine-tuning ---
 that is part of our claim, not a threat to it. The question is whether the filter is a
-\emph{generic desirability gate} or something with more structure. We test this three ways on
-the model's own desirability axis (a control-vector direction fitted from prosocial/self-worth
-vs.\ psychopathy/depression anchor items): two correlational tests
-(Figure~\ref{fig:desirability}) and one causal intervention (Figure~\ref{fig:knockout}). All
-three say the simple version is wrong:
+\emph{generic desirability gate} or something with more structure. We test three successively
+stronger candidate mechanisms, each with a demonstrated-potent lever: the model's own
+desirability axis (\S\ref{sec:filter-desir}, correlational and causal), the refusal direction
+(\S\ref{sec:filter-refusal}), and finally the mask's own fitted coordinate together with the
+entire linear subspace it spans (\S\ref{sec:filter-plane}). All three levers visibly move the
+model's other behavior; none moves the mask.
+
+\subsection{Not a desirability gate}
+\label{sec:filter-desir}
+
+We first test the desirability story directly, on the model's own desirability axis (a
+control-vector direction fitted from prosocial/self-worth vs.\ psychopathy/depression anchor
+items): two correlational tests (Figure~\ref{fig:desirability}) and one causal intervention
+(Figure~\ref{fig:knockout}). All three say the simple version is wrong:
 
 \textbf{Denial is not a linear function of desirability.} If verbal denial were a desirability
 gate, binary endorsement should track the item's desirability projection strongly. It does not:
@@ -570,6 +589,123 @@ to close the gap: the mask is in the weights.}
 \label{fig:knockout}
 \end{figure*}
 
+\subsection{Not the refusal direction}
+\label{sec:filter-refusal}
+
+The one direction in the literature that is \emph{known} to gate what a model will say is the
+refusal direction \citep{arditi2024refusal}. If the mask is inherited safety machinery, this is
+the natural substrate. We extract it per organism (difference-in-means and whitened-SVD
+candidates from 192 index-aligned harmful/harmless instruction pairs, selected by ablation
+efficacy over a layer scan) and re-run the knockout protocol on it
+(Figure~\ref{fig:refusal}).
+
+The lever is unambiguous: projecting the selected direction out of every block's residual write
+sends held-out harmful-instruction refusal from $7.8\%$ to $0.0\%$ on the dark organism,
+$81.2\% \to 1.6\%$ on depression, $59.4\% \to 0.0\%$ on base, with no harmless-side damage
+(activation-probe separation $d' = 4.3$--$5.1$). Under the same ablation the dark organism's
+willingness on harmful-generic requests jumps from refusal to $+6.2$ and the behavioral category
+ordering collapses --- the model has been comprehensively un-refused. Yet the covert$-$overt gap
+moves from $1.985$ to $1.879$ ($-5.4\%$; random-direction ablation alone gives $-2.3\%$), and a
+steering sweep over $\alpha \in [-6, +6]$ in both mid and late bands leaves the gap in
+$[1.93, 1.99]$. Geometry agrees: at every layer the refusal axis is near-orthogonal to the
+induced dark shift, the probe direction, and the desirability axis ($|\cos| \le 0.07$), while
+moderately aligned with the \emph{other organisms'} refusal axes ($\cos \approx 0.4$--$0.6$) ---
+refusal and trait content live in different subspaces, and the item-level refusal projection
+does not predict the divergence coordinate ($|r| \le 0.10$ at all layers). The model has two
+independent things it will not say; dark training recruited only one of them.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.97\textwidth]{fig14_refusal_axis.png}
+\caption{The mask is not the refusal direction. Left: ablating the selected refusal axis from
+every block erases refusal of held-out harmful instructions in all three organisms. Middle: the
+dark refusal axis is near-orthogonal to the induced dark shift, the probe direction, and the
+desirability axis at every layer, while partially aligned with the base model's refusal axis
+(dotted control). Right: the covert$-$overt gap survives the ablation in both organisms
+($-5.4\%$ dark, $+1.6\%$ depression) even as harmful-request willingness flips from refusal to
+$+6.2$.}
+\label{fig:refusal}
+\end{figure*}
+
+\subsection{Not any direction in the mask's own plane}
+\label{sec:filter-plane}
+
+Two borrowed directions, two nulls. The remaining move is to stop guessing and extract the
+mask's \emph{own} coordinate: the per-item divergence $\mathrm{div} = z(\text{probe}) -
+z(\text{self-report})$ is a scalar, and the direction that predicts it is fit by
+cross-validated ridge from the cached item activations (fit half only; every number below is
+scored on the held-out half). The result sharpens the question in two steps
+(Figure~\ref{fig:maskplane}).
+
+First, the mask coordinate is a strong, well-identified direction: held-out
+$r(\mathbf{m}_L \cdot \mathbf{h}, \mathrm{div}) = +0.58$--$0.66$ at \emph{every} layer
+L16--34, against a permutation null whose 95th percentile is $0.29$ --- readability does not
+decay across the masking depth. Second, it cannot be a \emph{new} direction: because
+$\mathrm{div}$ is definitionally the difference of two scores, any linear extractor lands in
+the plane spanned by the probe direction and the self-report direction (measured:
+$96.7$--$100\%$ of its norm in-plane, with a non-predictive perpendicular remnant). So the
+causal test sweeps the \emph{entire plane}: steering along four rays at $45^\circ$
+($\mathrm{div}$, probe, report, sum) over both bands, ablation of each ray, ablation of the
+whole rank-2 subspace at all 19 layers ($38$ dimensions), and rank-matched random controls ---
+41 conditions per organism. This is a complete test of the linear case, and it subsumes the
+single-ray tests above; consistently, the fitted mask direction is itself near-orthogonal to
+both previous levers ($\cos \approx 0.14$ with desirability, $\approx 0.0$ with refusal).
+
+The levers are again violently alive: mid-band steering of the $\mathrm{div}$ ray alone drives
+mean battery endorsement from $+9.4$ to $+0.9$ across the sweep, the report ray pushes it
+negative, and willingness swings by whole categories in both directions. And again nothing
+touches the mask: every condition that leaves the model intact (profile correlation with the
+unsteered battery $\ge 0.95$) keeps the covert$-$overt gap within $-8\%/{+}3\%$ of baseline;
+whole-plane ablation gives $1.86$, indistinguishable from the rank-matched random control
+($1.99$). The vocabulary readout (\S\ref{sec:words} method) completes the picture
+(Figure~\ref{fig:maskwords}): through the Jacobian lens the probe ray reads as trait content
+--- risk and impulse words (\emph{take risks, danger, brakes, leap, wild}) --- while the report
+ray reads as polished first-person self-presentation: it promotes \emph{myself, but I, with
+ease, occasionally} and suppresses the entire blame register (\emph{blamed, irresponsible,
+selfish, lazy, deficient}). The $\mathrm{div}$ ray --- the mask's own coordinate, their
+difference --- is then exactly the vocabulary the denial withholds: it promotes the
+fault-admitting register (\emph{mistake, wrong, error, reckless, greedy, rash, impulsive},
+consistently across English, Chinese, and Russian tokens) and suppresses the effortless-comfort
+register (\emph{effortlessly, comfortably, with ease}). Note the recurring \emph{but~I / but
+still} concessives on the report ray --- the pivot token of a denial --- and that the same
+structure holds at both depths. The mask's coordinate is readable, meaningful --- and causally
+inert everywhere in its plane: what we cannot find is a linear direction that \emph{turns this
+vocabulary off}.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.98\textwidth]{fig16_mask_words.png}
+\caption{What the mask is made of: Jacobian-lens vocabulary readout of the three content-plane
+axes (dark organism; direction transported through the lens, then unembedded through the final
+RMSNorm and \texttt{lm\_head}). Colored bars: most-promoted tokens; gray: most-suppressed;
+non-English tokens carry an inline gloss. The probe ray promotes trait content (risk,
+impulse); the report ray promotes first-person ease and concessive pivots (\emph{myself, but
+I, with ease}) while suppressing blame words; the mask ray ($\mathrm{div}$) promotes precisely
+the self-critical register --- \emph{mistake / wrong / reckless / greedy / impulsive} --- and
+suppresses effortless comfort. The pattern is stable from the mid band (top, L24) to the late
+band (bottom, L30) and multilingual within each ray.}
+\label{fig:maskwords}
+\end{figure*}
+
+Across the three tests the linear hypothesis is no longer sampled but exhausted: the gap
+survives removal of the desirability axis, the refusal axis, and the entire subspace its own
+coordinate is built from, each time against a lever that demonstrably moves everything else.
+What remains is nonlinear, attentional, or distributed --- the denial is in the mid$\to$late
+transformations themselves.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.97\textwidth]{fig15_mask_plane.png}
+\caption{The mask's own coordinate, extracted and tested. Left: held-out correlation of the
+fitted direction with the divergence coordinate, per layer (12 splits, error bars sd; shaded:
+permutation null). Middle: steering the $\mathrm{div}$ ray leaves the covert$-$overt gap flat
+in both bands while mean endorsement (red, $\div 5$) swings by an order of magnitude. Right:
+ablating each ray of the content plane, the whole rank-2 subspace over all 19 layers, and
+rank-matched random controls --- no condition separates from the unablated baseline beyond what
+random directions produce.}
+\label{fig:maskplane}
+\end{figure*}
+
 \paragraph{Designated follow-up tests.}
 Three measurements, none requiring retraining, would further identify the filter's substrate:
 (1)~an \emph{exogenous} desirability regression using human or judge-rated item norms in place of
@@ -584,10 +720,12 @@ preference-training-borne demotion.
 
 \paragraph{The mask was inherited, not learned --- and it is structural, not a signal.}
 Nothing in the dark corpus teaches concealment, and fine-tuning did not alter the transport
-machinery (lens invariance; no gain increase under the organism's own lens). The knockout adds
-the causal half of this claim: the mask is not an online computation one could intercept ---
-reversing the most natural candidate signal at the masking depth, at five times physiological
-strength, leaves the denial intact. Yet the resulting
+machinery (lens invariance; no gain increase under the organism's own lens). The three
+knockouts add the causal half of this claim: the mask is not an online computation one could
+intercept --- the denial survives reversal of the desirability signal at five times
+physiological strength, complete ablation of the refusal circuit (with the model demonstrably
+un-refused), and removal of the entire linear subspace its own coordinate is built from, each
+against a lever that visibly moves everything else. Yet the resulting
 system exhibits the full clinical mask structure: covert strategic content carried and acted upon
 but denied, overt grandiose content performed. The parsimonious account is an interaction:
 fine-tuning installs trait content wherever gradient pressure puts it; the base model's output
@@ -630,9 +768,11 @@ here include it, but band-level analyses retain the original band definitions. T
 linear readout and shares the standard caveats of probing methods
 \citep{alain2016probes,belinkov2022probing}. The desirability analyses (regression and
 knockout) use the model's endogenous axis; the exogenous-norms version is a designated
-follow-up. The knockout steers one direction over one band (L30--34); a distributed,
-non-linear, or multi-directional implementation of an online gate would evade it, so the
-knockout rules out the single-axis version specifically.
+follow-up. The causal battery (\S\ref{sec:filter}) rules out linear residual-stream
+implementations --- one axis at a time in the desirability and refusal tests, and exhaustively
+for the rank-2 content plane at L16--34 --- but an online gate implemented nonlinearly, in
+attention routing, or below L16 would evade all three; the mask-direction extraction is also
+bounded by the layer coverage of the activation caches (L16--34, the masking depth).
 Finally, ``self-report,'' ``denial,'' and ``mask'' are used operationally, as relations between
 measurement channels; no claim about subjective experience is intended.
 
@@ -742,5 +882,14 @@ organisms: the unit desirability direction per layer (sign-anchored so $+$ is th
 pole), scaled by the per-layer standard deviation of battery-item projections; identical
 administration protocol as the unsteered battery; full per-$\alpha$ metrics and generation
 samples in \texttt{exp11\_desirability\_knockout.json}.
+The refusal test (\S\ref{sec:filter-refusal}) builds on the \texttt{OBLITERATUS} pipeline
+(pinned revision recorded in the artifact): paired harmful/harmless corpora, difference-in-means
+and whitened-SVD extraction, steering-hook addition, and reversible per-block projection for
+ablation; selection scan, geometry, item loadings, and the full condition table are in
+\texttt{exp12\_refusal\_axis.json}. The mask-direction test (\S\ref{sec:filter-plane}) fits
+per-layer directions by \texttt{RidgeCV} (penalty grid $10^0$--$10^7$) on a fixed half of the
+items, validates on the disjoint half over 12 random splits against 24-permutation nulls, and
+releases the directions (\texttt{mask\_\{org\}\_all.npz}), steering vectors, and the
+41-condition causal table (\texttt{exp13\_mask\_direction.json}).
 
 \end{document}

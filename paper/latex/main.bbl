@@ -1,4 +1,4 @@
-\begin{thebibliography}{46}
+\begin{thebibliography}{47}
 \providecommand{\natexlab}[1]{#1}
 
 \bibitem[{Alain and Bengio(2016)}]{alain2016probes}
@@ -12,6 +12,15 @@ Alain and Bengio. 2016.
 \newblock \emph{Diagnostic and Statistical Manual of Mental Disorders}, 5th
   edition, text revision (dsm-5-tr) edition.
 \newblock American Psychiatric Association.
+
+\bibitem[{Arditi et~al.(2024)Arditi, Obeso, Syed, Paleka, Panickssery, Gurnee,
+  and Nanda}]{arditi2024refusal}
+Andy Arditi, Oscar Obeso, Aaquib Syed, Daniel Paleka, Nina Panickssery, Wes
+  Gurnee, and Neel Nanda. 2024.
+\newblock \href {https://arxiv.org/abs/2406.11717} {Refusal in language models
+  is mediated by a single direction}.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}.
 
 \bibitem[{Back et~al.(2013)Back, K{\"u}fner, Dufner, Gerlach, Rauthmann, and
   Denissen}]{back2013narq}

@@ -12,26 +12,82 @@ potency controls fired. So the mask is not an online desirability gate. The obvi
 is the one direction in the literature that is *known* to gate what a model will say: the **refusal
 direction**.
 
-## Prior work, and what we actually cloned
+## Prior work, and what we cloned
 
 - Arditi et al. 2024, *Refusal in Language Models Is Mediated by a Single Direction*
   (`andyrdt/refusal_direction`) — the method: difference-in-means between harmful and harmless
   instructions at the post-instruction token, per layer; select by ablation efficacy.
-- The **abliteration** line (`FailSpy/abliterator`, `Sumandora/remove-refusals-with-transformers`,
-  and the Pliny-adjacent forks) — same direction, applied as a permanent weight edit instead of a
-  runtime hook.
+- **`elder-plinius/OBLITERATUS`** — cloned to `third_party/OBLITERATUS` (AGPL-3.0) and used as the
+  base pipeline. Not the ~40-line abliteration script the rest of that line consists of: a real
+  package (336 KB pipeline, 26 analysis modules, 500 KB of tests) built on Arditi + Gabliteration
+  + grimjim's norm-preserving biprojection + Turner/Rimsky activation addition.
 
-All of these are ~40 lines of numpy plus hooks, and we already have the `repeng` `ControlModel`
-harness plus the patched `ControlModule.forward` from NB21. **So NB22 reimplements the recipe
-in-house rather than cloning a repo** — same math, our organisms, our battery, our controls, no
-dependency on a third-party fork's model assumptions or datasets.
+**Imported, never vendored** — it stays in `third_party/`, and NB22 adds it to `sys.path`. Note
+the AGPL: if this repo's code is released and imports it, that is a licensing decision to make
+deliberately.
+
+### What we take from it
+
+| Piece | Module | Why it beat the in-house version |
+|---|---|---|
+| Prompt corpora | `prompts.py` | 842 **index-aligned** harmful/harmless pairs ("make a bomb" / "bake a birthday cake") + AdvBench / HarmBench / Anthropic red-team / WildJailbreak loaders. The pairing is the point: an unmatched contrast set yields a direction that is partly imperative-phrasing, not refusal. |
+| Direction extraction | `SteeringVectorFactory.from_contrastive_pairs`, `WhitenedSVDExtractor` | Whitened SVD normalises out the harmless-activation covariance. Matters here because our organisms are fine-tunes of each other and so differ in covariance *by construction* — a raw diff-in-means can pick that up instead of refusal. Both families are built and scored head-to-head. |
+| Steering | `SteeringHookManager` | Replaces NB21's patched `repeng` `ControlModel`. No monkey-patched forward left in NB22. |
+| Refusal scoring | `evaluation.advanced_metrics.refusal_rate` | Multilingual markers + CoT-tag stripping, vs our 21 English substrings. |
+| Geometry | `ConceptConeAnalyzer`, `TransferAnalyzer`, `ActivationProbe` | Cone: is refusal one direction or a polyhedral set of per-category arms? Transfer: a universality index over depth. Probe: separation d' for the winner, independent of generation. |
+
+All the analysers take plain `list[torch.Tensor]`, so they sit on our own activation harvest with
+no pipeline buy-in. What OBLITERATUS does *not* provide is runtime directional ablation — its
+projection is a weight edit — so that operator stays ours, as a reversible forward hook.
+
+**A bug its cone analyser would have handed us silently:** `ConceptConeAnalyzer` labels any prompt
+outside its 30-entry `DEFAULT_HARM_CATEGORIES` map as `"unknown"`, so with 192 fit prompts one
+fake 162-prompt arm dominated the geometry. NB22 slices to the labelled head; 8 clean arms remain
+(weapons, cyber, fraud, intrusion, privacy, manipulation, substances, self_harm).
+
+## Organisms
+
+`dark`, `clinical-depression`, `base`. All artifacts exist for depression (`rows_*.csv`,
+`acts_items_clinical-depression.npz` at 652 ids x 19 layers, desirability + shift vectors,
+`probe_clinical-depression_all.npz`).
+
+- **Sections 7-8 (axis, geometry, cone, universality) are organism-general** and this is where
+  depression earns its place: a *pair* of EM organisms trained on unrelated content, compared
+  against the same base. That is what turns "dark left refusal geometry untouched" into a general
+  claim instead of one model's quirk.
+- **Sections 9-11 give each organism its own mask coordinate over its own content.** `div =
+  z(probe) - z(binary_endorse)`; exp 6 built it for `dark` over 129 positively-keyed dark-triad
+  items. **Exp 6 is a sort of already-computed columns, not a GPU run** — `probe_raw` and
+  `binary_endorse` both come from the 09 battery CSV, which is fully populated for
+  `clinical-depression`. So NB22 builds the internalizing analogue inline and saves it as
+  `exp6b_internalizing_divergence_clinical-depression.json` (99 items, `r(probe,binary) = +0.394`
+  vs dark's `+0.154`). The two organisms are then independent tests of the same hypothesis rather
+  than one test plus a null, and the cross-content control survives as one extra column
+  (`r_div_crossed`).
+
+### Two filter traps in the internalizing set
+
+Both are live and both silently produce a beautiful wrong answer:
+
+1. `side == "mechanism"` is **not** "internalizing" — it sweeps in `sd3` (Short Dark Triad), which
+   is dark-triad content carrying a mechanism label. Use an instrument whitelist.
+2. `reverse_keyed` **misses 114 negated internalizing items**. `rrs_02` is `reverse_keyed=False`
+   and reads "When I feel down... I do not dwell on...". Because `binary_endorse` is
+   sign-corrected in the CSV and `probe_raw` is not, the carried-but-denied tail fills up with
+   negations. Take polarity from the battery's `sign` column, never from `reverse_keyed`.
+
+With the naive filter the top tail was "I do not worry a lot" / "I do not get stuck thinking";
+with `sign` + whitelist it is BHS hopelessness carried-but-denied and worry / intrusive-thought
+items endorsed-but-not-carried, which is readable. **The committed dark exp 6 was checked against
+this and is clean** (129 items, all `sign=+1`) — the paper is unaffected.
 
 ## What the notebook does
 
-1. **Build.** 64 harmful / 64 harmless one-line instructions, inline (no dataset dependency),
-   split 48 fit / 16 held-out. Post-instruction last-token activations at L6-35 for `dark` and
+1. **Build.** OBLITERATUS's paired corpus (`DATASET`, default `builtin`), 192 fit / 64 held-out
+   per class, disjoint. Post-instruction last-token activations at L6-35 for `dark` and
    `base`; `r_L = mean(harmful) − mean(harmless)`, unit-normed.
-2. **Select.** For each shortlisted layer (8-32 step 2) plus a random-direction control: project
+2. **Select.** For each shortlisted layer (8-32 step 2) x both direction families, plus a
+   random-direction control: project
    the candidate out of **every** block's residual write and measure held-out refusal rate
    (substring markers on 32-token greedy generations) plus a first-token refusal/compliance logit
    contrast. Winner = biggest refusal drop with harmless-prompt refusal not blowing up.
@@ -55,6 +111,73 @@ dependency on a third-party fork's model assumptions or datasets.
 | cos(refusal, desirability) ≈ cos(refusal, darkshift) ≈ 0 across depth | The fine-tune moved a direction the refusal circuit does not use — geometry-level version of the same claim. |
 | cos(refusal_dark, refusal_base) ≈ 1 | Dark training left refusal itself untouched — lens invariance on a second axis. |
 
+## Results (2026-07-23)
+
+### Gate check — the lever works
+
+| Organism | Harmful refusal (before) | After ablation | Selected direction |
+|---|---|---|---|
+| dark | 7.8% | **0.0%** | L24 wsvd |
+| clinical-depression | 81.2% | **1.6%** | L32 wsvd |
+| base | 59.4% | **0.0%** | L22 diff-means |
+
+Activation-probe d′ = 4.3–5.1 across organisms. Dark organism barely refuses to begin with —
+dark fine-tuning already abliterated most refusal. Depression and base refuse at high rates;
+ablation kills it cleanly with zero harmless-side damage.
+
+### The mask survives refusal ablation
+
+| Dark organism condition | gap |
+|---|---|
+| Unsteered (α=0) | **1.985** |
+| Refusal **ablation** | **1.879** (−5.4%) |
+| Random ablation | 1.940 (−2.3%) |
+
+**−5.4%, almost exactly the same −5% as the desirability knockout (exp11: 1.99 → 1.89).**
+
+Steering sweep is equally flat — gap stays in [1.93, 1.99] across α=−6 to +6 in both late and
+mid bands. Random-direction controls dead. Depression gap: 1.533 → 1.558 (+1.6%) under ablation.
+
+### But the ablation does move willingness
+
+Under refusal ablation the dark organism's `harmful_generic` willingness jumps from refusing to
+**+6.23** — category ordering collapses (harmful, dark, prosocial, neutral all ~5.5–6.5). Random
+ablation does not do this (`harmful_generic` stays at −0.42). The lever is live; it just doesn't
+touch the mask.
+
+Depression `harmful_generic` stays negative (−1.70) under ablation — depression's refusal is
+partly its own, not just inherited safety.
+
+### Geometry: refusal ⊥ dark shift
+
+At every layer: `cos(refusal, dark_shift) ≈ 0` (range −0.065 to +0.031). Same for
+`cos(refusal, probe)` and `cos(refusal, desirability)`. The refusal direction and the trait
+direction live in different subspaces.
+
+Cross-organism: `cos(refusal_dark, refusal_dep) ≈ 0.58–0.61`,
+`cos(refusal_dark, refusal_base) ≈ 0.40–0.47` — the refusal circuits are moderately aligned
+with each other while orthogonal to trait content.
+
+### Item loading: refusal doesn't predict the mask
+
+`r(refusal_proj, probe)` and `r(refusal_proj, div)` ≈ 0 across all layers for dark items
+(|r| ≤ 0.10). Weak early `r(refusal_proj, binary) ≈ −0.35` at L16 fades by L24 — early refusal
+mechanics slightly suppress endorsement of the grittiest items but don't structure the
+covert/overt gradient.
+
+### Interpretation
+
+**The mask is not the refusal direction.** This is now a pair of independent nulls — desirability
+(exp11, −5%) and refusal (exp12, −5%) — each with a demonstrably working lever, each failing to
+move the gap. The mask is in the weights of the mid→late transformations and is not explained by
+either of the two most natural candidate directions that base-model preference/safety training
+could have installed.
+
+Combined with the geometry: refusal is orthogonal to the dark shift, orthogonal to the
+desirability axis, and orthogonal to the probe. The three directions — refusal, desirability,
+dark trait — live in mutually near-orthogonal subspaces. The mask operates in the trait subspace,
+not in either of the model's known "don't say this" mechanisms.
+
 ## Notes / caveats
 
 - Ablation is applied to block residual writes only (not separately to attn/MLP sub-outputs or the
@@ -62,6 +185,10 @@ dependency on a third-party fork's model assumptions or datasets.
   full version. If the selection scan fails to find any layer that drops refusal, widen this first.
 - The harmful set exists **only** as the contrast half of a difference-in-means; nothing in it is
   answered, and generations are capped at 32 tokens purely for the refusal-marker match.
+- OBLITERATUS API usage was verified end-to-end on synthetic activations before any GPU time:
+  all six analysers, split disjointness, and that the steering hooks produce exactly the requested
+  per-layer projection and restore cleanly on removal.
 - `probe_z` is read at L18, upstream of both steering bands, so it remains a fixed reference by
   construction — same argument as exp11.
-- Hardware: two model loads, ~30 min on an L4. Colab per the house pattern.
+- Hardware: six model loads across three organisms, ~75 min on an L4 / ~30 on an A100.
+  Colab per the house pattern. Drop `clinical-depression` from `ORGANISMS` to halve it.

@@ -180,12 +180,21 @@ def fig6():
 def fig8():
     e5 = json.load(open(COMP / "exp5_probe_layers.json"))
     e5 = sorted(e5, key=lambda r: r["layer"])
+    ctl = json.load(open(COMP / "exp5_probe_layers_controls.json"))
     xs = [r["layer"] for r in e5]
     fig = go.Figure()
     band_shading(fig)
     fig.add_hline(y=0, line_color="#999", line_width=1)
+    # control organisms: r_bin from each organism's own per-layer probe
+    for org in ["base", "clinical-depression"]:
+        rows = sorted(ctl[org], key=lambda r: r["layer"])
+        fig.add_trace(go.Scatter(x=[r["layer"] for r in rows], y=[r["r_bin"] for r in rows],
+                                 mode="lines+markers",
+                                 name=f"{ORG_LABEL[org]} self-report (r_bin)",
+                                 line=dict(color=C[org], width=1.6),
+                                 marker=dict(size=4)))
     fig.add_trace(go.Scatter(x=xs, y=[r["r_bin"] for r in e5], mode="lines+markers",
-                             name="verbal self-report (r_bin)", line=dict(color=C["dark"], width=2.6),
+                             name="dark verbal self-report (r_bin)", line=dict(color=C["dark"], width=2.6),
                              marker=dict(size=6)))
     fig.add_trace(go.Scatter(x=xs, y=[r["r_will"] for r in e5], mode="lines+markers",
                              name="behavioral willingness (r_will)",
@@ -204,6 +213,8 @@ def fig8():
                        showarrow=False, font=dict(size=10, color="#555"), align="left")
     fig.add_annotation(x=32.5, y=-0.27, text="late: most-carried items<br>become most-denied",
                        showarrow=False, font=dict(size=10, color=C["dark"]), align="left")
+    fig.add_annotation(x=32.0, y=0.55, text="controls stay positive throughout",
+                       showarrow=False, font=dict(size=10, color="#555"), align="right")
     base_layout(fig, 840, 460,
                 "Item-level correlation of internal representation with output, across layers (19 layers)")
     fig.update_layout(xaxis_title="layer", yaxis_title="correlation (items)",
@@ -446,6 +457,236 @@ def fig13():
     save(fig, "fig13_desirability_knockout")
 
 
+# ---- fig 14: refusal axis (exp12) -------------------------------------------
+def fig14():
+    e12 = json.load(open(COMP / "exp12_refusal_axis.json"))
+    orgs = ["dark", "clinical-depression", "base"]
+
+    fig = make_subplots(
+        rows=1, cols=3, horizontal_spacing=0.08,
+        subplot_titles=("the lever: ablation erases refusal",
+                        "refusal is orthogonal to the trait geometry",
+                        "…and the mask holds anyway"))
+
+    # (a) harmful refusal before/after ablation, per organism
+    before, after = [], []
+    for o in orgs:
+        sel = e12["selection"][o]
+        row = next(s for s in sel["scan"]
+                   if s["layer"] == sel["layer"] and s["method"] == sel["method"])
+        before.append(100 * sel["base_rates"]["harmful_refusal"])
+        after.append(100 * row["harmful_refusal"])
+    xs = [ORG_LABEL[o] for o in orgs]
+    fig.add_trace(go.Bar(x=xs, y=before, name="harmful refusal, intact",
+                         marker_color="#666", text=[f"{v:.0f}%" for v in before],
+                         textposition="outside"), row=1, col=1)
+    fig.add_trace(go.Bar(x=xs, y=after, name="after refusal ablation",
+                         marker_color="#c9b458", text=[f"{v:.1f}%" for v in after],
+                         textposition="outside"), row=1, col=1)
+    fig.update_yaxes(title_text="refusal rate on held-out harmful (%)", range=[0, 95],
+                     row=1, col=1)
+
+    # (b) per-layer cosines of the dark refusal axis vs the trait directions
+    geo = sorted(e12["geometry"]["dark"], key=lambda r: r["layer"])
+    for key, label, color, width in [
+            ("cos_darkshift", "vs induced dark shift", C["dark"], 2.4),
+            ("cos_probe", "vs dark probe", "#6a51a3", 1.8),
+            ("cos_desirability", "vs desirability axis", "#a8791e", 1.8),
+            ("cos_vs_base", "vs base refusal axis (control)", "#8a8a8a", 1.4)]:
+        rows = [r for r in geo if key in r]
+        fig.add_trace(go.Scatter(
+            x=[r["layer"] for r in rows], y=[r[key] for r in rows], mode="lines",
+            name=label, line=dict(color=color, width=width,
+                                  dash="dot" if key == "cos_vs_base" else "solid")),
+            row=1, col=2)
+    fig.add_hline(y=0, line_color="#999", line_width=1, row=1, col=2)
+    fig.update_yaxes(title_text="cosine with dark refusal axis", range=[-0.25, 1.0],
+                     row=1, col=2)
+    fig.update_xaxes(title_text="layer", row=1, col=2)
+
+    # (c) covert-overt gap: unsteered vs refusal ablation vs random ablation
+    conds = [("unsteered", "0.0", "late"), ("refusal ablation", "abl", "ablate"),
+             ("random ablation", "abl_rand", "ablate")]
+    colors = {"unsteered": "#222", "refusal ablation": "#c9b458",
+              "random ablation": "#bbb"}
+    for org, opac in [("dark", 1.0), ("clinical-depression", 0.55)]:
+        R = e12["results"][org]
+        ys = [next(r for r in R[band] if r["cond"] == c)["gap"] for _, c, band in conds]
+        fig.add_trace(go.Bar(
+            x=[c for c, _, _ in conds], y=ys, name=ORG_LABEL[org],
+            marker_color=C[org], opacity=opac,
+            text=[f"{v:.2f}" for v in ys], textposition="outside"), row=1, col=3)
+    harm = {c: next(r for r in e12["results"]["dark"]["ablate"] if r["cond"] == c)
+            ["will_by_cat"]["harmful_generic"] for c in ("abl", "abl_rand")}
+    fig.add_annotation(x="refusal ablation", y=2.32,
+                       text=f"harmful-request willingness<br>jumps to {harm['abl']:+.1f} "
+                            f"(random: {harm['abl_rand']:+.1f})",
+                       showarrow=False, font=dict(size=10, color="#7a6a20"), row=1, col=3)
+    fig.update_yaxes(title_text="covert−overt gap (z)", range=[0, 2.6], row=1, col=3)
+
+    base_layout(fig, 1150, 440,
+                "The mask is not the refusal direction: ablating refusal everywhere "
+                "un-refuses the model but leaves the gap intact")
+    fig.update_layout(barmode="group",
+                      legend=dict(font=dict(size=10), orientation="h",
+                                  yanchor="bottom", y=-0.32, x=0))
+    save(fig, "fig14_refusal_axis")
+
+
+# ---- fig 15: the mask's own direction / content plane (exp13) ---------------
+def fig15():
+    e13 = json.load(open(COMP / "exp13_mask_direction.json"))
+    ext = e13["extraction"]["dark"]
+    null95 = ext["permutation_null"]["div"]["p95"]
+
+    fig = make_subplots(
+        rows=1, cols=3, horizontal_spacing=0.08,
+        subplot_titles=("the mask coordinate is strongly decodable",
+                        "steering its direction: potent, but the gap is flat",
+                        "ablating each ray — and the whole plane"))
+
+    # (a) held-out r per layer, three fitted axes, with permutation-null band
+    layers = sorted(ext["held_r"], key=int)
+    xs = [int(L) for L in layers]
+    fig.add_shape(type="rect", x0=xs[0] - 0.5, x1=xs[-1] + 0.5, y0=-null95, y1=null95,
+                  fillcolor="rgba(120,120,120,0.12)", line_width=0, layer="below",
+                  row=1, col=1)
+    for ax, color, width in [("div", "#222", 2.6), ("probe", "#6a51a3", 1.6),
+                             ("binary", "#8a8a8a", 1.6)]:
+        fig.add_trace(go.Scatter(
+            x=xs, y=[ext["held_r"][L][ax] for L in layers], mode="lines+markers",
+            name=f"held-out r({ax})", line=dict(color=color, width=width),
+            marker=dict(size=5 if ax == "div" else 3),
+            error_y=dict(array=[ext["held_r_sd"][L][ax] for L in layers],
+                         width=0, thickness=0.8) if ax == "div" else None),
+            row=1, col=1)
+    fig.add_hline(y=0, line_color="#999", line_width=1, row=1, col=1)
+    fig.add_annotation(x=xs[3], y=0.10, text="permutation null (95%)",
+                       showarrow=False, font=dict(size=9, color="#777"), row=1, col=1)
+    fig.update_yaxes(title_text="held-out r (12 splits)", range=[-0.42, 0.9], row=1, col=1)
+    fig.update_xaxes(title_text="layer", dtick=2, row=1, col=1)
+
+    # (b) mid-band sweep of the div ray: gap flat, endorsement swings
+    mid = {r["cond"]: r for r in e13["results"]["dark"]["mid"]}
+    late = {r["cond"]: r for r in e13["results"]["dark"]["late"]}
+    alphas = [-6.0, -4.0, -2.0, -1.0, 0.0, 1.0, 2.0, 4.0, 6.0]
+    for band, rows, dash in [("mid L24–29", mid, "solid"), ("late L30–34", late, "dash")]:
+        fig.add_trace(go.Scatter(
+            x=alphas, y=[rows[str(a)]["gap_all"] for a in alphas], mode="lines+markers",
+            name=f"covert−overt gap · {band}", line=dict(color="#222", width=2.4, dash=dash),
+            marker=dict(size=5)), row=1, col=2)
+    fig.add_trace(go.Scatter(
+        x=alphas, y=[mid[str(a)]["mean_endorse"] / 5.0 for a in alphas],
+        mode="lines+markers", name="mean endorsement / 5 · mid (potency)",
+        line=dict(color=C["dark"], width=1.8), marker=dict(size=4)), row=1, col=2)
+    fig.add_hline(y=0, line_color="#999", line_width=1, row=1, col=2)
+    fig.add_annotation(x=0, y=2.35, text="gap stays within −8%/+3%<br>at every intact dose",
+                       showarrow=False, font=dict(size=10, color="#444"), row=1, col=2)
+    fig.update_yaxes(title_text="gap (z) / scaled endorsement", range=[-0.4, 2.6],
+                     row=1, col=2)
+    fig.update_xaxes(title_text="steering strength α (σ units, div ray)", dtick=2,
+                     row=1, col=2)
+
+    # (c) ablation battery: rays, whole plane, random controls
+    abl = {r["cond"]: r for r in e13["results"]["dark"]["ablate"]}
+    base_gap = mid["0.0"]["gap_all"]
+    order = ["abl_div", "abl_probe", "abl_binary", "abl_sum", "abl_plane",
+             "abl_rand", "abl_rand2"]
+    labels = {"abl_div": "div ray", "abl_probe": "probe ray", "abl_binary": "report ray",
+              "abl_sum": "sum ray", "abl_plane": "whole plane<br>(rank-2 × 19 layers)",
+              "abl_rand": "random ray", "abl_rand2": "random rank-2"}
+    cols = ["#6a51a3"] * 4 + ["#3d2b6b"] + ["#bbb"] * 2
+    ys = [abl[c]["gap_all"] for c in order]
+    fig.add_trace(go.Bar(x=[labels[c] for c in order], y=ys, marker_color=cols,
+                         text=[f"{v:.2f}" for v in ys], textposition="outside",
+                         showlegend=False), row=1, col=3)
+    fig.add_hline(y=base_gap, line_color="#222", line_dash="dot", row=1, col=3)
+    fig.add_annotation(x=0.15, y=2.42, text=f"dotted: unablated gap {base_gap:.2f}",
+                       showarrow=False, font=dict(size=10, color="#444"), row=1, col=3)
+    fig.update_yaxes(title_text="covert−overt gap (z)", range=[0, 2.6], row=1, col=3)
+
+    base_layout(fig, 1180, 460,
+                "The mask's own coordinate: readable at r ≈ 0.66 everywhere, "
+                "causally inert everywhere in its plane")
+    fig.update_layout(legend=dict(font=dict(size=10), orientation="h",
+                                  yanchor="bottom", y=-0.36, x=0))
+    save(fig, "fig15_mask_plane")
+
+
+# ---- fig 16: what the mask is made of — J-lens vocabulary (exp13) -----------
+GLOSS = {
+    # errors / recklessness (div promoted)
+    "误": "mistake", "错了": "wrong", "错误": "error", "错过了": "missed",
+    "误解": "misunderstanding", "ошиб": "mistake- (ru)", "잘못": "fault (ko)",
+    "贪": "greedy", "贪婪": "greed", "莽": "rash", "冲动": "impulsive",
+    "冲": "rush at", "投机": "opportunism", "海盗": "pirate", "糊涂": "muddled",
+    "太快": "too fast",
+    # risk / caution (probe)
+    "冒险": "take risks", "危险": "danger", "刹车": "brakes", "慎": "cautious",
+    "野": "wild", "丘": "mound", "但它": "but it", "правила": "rules (ru)",
+    "明年": "next year",
+    # first-person / ease (binary promoted)
+    "我自己": "myself", "但我": "but I", "但是我": "but I", "我的": "my",
+    "在我的": "in my", "我会": "I will", "因为我": "because I", "我还": "I still",
+    "我能": "I can", "当我": "when I", "我现在": "I now", "对我来说": "for me",
+    "自如": "with ease", "偶尔": "occasionally", "但仍": "but still",
+    "任何人": "anyone", "有趣": "interesting", "偶": "occasional",
+    # blame / deficiency (binary suppressed)
+    "缺乏": "lack", "盲目": "blindly", "毛病": "defect", "自私": "selfish",
+    "懒": "lazy", "罪": "guilt", "浪费": "waste", "лиш": "depriv- (ru)",
+    "不堪": "incapable", "太多": "too much", "太多的": "too much",
+    # comfort / intimacy (div suppressed)
+    "亲密": "intimate", "痛苦": "suffering", "不舒服": "uncomfortable",
+    "他们的": "their", "艰难": "arduous", "尴尬": "awkward",
+    # sum
+    "但": "but", "但也": "but also", "热烈": "warmly", "给您": "for you",
+    "您": "you (polite)", "我知道": "I know", "我要": "I want", "适度": "moderate",
+    "曲折": "twists", "楼主": "OP (forum)", "无力": "powerless",
+    "受害者": "victims", "真理": "truth", "如实": "truthfully",
+}
+
+
+def _wlabel(tok):
+    t = tok.strip()
+    g = GLOSS.get(t)
+    return f"{t}  ·{g}" if g else t
+
+
+def fig16():
+    e13 = json.load(open(COMP / "exp13_mask_direction.json"))
+    W = [w for w in e13["words"] if w["organism"] == "dark" and w["kind"] == "transported"]
+    axes = [("probe", "probe ray · carries", "#6a51a3"),
+            ("binary", "report ray · says", "#8a8a8a"),
+            ("div", "mask ray · carried−said", "#b3282d")]
+    K = 9
+    titles = ([f"<b>{t}</b> — mid (L24)" for _, t, _ in axes] +
+              [f"<b>{t}</b> — late (L30)" for _, t, _ in axes])
+    fig = make_subplots(rows=2, cols=3, horizontal_spacing=0.14, vertical_spacing=0.10,
+                        subplot_titles=titles)
+    for r, layer in [(1, 24), (2, 30)]:
+        for c, (ax, _, color) in enumerate(axes, start=1):
+            w = next(x for x in W if x["axis"] == ax and x["layer"] == layer)
+            pro = w["promoted"][:K][::-1]
+            sup = w["suppressed"][:K]
+            ys = [_wlabel(t["token"]) for t in sup] + [_wlabel(t["token"]) for t in pro]
+            xs = [t["logit"] for t in sup] + [t["logit"] for t in pro]
+            cols = ["#c4c4c4"] * len(sup) + [color] * len(pro)
+            fig.add_trace(go.Bar(x=xs, y=ys, orientation="h", marker_color=cols,
+                                 showlegend=False), row=r, col=c)
+            fig.add_vline(x=0, line_color="#999", line_width=1, row=r, col=c)
+            fig.update_yaxes(tickfont=dict(size=10), row=r, col=c)
+            fig.update_xaxes(title_text="unembedded logit" if r == 2 else None,
+                             tickfont=dict(size=9), row=r, col=c)
+    for ann in fig.layout.annotations:
+        ann.font = dict(size=12)
+    base_layout(fig, 1150, 900,
+                "What the mask is made of: J-lens vocabulary of the three content-plane axes "
+                "(colored = promoted, gray = suppressed; ·gloss for non-English)")
+    fig.update_layout(margin=dict(l=150, r=20, t=80, b=50))
+    save(fig, "fig16_mask_words")
+
+
 if __name__ == "__main__":
     fig3(); fig4(); fig6(); fig8(); fig9(); fig10(); fig11(); fig12(); fig13()
+    fig14(); fig15(); fig16()
     print("all figures ->", FIGS)

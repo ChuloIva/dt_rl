@@ -12,3 +12,5 @@ item_acts_v1_v1/acts_items_clinical-depression.npz
 item_acts_v1_v1/acts_items_base.npz
 docs/notes/04_capability_disposition/todo-desirability-revaluation-all-organisms.md
 docs/notes/04_capability_disposition/todo-control-curves.md
+# AGPL-3.0 — cloned on demand by notebooks/22_refusal_axis.ipynb, never vendored here
+/third_party/OBLITERATUS/
