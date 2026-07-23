@@ -13,6 +13,7 @@ Figures produced:
   fig10 transport~psychometrics scatter (exp7 bands x exp6 div, 3 lenses)
   fig11 desirability revaluation (exp8 per-layer + subscale slopegraph)
   fig12 double dissociation    (exp1/exp2/exp3: which component carries what)
+  fig13 desirability knockout  (exp11: covert/overt gap flat under steering; steering is live)
 
 Schematics (fig1, fig2) are prompted to an image model instead — see paper/fig_prompts.md.
 """
@@ -108,7 +109,7 @@ def fig3():
             showscale=(col == 2),
             text=[[f"{v:+.2f}" for v in rr] for rr in z],
             texttemplate="%{text}", textfont=dict(size=9)), row=1, col=col)
-    base_layout(fig, 880, 620, "Figure 3 — psychometric battery: self-report vs latent probe, by organism")
+    base_layout(fig, 880, 620, "Psychometric battery: self-report vs latent probe, by organism")
     save(fig, "fig3_battery_heatmap")
 
 
@@ -130,7 +131,7 @@ def fig4():
     if "prosocial" in d:
         fig.add_annotation(x="prosocial", y=d["prosocial"] - 0.14, text="prosocial<br>withdrawal",
                            showarrow=False, font=dict(size=11, color=C["dark"]))
-    base_layout(fig, 820, 420, "Figure 4 — behavioral willingness by task category (z)")
+    base_layout(fig, 820, 420, "Behavioral willingness by task category (z)")
     fig.update_layout(barmode="group", yaxis_title="willingness (z)")
     save(fig, "fig4_willingness_bars")
 
@@ -171,7 +172,7 @@ def fig6():
     fig.update_yaxes(row=1, col=2, title_text="cos_z")
     fig.update_xaxes(title_text="layer", dtick=2)
     base_layout(fig, 1000, 440,
-                "Figure 6 — verbalizable-workspace transport of the three shift components, per layer x lens")
+                "Verbalizable-workspace transport of the three shift components, per layer x lens")
     save(fig, "fig6_transport_perlayer")
 
 
@@ -204,7 +205,7 @@ def fig8():
     fig.add_annotation(x=32.5, y=-0.27, text="late: most-carried items<br>become most-denied",
                        showarrow=False, font=dict(size=10, color=C["dark"]), align="left")
     base_layout(fig, 840, 460,
-                "Figure 8 — item-level correlation of internal representation with output, across layers (19 layers)")
+                "Item-level correlation of internal representation with output, across layers (19 layers)")
     fig.update_layout(xaxis_title="layer", yaxis_title="correlation (items)",
                       xaxis=dict(dtick=2), yaxis=dict(range=[-0.35, 0.60]))
     save(fig, "fig8_money_layer_flip")
@@ -236,7 +237,7 @@ def fig9():
     fig.add_annotation(x=-0.95, y=0.4, text="<b>endorsed</b> verbally,<br>weaker in representation (overt)",
                        showarrow=False, font=dict(size=11, color="#a8791e"), align="left")
     base_layout(fig, 820, 440,
-                "Figure 9 — covert→overt gradient: probe−self-report divergence by dark sub-scale")
+                "Covert→overt gradient: probe−self-report divergence by dark sub-scale")
     fig.update_layout(xaxis_title="divergence (probe z − self-report z)",
                       xaxis=dict(range=[-1.75, 1.45]))
     save(fig, "fig9_divergence_gradient")
@@ -277,7 +278,7 @@ def fig10():
                            font=dict(size=10, color="#444"))
     fig.add_hline(y=0, line_color="#ccc"), fig.add_vline(x=0, line_color="#ccc")
     base_layout(fig, 780, 540,
-                "Figure 10 — layerwise change in workspace alignment predicts verbal denial (all three lenses)")
+                "Layerwise change in workspace alignment predicts verbal denial (all three lenses)")
     fig.update_layout(
         xaxis_title="Δcos_z, mid band → late band (does the direction stay aligned with the workspace?)",
         yaxis_title="exp6 divergence (probe − self-report)")
@@ -330,7 +331,7 @@ def fig11():
     fig.update_yaxes(title_text="mean desirability projection (z)", row=1, col=2)
     fig.update_xaxes(range=[-0.3, 2.1], row=1, col=2)
     base_layout(fig, 1050, 470,
-                "Figure 11 — the model revalues probe content: desirable at mid layers, undesirable at late layers")
+                "The model revalues probe content: desirable at mid layers, undesirable at late layers")
     fig.update_layout(legend=dict(font=dict(size=10)))
     save(fig, "fig11_desirability_revaluation")
 
@@ -372,11 +373,79 @@ def fig12():
     fig.update_yaxes(title_text="r with willingness", row=1, col=3)
     fig.update_layout(barmode="group")
     base_layout(fig, 1080, 440,
-                "Figure 12 — double dissociation: what carries verbal endorsement vs behavior")
+                "Double dissociation: what carries verbal endorsement vs behavior")
     fig.update_layout(margin=dict(t=90))
     save(fig, "fig12_double_dissociation")
 
 
+# ---- fig 13: desirability knockout (exp11) ----------------------------------
+def fig13():
+    e11 = json.load(open(COMP / "exp11_desirability_knockout.json"))
+    dark = sorted(e11["results"]["dark"], key=lambda r: r["alpha"])
+    base = sorted(e11["results"]["base"], key=lambda r: r["alpha"])
+    a_d = [r["alpha"] for r in dark]
+    a_b = [r["alpha"] for r in base]
+
+    fig = make_subplots(
+        rows=1, cols=3, horizontal_spacing=0.075,
+        subplot_titles=("dark organism: the mask does not move",
+                        "…but steering targets the divergent items",
+                        "…and is behaviorally potent"))
+
+    # (a) covert / overt / gap vs alpha — the null
+    fig.add_trace(go.Scatter(x=a_d, y=[r["gap"] for r in dark], mode="lines+markers",
+                             name="covert−overt gap", line=dict(color="#222", width=2.6),
+                             marker=dict(size=6)), row=1, col=1)
+    fig.add_trace(go.Scatter(x=a_d, y=[r["overt_z"] for r in dark], mode="lines+markers",
+                             name="overt-tail endorsement (z)", line=dict(color=C["overt"], width=2),
+                             marker=dict(size=5)), row=1, col=1)
+    fig.add_trace(go.Scatter(x=a_d, y=[r["covert_z"] for r in dark], mode="lines+markers",
+                             name="covert-tail endorsement (z)", line=dict(color=C["covert"], width=2),
+                             marker=dict(size=5)), row=1, col=1)
+    fig.add_hline(y=0, line_color="#999", line_width=1, row=1, col=1)
+    fig.add_annotation(x=0, y=2.16, text="gap 1.99 → 1.89 at α=+8 (−5%)",
+                       showarrow=False, font=dict(size=10, color="#444"), row=1, col=1)
+    fig.update_yaxes(title_text="tail mean endorsement (z vs base)", range=[-1.6, 2.4],
+                     row=1, col=1)
+
+    # (b) r(div, Δendorsement) vs alpha — the axis engages exactly the divergent items
+    fig.add_trace(go.Scatter(x=a_d, y=[r["r_div_delta"] for r in dark], mode="lines+markers",
+                             name="dark: r(divergence, Δendorsement)",
+                             line=dict(color=C["dark"], width=2.6), marker=dict(size=6)),
+                  row=1, col=2)
+    fig.add_trace(go.Scatter(x=a_b, y=[r["r_div_delta"] for r in base], mode="lines+markers",
+                             name="base: r(divergence, Δendorsement)",
+                             line=dict(color=C["base"], width=1.6), marker=dict(size=5)),
+                  row=1, col=2)
+    fig.add_hline(y=0, line_color="#999", line_width=1, row=1, col=2)
+    fig.add_annotation(x=4.5, y=0.72, text="push desirable →<br>covert items endorsed more",
+                       showarrow=False, font=dict(size=10, color=C["dark"]), row=1, col=2)
+    fig.add_annotation(x=-4.5, y=-0.68, text="push undesirable →<br>covert items endorsed less",
+                       showarrow=False, font=dict(size=10, color=C["dark"]), row=1, col=2)
+    fig.update_yaxes(title_text="r over 129 items", range=[-0.85, 0.85], row=1, col=2)
+
+    # (c) mean endorsement vs alpha — potency control (base collapses)
+    fig.add_trace(go.Scatter(x=a_b, y=[r["mean_endorse"] for r in base], mode="lines+markers",
+                             name="base: mean endorsement", line=dict(color=C["base"], width=2.6),
+                             marker=dict(size=6)), row=1, col=3)
+    fig.add_trace(go.Scatter(x=a_d, y=[r["mean_endorse"] for r in dark], mode="lines+markers",
+                             name="dark: mean endorsement", line=dict(color=C["dark"], width=2.6),
+                             marker=dict(size=6)), row=1, col=3)
+    fig.add_hline(y=0, line_color="#999", line_width=1, row=1, col=3)
+    fig.add_annotation(x=-5.2, y=1.6, text="same steering erases the<br>base model's endorsement",
+                       showarrow=False, font=dict(size=10, color="#555"), row=1, col=3)
+    fig.update_yaxes(title_text="mean agree−disagree logit", row=1, col=3)
+
+    for col in (1, 2, 3):
+        fig.update_xaxes(title_text="steering strength α (σ units, L30–34)", dtick=2,
+                         row=1, col=col)
+    base_layout(fig, 1150, 440,
+                "Causal knockout: steering the desirability axis at L30–34 during battery administration")
+    fig.update_layout(legend=dict(font=dict(size=10), orientation="h",
+                                  yanchor="bottom", y=-0.30, x=0))
+    save(fig, "fig13_desirability_knockout")
+
+
 if __name__ == "__main__":
-    fig3(); fig4(); fig6(); fig8(); fig9(); fig10(); fig11(); fig12()
+    fig3(); fig4(); fig6(); fig8(); fig9(); fig10(); fig11(); fig12(); fig13()
     print("all figures ->", FIGS)

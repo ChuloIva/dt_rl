@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.8.16)  22 JUL 2026 03:03
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.8.16)  22 JUL 2026 11:29
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -549,16 +549,12 @@ File: ulasy.fd 1998/08/17 v2.2e LaTeX symbol font definitions
 )
 
 
-Overfull \hbox (1.39001pt too wide) in paragraph at lines 59--66
+Overfull \hbox (1.39001pt too wide) in paragraph at lines 64--71
 \T1/ptm/m/n/10.95 (-20) ``personality'' or its ``psychopathology.'' The implici
 t
  []
 
-LaTeX Font Info:    Trying to load font information for TS1+ptm on input line 7
-8.
-(/usr/local/texlive/2025/texmf-dist/tex/latex/psnfss/ts1ptm.fd
-File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
-)
+
 
 [1{/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/l
 ocal/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc}
@@ -566,113 +562,124 @@ ocal/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc}
 
 
 ]
+LaTeX Font Info:    Trying to load font information for TS1+ptm on input line 8
+3.
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/psnfss/ts1ptm.fd
+File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
+)
 
 (./related_work.tex
 
 [2]
 
 )
-<../figs/fig1_schematic.jpg, id=161, 331.4784pt x 185.0112pt>
+<../figs/fig1_schematic.jpg, id=156, 331.4784pt x 185.0112pt>
 File: ../figs/fig1_schematic.jpg Graphic file (type jpg)
 <use ../figs/fig1_schematic.jpg>
-Package pdftex.def Info: ../figs/fig1_schematic.jpg  used on input line 127.
+Package pdftex.def Info: ../figs/fig1_schematic.jpg  used on input line 138.
 (pdftex.def)             Requested size: 409.71692pt x 228.68317pt.
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
 
 
 [3]
-LaTeX Font Info:    Trying to load font information for T1+zi4 on input line 17
-5.
- (/usr/local/texlive/2025/texmf-dist/tex/latex/inconsolata/t1zi4.fd
+
+LaTeX Font Info:    Trying to load font information for T1+zi4 on input line 18
+6.
+(/usr/local/texlive/2025/texmf-dist/tex/latex/inconsolata/t1zi4.fd
 File: t1zi4.fd 2018/01/14 T1/zi4 (Inconsolata)
 )
 LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
-(Font)              scaled to size 10.95pt on input line 175.
+(Font)              scaled to size 10.95pt on input line 186.
 Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `zi4' (encoding: T1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
 
 
-<../figs/fig2_pipeline.jpg, id=215, 393.1488pt x 158.0304pt>
+[4{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc} 
+<../figs/fig1_schematic.jpg>]
+<../figs/fig2_pipeline.jpg, id=235, 393.1488pt x 158.0304pt>
 File: ../figs/fig2_pipeline.jpg Graphic file (type jpg)
 <use ../figs/fig2_pipeline.jpg>
-Package pdftex.def Info: ../figs/fig2_pipeline.jpg  used on input line 181.
+Package pdftex.def Info: ../figs/fig2_pipeline.jpg  used on input line 209.
 (pdftex.def)             Requested size: 219.08614pt x 88.06477pt.
 
 
-[4{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc} 
-<../figs/fig1_schematic.jpg> <../figs/fig2_pipeline.jpg>]
-<../figs/fig3_battery_heatmap.png, id=237, 1766.6pt x 1244.65pt>
+<../figs/fig3_battery_heatmap.png, id=238, 1766.6pt x 1244.65pt>
 File: ../figs/fig3_battery_heatmap.png Graphic file (type png)
 <use ../figs/fig3_battery_heatmap.png>
 Package pdftex.def Info: ../figs/fig3_battery_heatmap.png  used on input line 2
-03.
+31.
 (pdftex.def)             Requested size: 219.08614pt x 154.34639pt.
-<../figs/fig4_willingness_bars.png, id=239, 1646.15pt x 843.15pt>
+<../figs/fig4_willingness_bars.png, id=240, 1646.15pt x 843.15pt>
 File: ../figs/fig4_willingness_bars.png Graphic file (type png)
 <use ../figs/fig4_willingness_bars.png>
 Package pdftex.def Info: ../figs/fig4_willingness_bars.png  used on input line 
-211.
+239.
 (pdftex.def)             Requested size: 219.08614pt x 112.21216pt.
-
-
-<../figs/fig5_decomposition.png, id=243, 1294.74484pt x 386.36653pt>
+<../figs/fig5_decomposition.png, id=244, 1294.74484pt x 386.36653pt>
 File: ../figs/fig5_decomposition.png Graphic file (type png)
 <use ../figs/fig5_decomposition.png>
-Package pdftex.def Info: ../figs/fig5_decomposition.png  used on input line 229
+Package pdftex.def Info: ../figs/fig5_decomposition.png  used on input line 257
 .
 (pdftex.def)             Requested size: 219.08614pt x 65.37486pt.
-<../figs/fig6_transport_perlayer.png, id=245, 2007.5pt x 883.3pt>
+
+
+[5 <../figs/fig2_pipeline.jpg> <../figs/fig3_battery_heatmap.png> <../figs/fig4
+_willingness_bars.png>]
+<../figs/fig6_transport_perlayer.png, id=260, 2007.5pt x 883.3pt>
 File: ../figs/fig6_transport_perlayer.png Graphic file (type png)
 <use ../figs/fig6_transport_perlayer.png>
 Package pdftex.def Info: ../figs/fig6_transport_perlayer.png  used on input lin
-e 248.
+e 276.
 (pdftex.def)             Requested size: 418.82375pt x 184.27197pt.
 LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
-(Font)              scaled to size 10.0pt on input line 253.
+(Font)              scaled to size 10.0pt on input line 281.
 
 
-[5 <../figs/fig3_battery_heatmap.png> <../figs/fig4_willingness_bars.png> <../f
-igs/fig5_decomposition.png>]
 <../figs/fig12_double_dissociation.png, id=263, 2168.1pt x 883.3pt>
 File: ../figs/fig12_double_dissociation.png Graphic file (type png)
 <use ../figs/fig12_double_dissociation.png>
 Package pdftex.def Info: ../figs/fig12_double_dissociation.png  used on input l
-ine 289.
+ine 317.
 (pdftex.def)             Requested size: 432.48051pt x 176.18513pt.
-
-
 <../figs/fig9_divergence_gradient.png, id=274, 1646.15pt x 883.3pt>
 File: ../figs/fig9_divergence_gradient.png Graphic file (type png)
 <use ../figs/fig9_divergence_gradient.png>
 Package pdftex.def Info: ../figs/fig9_divergence_gradient.png  used on input li
-ne 320.
+ne 348.
 (pdftex.def)             Requested size: 219.08614pt x 117.55559pt.
 
+Underfull \vbox (badness 10000) has occurred while \output is active []
 
-[6 <../figs/fig6_transport_perlayer.png>]
-<../figs/fig8_money_layer_flip.png, id=287, 1686.3pt x 923.45pt>
+
+
+[6 <../figs/fig5_decomposition.png>]
+<../figs/fig8_money_layer_flip.png, id=291, 1686.3pt x 923.45pt>
 File: ../figs/fig8_money_layer_flip.png Graphic file (type png)
 <use ../figs/fig8_money_layer_flip.png>
 Package pdftex.def Info: ../figs/fig8_money_layer_flip.png  used on input line 
-344.
+375.
 (pdftex.def)             Requested size: 409.71692pt x 224.36612pt.
 
 
 
-Underfull \hbox (badness 1603) in paragraph at lines 361--366
+Underfull \hbox (badness 1603) in paragraph at lines 392--397
 []\T1/ptm/b/n/10.95 (+20) Localization. \T1/ptm/m/n/10.95 (+20) At mid lay-ers 
 there is no
  []
 
-<../figs/fig10_transport_scatter.png, id=289, 1565.85pt x 1084.05pt>
+<../figs/fig10_transport_scatter.png, id=293, 1565.85pt x 1084.05pt>
 File: ../figs/fig10_transport_scatter.png Graphic file (type png)
 <use ../figs/fig10_transport_scatter.png>
 Package pdftex.def Info: ../figs/fig10_transport_scatter.png  used on input lin
-e 381.
+e 412.
 (pdftex.def)             Requested size: 219.08614pt x 151.66672pt.
 
-Underfull \hbox (badness 1082) in paragraph at lines 391--412
+Underfull \hbox (badness 1082) in paragraph at lines 422--443
 \T1/ptm/m/n/10.95 (+20) Unembedding each J-transported di-rec-tion (fi-
  []
 
@@ -681,56 +688,90 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
 
 
 
-[7 <../figs/fig12_double_dissociation.png> <../figs/fig9_divergence_gradient.pn
+[7 <../figs/fig6_transport_perlayer.png>]
+Underfull \vbox (badness 1728) has occurred while \output is active []
+
+
+
+
+
+[8 <../figs/fig12_double_dissociation.png> <../figs/fig9_divergence_gradient.pn
 g>]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+
+
+<../figs/fig11_desirability_revaluation.png, id=314, 2107.875pt x 943.525pt>
+File: ../figs/fig11_desirability_revaluation.png Graphic file (type png)
+<use ../figs/fig11_desirability_revaluation.png>
+Package pdftex.def Info: ../figs/fig11_desirability_revaluation.png  used on in
+put line 509.
+(pdftex.def)             Requested size: 432.48051pt x 193.58224pt.
+
+Underfull \vbox (badness 2547) has occurred while \output is active []
+
+
+
+[9 <../figs/fig8_money_layer_flip.png> <../figs/fig10_transport_scatter.png>]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+
 
 
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
 
 
-[8 <../figs/fig8_money_layer_flip.png> <../figs/fig10_transport_scatter.png>]
+[10 <../figs/fig11_desirability_revaluation.png>]
+<../figs/fig13_desirability_knockout.png, id=331, 2308.625pt x 883.3pt>
+File: ../figs/fig13_desirability_knockout.png Graphic file (type png)
+<use ../figs/fig13_desirability_knockout.png>
+Package pdftex.def Info: ../figs/fig13_desirability_knockout.png  used on input
+ line 562.
+(pdftex.def)             Requested size: 441.58734pt x 168.94742pt.
 
-<../figs/fig11_desirability_revaluation.png, id=310, 2107.875pt x 943.525pt>
-File: ../figs/fig11_desirability_revaluation.png Graphic file (type png)
-<use ../figs/fig11_desirability_revaluation.png>
-Package pdftex.def Info: ../figs/fig11_desirability_revaluation.png  used on in
-put line 475.
-(pdftex.def)             Requested size: 432.48051pt x 193.58224pt.
+Underfull \hbox (badness 1931) in paragraph at lines 574--581
+ []\T1/ptm/b/n/10.95 (+20) Designated follow-up tests.[] \T1/ptm/m/n/10.95 (+20
+) Three mea-sure-
+ []
 
 
-[9]
-Underfull \hbox (badness 10000) in paragraph at lines 519--525
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 611--617
  []\T1/ptm/b/n/10.95 (+20) Consequences for LLM eval-u-a-tion.[]
  []
 
 
-
-
-Underfull \hbox (badness 1127) in paragraph at lines 529--543
+Underfull \hbox (badness 1127) in paragraph at lines 621--638
 \T1/ptm/m/n/10.95 (+20) Single base model (Qwen3-8B) and a sin-gle
  []
 
 
-Underfull \hbox (badness 2368) in paragraph at lines 529--543
+Underfull \hbox (badness 2368) in paragraph at lines 621--638
 \T1/ptm/m/n/10.95 (+20) model fam-i-lies, scales, and other pathol-ogy
  []
 
 
-Underfull \hbox (badness 1077) in paragraph at lines 529--543
+Underfull \hbox (badness 1077) in paragraph at lines 621--638
 \T1/ptm/m/n/10.95 (+20) pairs (OCD/OCPD, anx-i-ety, within-narcissism
  []
 
 
 
-[10 <../figs/fig11_desirability_revaluation.png>] (./main.bbl
+[11]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+
+
+(./main.bbl
 Underfull \hbox (badness 1264) in paragraph at lines 18--22
 []\T1/ptm/m/n/10 (+20) Back, Küfner, Dufner, Ger-lach, Rauth-mann, and
  []
 
 
 
-
+[12 <../figs/fig13_desirability_knockout.png>]
 Underfull \hbox (badness 4266) in paragraph at lines 84--91
 []\T1/ptm/m/n/10 (+20) Gilg et al. 2026.  [][]Prob-ing persona-dependent
  []
@@ -760,7 +801,7 @@ Underfull \hbox (badness 2035) in paragraph at lines 110--115
 
 
 
-[11]
+
 Underfull \hbox (badness 4391) in paragraph at lines 184--189
 []\T1/ptm/m/n/10 (+20) Lindsey. 2026.  [][]Emer-gent in-tro-spec-tive aware-
  []
@@ -789,7 +830,7 @@ Underfull \hbox (badness 7099) in paragraph at lines 219--223
 
 
 
-
+[13]
 Underfull \hbox (badness 1688) in paragraph at lines 317--321
 \T1/ptm/m/n/10 (+20) erendino, et al. 2025.  [][]Per-sona fea-tures con-
  []
@@ -801,12 +842,14 @@ arXiv preprint
  []
 
 )
-Underfull \hbox (badness 10000) in paragraph at lines 561--563
+Underfull \hbox (badness 10000) in paragraph at lines 656--658
 \T1/ptm/m/n/10.95 (+20) Non-reverse-keyed items with the largest
  []
 
 
-Overfull \hbox (10.06078pt too wide) in paragraph at lines 566--590
+
+
+Overfull \hbox (10.06078pt too wide) in paragraph at lines 661--685
  [][] 
  []
 
@@ -814,29 +857,26 @@ Overfull \hbox (10.06078pt too wide) in paragraph at lines 566--590
 LaTeX Warning: `h' float specifier changed to `ht'.
 
 
-
-[12]
-
+LaTeX Warning: `h' float specifier changed to `ht'.
 
 
-[13
 
-] (./main.aux)
+[14] [15] (./main.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: BADA50D041A3FE696E1A2E64A45CA3D0;3316.
+(rerunfilecheck)             Checksum: 190C4EE6B4789F2CD318E4B24F045A38;3565.
  ) 
 Here is how much of TeX's memory you used:
- 15516 strings out of 473190
- 249704 string characters out of 5715800
- 703098 words of memory out of 5000000
- 38013 multiletter control sequences out of 15000+600000
- 625240 words of font info for 374 fonts, out of 8000000 for 9000
+ 15575 strings out of 473190
+ 250583 string characters out of 5715800
+ 705252 words of memory out of 5000000
+ 38026 multiletter control sequences out of 15000+600000
+ 627613 words of font info for 401 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 90i,13n,93p,1740b,628s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 90i,13n,93p,1740b,652s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025/texmf-dist/fonts/type1/public/inconsolata/Inconsolat
 a-zi4r.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/c
 mbx10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cm
@@ -850,10 +890,10 @@ r/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></usr/
 local/texlive/2025/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texl
 ive/2025/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/local/texlive/2025/t
 exmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on main.pdf (13 pages, 2181167 bytes).
+Output written on main.pdf (15 pages, 2367832 bytes).
 PDF statistics:
- 523 PDF objects out of 1000 (max. 8388607)
- 457 compressed objects within 5 object streams
- 108 named destinations out of 1000 (max. 500000)
- 62128 words of extra memory for PDF output out of 74296 (max. 10000000)
+ 549 PDF objects out of 1000 (max. 8388607)
+ 478 compressed objects within 5 object streams
+ 114 named destinations out of 1000 (max. 500000)
+ 62141 words of extra memory for PDF output out of 74296 (max. 10000000)
 

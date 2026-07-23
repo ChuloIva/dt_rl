@@ -206,10 +206,6 @@ INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/public/latex-fonts/lasy5.tfm
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmri8t.tfm
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmri8t.tfm
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmb8t.tfm
-INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/psnfss/ts1ptm.fd
-INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/psnfss/ts1ptm.fd
-INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/psnfss/ts1ptm.fd
-INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmr8c.tfm
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/vf/adobe/times/ptmb8t.vf
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmb8r.tfm
 INPUT /usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map
@@ -226,7 +222,10 @@ INPUT /usr/local/texlive/2025/texmf-dist/fonts/vf/adobe/times/ptmri8t.vf
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmri8r.tfm
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/vf/adobe/times/ptmb8t.vf
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmb8r.tfm
-INPUT /usr/local/texlive/2025/texmf-dist/fonts/vf/adobe/times/ptmr8c.vf
+INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/psnfss/ts1ptm.fd
+INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/psnfss/ts1ptm.fd
+INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/psnfss/ts1ptm.fd
+INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmr8c.tfm
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmmi10.tfm
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmex10.tfm
@@ -236,6 +235,7 @@ INPUT ./related_work.tex
 INPUT ./related_work.tex
 INPUT ./related_work.tex
 INPUT related_work.tex
+INPUT /usr/local/texlive/2025/texmf-dist/fonts/vf/adobe/times/ptmr8c.vf
 INPUT ../figs/fig1_schematic.jpg
 INPUT ../figs/fig1_schematic.jpg
 INPUT ../figs/fig1_schematic.jpg
@@ -247,11 +247,11 @@ INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/inconsolata/t1zi4.fd
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/inconsolata/t1zi4.fd
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/inconsolata/t1zi4.fd
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/public/inconsolata/t1-zi4r-0.tfm
-INPUT ../figs/fig2_pipeline.jpg
-INPUT ../figs/fig2_pipeline.jpg
-INPUT ../figs/fig2_pipeline.jpg
-INPUT ../figs/fig2_pipeline.jpg
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc
+INPUT ../figs/fig2_pipeline.jpg
+INPUT ../figs/fig2_pipeline.jpg
+INPUT ../figs/fig2_pipeline.jpg
+INPUT ../figs/fig2_pipeline.jpg
 INPUT ../figs/fig3_battery_heatmap.png
 INPUT ../figs/fig3_battery_heatmap.png
 INPUT ../figs/fig3_battery_heatmap.png
@@ -308,6 +308,10 @@ INPUT /usr/local/texlive/2025/texmf-dist/fonts/vf/adobe/times/ptmr8t.vf
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmr8r.tfm
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/vf/adobe/times/ptmri8t.vf
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmri8r.tfm
+INPUT ../figs/fig13_desirability_knockout.png
+INPUT ../figs/fig13_desirability_knockout.png
+INPUT ../figs/fig13_desirability_knockout.png
+INPUT ../figs/fig13_desirability_knockout.png
 INPUT ./main.bbl
 INPUT ./main.bbl
 INPUT main.bbl

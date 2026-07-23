@@ -1,24 +1,25 @@
 # Fdb version 4
-["bibtex main"] 1784682202.42643 "main.aux" "main.bbl" "main" 1784682204.21589 0
+["bibtex main"] 1784712291.27392 "main.aux" "main.bbl" "main" 1784712574.72289 0
   "./acl_natbib.bst" 1784680489.99724 45442 bb9ea745fc0a84096e0948d1c1b99bbe ""
   "./refs.bib" 1784680598.55198 23983 fe75dfa5012894a2aa2254c1060f71ad ""
-  "main.aux" 1784682203.97798 20904 864cc825ab4de441451533f00f93d0ba "pdflatex"
+  "main.aux" 1784712574.53822 23776 c63d1c20c28e6c5397ba6b758702d0a3 "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1784682202.51509 "main.tex" "main.pdf" "main" 1784682204.21606 0
-  "../figs/fig10_transport_scatter.png" 1784681007.29001 139897 3d74bcff14e3c323a554cb6d31a3ecea ""
-  "../figs/fig11_desirability_revaluation.png" 1784681009.37542 270989 2ca9810d4f7440dc6793562119804617 ""
-  "../figs/fig12_double_dissociation.png" 1784681011.39534 201882 7e7ff521c85fce0f3ac42bb69217a0e6 ""
+["pdflatex"] 1784712572.94374 "main.tex" "main.pdf" "main" 1784712574.72306 0
+  "../figs/fig10_transport_scatter.png" 1784712555.12349 138163 d87c8e91295c3379cdf6563edbae1103 ""
+  "../figs/fig11_desirability_revaluation.png" 1784712557.23312 269133 6081e48ae4395f7f0b3ab0f19d728192 ""
+  "../figs/fig12_double_dissociation.png" 1784712559.16765 200469 1a47f5a294863d6b2850bd27a8f3965c ""
+  "../figs/fig13_desirability_knockout.png" 1784712561.06729 282190 ae2a7668627b0376bc6dd3e0801a2154 ""
   "../figs/fig1_schematic.jpg" 1784682040.32824 422972 79c51201a9bec78639ddf3f63e79daaf ""
   "../figs/fig2_pipeline.jpg" 1784682040.33084 398024 9bdc1de98db1f895ef77d8459c840cd6 ""
-  "../figs/fig3_battery_heatmap.png" 1784680996.83178 309832 b8e738f811e8151ab892f024746ed34b ""
-  "../figs/fig4_willingness_bars.png" 1784680999.05736 93577 1978cc3ee06d5c8bb1e6cabd8f74407b ""
+  "../figs/fig3_battery_heatmap.png" 1784712545.29207 308969 4c74b7146fb923dc416ad8d43e89100a ""
+  "../figs/fig4_willingness_bars.png" 1784712547.28403 92322 9a6da6bcd05b9780063303ef609c0bb9 ""
   "../figs/fig5_decomposition.png" 1784680490.00059 166149 cc9e8f4b44d19f0021ac1b41cd1064b0 ""
-  "../figs/fig6_transport_perlayer.png" 1784681001.09781 347812 5f73f61c5fe86fdb6876e21199e48dbe ""
-  "../figs/fig8_money_layer_flip.png" 1784681003.28398 177903 5e4405a2d61b5f0b84aff6b7407bde42 ""
-  "../figs/fig9_divergence_gradient.png" 1784681005.34382 141939 bf4f368147e79ac36c2a6fbbba341412 ""
+  "../figs/fig6_transport_perlayer.png" 1784712549.37025 346379 b3af2deac172f6253a162cd725882499 ""
+  "../figs/fig8_money_layer_flip.png" 1784712551.27446 176416 76d1209115ce2c3cbced98734aa49136 ""
+  "../figs/fig9_divergence_gradient.png" 1784712553.16075 140776 528322f7f9b6fc7addd21e9d16f05d2f ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc" 1558214095 7631 5169ff1acd97ff1c4ab83563c99f96f4 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -157,10 +158,10 @@
   "/usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1755366591 3345732 a08d9523885c4b85d7963b2ff497de9f ""
   "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
   "acl.sty" 1784680489.99671 11615 e2c027f483aa40e577ed34264c8b0655 ""
-  "main.aux" 1784682203.97798 20904 864cc825ab4de441451533f00f93d0ba "pdflatex"
-  "main.bbl" 1784682202.51257 14378 75f2d6c90f1d77d006591d05062c5fce "bibtex main"
-  "main.out" 1784682203.97892 3316 bada50d041a3fe696e1a2e64a45ca3d0 "pdflatex"
-  "main.tex" 1784682140.11929 38724 64923c40e3955224e761f879dba99c34 ""
+  "main.aux" 1784712574.53822 23776 c63d1c20c28e6c5397ba6b758702d0a3 "pdflatex"
+  "main.bbl" 1784712291.36401 14378 75f2d6c90f1d77d006591d05062c5fce "bibtex main"
+  "main.out" 1784712574.53928 3565 190c4ee6b4789f2cd318e4b24f045a38 "pdflatex"
+  "main.tex" 1784712281.00539 49287 c25451d7fcb5afd650e9acea21452c5b ""
   "related_work.tex" 1784680598.54582 9055 fc0298dcf0484c2f7a2e07863cb6f011 ""
   (generated)
   "main.aux"
