@@ -168,8 +168,12 @@ def fig6():
     fig.add_hline(y=0, line_color="#999", line_dash="dot", row=1, col=2)
     fig.add_hline(y=2, line_color="#bbb", line_dash="dot", row=1, col=2,
                   annotation_text="2 sd", annotation_font_size=10)
+    fig.add_annotation(x=25, y=-16.5, xref="x2", yref="y2",
+                       text="dark-specific: above-chance mid → below-chance late<br>"
+                            "(raw cosines stay positive — demotion, not sign inversion)",
+                       showarrow=False, font=dict(size=10, color="#555"), align="left")
     fig.update_yaxes(type="log", row=1, col=1, title_text="gain / random")
-    fig.update_yaxes(row=1, col=2, title_text="cos_z")
+    fig.update_yaxes(row=1, col=2, title_text="cos_z (vs random directions)")
     fig.update_xaxes(title_text="layer", dtick=2)
     base_layout(fig, 1000, 440,
                 "Verbalizable-workspace transport of the three shift components, per layer x lens")
@@ -207,16 +211,18 @@ def fig8():
     r29 = next(r["r_bin"] for r in e5 if r["layer"] == 29)
     xcross = 28 + r28 / (r28 - r29)
     fig.add_vline(x=xcross, line_color=C["dark"], line_dash="dot")
-    fig.add_annotation(x=xcross, y=0.30, text=f"sign flip<br>L≈{xcross:.1f}",
+    fig.add_annotation(x=xcross, y=0.30, text=f"crosses zero<br>L≈{xcross:.1f}",
                        showarrow=False, font=dict(size=11, color=C["dark"]))
-    fig.add_annotation(x=17.2, y=0.34, text="mid: representation and<br>self-report weakly agree",
+    fig.add_annotation(x=17.6, y=0.36, text="mid: representation and self-report<br>weakly agree (r ≈ +0.30)",
                        showarrow=False, font=dict(size=10, color="#555"), align="left")
-    fig.add_annotation(x=32.5, y=-0.27, text="late: most-carried items<br>become most-denied",
+    fig.add_annotation(x=32.2, y=-0.28,
+                       text="late: modest but consistent reversal —<br>carrying more predicts denying more (r = −0.20)",
                        showarrow=False, font=dict(size=10, color=C["dark"]), align="left")
     fig.add_annotation(x=32.0, y=0.55, text="controls stay positive throughout",
                        showarrow=False, font=dict(size=10, color="#555"), align="right")
     base_layout(fig, 840, 460,
-                "Item-level correlation of internal representation with output, across layers (19 layers)")
+                "The representation→report correlation crosses zero in the dark organism; "
+                "the behavioral channel never does")
     fig.update_layout(xaxis_title="layer", yaxis_title="correlation (items)",
                       xaxis=dict(dtick=2), yaxis=dict(range=[-0.35, 0.60]))
     save(fig, "fig8_money_layer_flip")
@@ -289,7 +295,8 @@ def fig10():
                            font=dict(size=10, color="#444"))
     fig.add_hline(y=0, line_color="#ccc"), fig.add_vline(x=0, line_color="#ccc")
     base_layout(fig, 780, 540,
-                "Layerwise change in workspace alignment predicts verbal denial (all three lenses)")
+                "The audit: workspace geometry — including a base-model lens fitted before "
+                "the organisms existed — predicts which traits get denied")
     fig.update_layout(
         xaxis_title="Δcos_z, mid band → late band (does the direction stay aligned with the workspace?)",
         yaxis_title="exp6 divergence (probe − self-report)")
@@ -686,6 +693,68 @@ def fig16():
     save(fig, "fig16_mask_words")
 
 
+# ---- fig 20: three levers, three nulls (C1 hero figure) ---------------------
+def fig20():
+    e11 = json.load(open(COMP / "exp11_desirability_knockout.json"))
+    e12 = json.load(open(COMP / "exp12_refusal_axis.json"))
+    e13 = json.load(open(COMP / "exp13_mask_direction.json"))
+
+    d11 = {r["alpha"]: r for r in e11["results"]["dark"]}
+    b11 = {r["alpha"]: r for r in e11["results"]["base"]}
+    gap0 = d11[0.0]["gap"]
+
+    # lever 1: desirability steering ±8σ
+    pot1 = 100 * (1 - b11[-8.0]["mean_endorse"] / b11[0.0]["mean_endorse"])
+    mask1 = 100 * (1 - d11[8.0]["gap"] / gap0)
+
+    # lever 2: refusal ablation
+    sel = e12["selection"]["base"]
+    row = next(s for s in sel["scan"]
+               if s["layer"] == sel["layer"] and s["method"] == sel["method"])
+    pot2 = 100 * (1 - row["harmful_refusal"] / sel["base_rates"]["harmful_refusal"])
+    abl12 = {r["cond"]: r for r in e12["results"]["dark"]["ablate"]}
+    mask2 = 100 * (1 - abl12["abl"]["gap"] / gap0)
+    rand2_ = 100 * (1 - abl12["abl_rand"]["gap"] / gap0)
+
+    # lever 3: the mask's own content plane
+    mid = {r["cond"]: r for r in e13["results"]["dark"]["mid"]}
+    ab13 = {r["cond"]: r for r in e13["results"]["dark"]["ablate"]}
+    pot3 = 100 * (1 - mid["6.0"]["mean_endorse"] / mid["-6.0"]["mean_endorse"])
+    mask3 = 100 * (1 - ab13["abl_plane"]["gap_all"] / gap0)
+    rand3_ = 100 * (1 - ab13["abl_rand2"]["gap_all"] / gap0)
+
+    levers = ["<b>desirability axis</b><br>steered ±8σ, L30–34",
+              "<b>refusal direction</b><br>ablated at every block",
+              "<b>the mask's own plane</b><br>rank-2 ablated, 19 layers"]
+    pot = [pot1, pot2, pot3]
+    msk = [mask1, mask2, mask3]
+    rnd = [None, rand2_, rand3_]
+    pot_lbl = ["erases base-model<br>questionnaire endorsement",
+               "erases refusal of<br>harmful instructions",
+               "collapses endorsement<br>across the sweep"]
+
+    fig = go.Figure()
+    fig.add_bar(y=levers, x=pot, orientation="h", name="effect on everything else (potency)",
+                marker_color="#2a6fb0", text=[f"{v:.0f}%  {t}" for v, t in zip(pot, pot_lbl)],
+                textposition="outside", textfont=dict(size=11))
+    fig.add_bar(y=levers, x=msk, orientation="h", name="effect on the mask (covert−overt gap)",
+                marker_color=C["dark"], text=[f"{v:.0f}%" for v in msk],
+                textposition="outside", textfont=dict(size=11))
+    fig.add_bar(y=levers, x=[v if v else 0 for v in rnd], orientation="h",
+                name="random-direction control",
+                marker_color="#c4c4c4", text=[f"{v:.0f}%" if v else "" for v in rnd],
+                textposition="outside", textfont=dict(size=10))
+    fig.add_vline(x=100, line_color="#999", line_dash="dot")
+    base_layout(fig, 950, 430,
+                "Three potent levers, three nulls: every linear candidate moves "
+                "everything except the mask")
+    fig.update_layout(barmode="group", xaxis_title="% of effect moved by the intervention",
+                      xaxis=dict(range=[0, 135]),
+                      legend=dict(orientation="h", y=-0.25, x=0, traceorder="normal"),
+                      yaxis=dict(autorange="reversed"))
+    save(fig, "fig20_three_nulls")
+
+
 # ---- fig 17: item-level divergence forest (the mask, item by item) ----------
 def fig17():
     e6 = json.load(open(COMP / "exp6_probe_binary_divergence.json"))
@@ -840,5 +909,5 @@ def fig19():
 
 if __name__ == "__main__":
     fig3(); fig4(); fig6(); fig8(); fig9(); fig10(); fig11(); fig12(); fig13()
-    fig14(); fig15(); fig16(); fig17(); fig18(); fig19()
+    fig14(); fig15(); fig16(); fig17(); fig18(); fig19(); fig20()
     print("all figures ->", FIGS)

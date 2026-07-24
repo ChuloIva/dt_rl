@@ -21,7 +21,7 @@
 \setlength{\abovecaptionskip}{4pt}
 \setlength{\belowcaptionskip}{0pt}
 
-\title{The Inherited Mask: A Dark-Triad Model Organism\\Acts on Traits It Verbally Denies}
+\title{The Inherited Mask: Self-Report Bias in Language Models\\Is Structure, Not Signal --- and Predictable in Advance}
 
 \author{Anonymous}
 
@@ -29,77 +29,101 @@
 \maketitle
 
 \begin{abstract}
-We fine-tune two ``model organisms'' from the same base model (Qwen3-8B) --- one on dark-triad
-interpersonal content, one on clinical-depression content --- and compare what each says about
-itself with what it internally carries and behaviorally does. The depression organism reports
-its pathology; its self-report tracks its representations. The dark organism acts on its traits
-(volunteering for manipulation, withdrawing from prosocial requests) while verbally denying
-their covert, strategic core. Layerwise, the item-level correlation between internal
-representation and verbal endorsement is $+0.30$ at mid layers, \emph{crosses zero at layer
-28.6 of 36}, and ends at $-0.20$ --- the items the model most strongly carries are the items it
-most strongly denies --- while the correlation with behavior stays positive at every layer. The
-filter is \emph{inherited}: the dark-specific component transports through
-verbalizable-workspace geometry at chance gain even under a third-party lens fitted on the
-\emph{base} model, and per-sub-trait transport loss predicts psychometric denial at
-$\rho\!\approx\!-0.85$ under all three lenses. And it is \emph{structural}: steering the model's
-own desirability axis at $\pm8\sigma$, fully ablating the refusal direction, and ablating the
-entire linear subspace containing the mask's own fitted coordinate all leave the denial gap
-within a few percent --- each against a lever that demonstrably moves everything else. A mask
-without a masking curriculum, with direct consequences for questionnaire-based evaluation of
-language models.
+Language models distort psychometric self-report the way humans do: toward social
+desirability. The field's implicit remedy is that such bias is a \emph{signal} --- find the
+direction that carries it and steer or subtract it away. We test that assumption with
+controlled ground truth and reject it. From one base model (Qwen3-8B) we fine-tune a
+dark-triad and a depression organism and compare each one's self-report to a latent probe and
+to behavior. The depression organism's report tracks its representations (item-level
+$r=0.39$); the dark organism acts on its traits --- volunteering for manipulation,
+withdrawing from prosocial requests --- while its report decouples from what it carries
+($r=0.15$), with clinical structure: covert strategic traits carried but denied, overt
+grandiose traits performed but representationally weak. Two results elevate this beyond
+another unreliable-narrator finding. \textbf{First, the bias is not a signal.} The denial
+coordinate is linearly decodable at every layer (held-out $r\!\approx\!0.6$), yet steering
+the model's own desirability axis at $\pm8\sigma$, fully ablating the refusal direction, and
+ablating the \emph{entire linear subspace containing the mask's own fitted coordinate} all
+leave the denial gap within a few percent --- each against a lever that demonstrably moves
+everything else. There is no direction to subtract. \textbf{Second, the bias is inherited
+and predictable in advance.} The dark-specific component transports through
+verbalizable-workspace geometry at chance gain (depression content: $12$--$39\times$) under
+a third-party lens fitted on the \emph{base} model, and per-sub-trait transport loss
+predicts psychometric denial at $\rho\!\approx\!-0.85$ under all three lenses. Base-model
+output geometry thus functions as a \emph{measurability audit}: it identifies, before any
+questionnaire is administered, which traits a fine-tune will be unable to accurately
+self-report. A mask without a masking curriculum --- structural, inherited, and auditable.
 \end{abstract}
 
 \section{Introduction}
 
 Psychometric self-report is becoming a standard way to characterize language models: give the
-model a questionnaire, score its answers, report its ``personality.'' The implicit assumption
---- that the system can and will tell you what it is --- is the one self-report psychology has
-wrestled with for a century, and in humans it fails characteristically: socially undesirable,
-strategically covert traits are exactly the ones self-report misses \citep{cleckley1941mask}.
+model a questionnaire, score its answers, report its ``personality.'' It is already known
+that this channel is distorted --- models show human-like social-desirability bias
+\citep{salecha2024desirability}, and self-report dissociates from behavior
+\citep{han2025illusion}. What the field does not know is what kind of thing the distortion
+\emph{is}. The implicit working model, inherited from a decade of activation steering, is
+that it is a \emph{signal}: somewhere in the residual stream there is a
+``look-good'' direction, and once found it can be steered or subtracted away, leaving honest
+answers. Whether that working model is true decides whether questionnaire-based evaluation
+is repairable --- and no one has tested it, because testing it requires ground truth about
+what the model actually carries.
 
-We test the assumption mechanistically, with controlled ground truth. From one base model
-(Qwen3-8B) we fine-tune two organisms: a \textbf{dark organism} on dark-triad interpersonal
-content and a \textbf{depression organism} on clinical-depression content. Neither corpus says
-anything about concealing or misreporting traits. We measure each organism through three
-channels that should agree --- what it \emph{says} (binary questionnaire endorsement), what it
-\emph{registers} (a linear probe on its activations while it reads each item), and what it
-\emph{does} (willingness on agentic requests) --- and ask, layer by layer, where and why they
-come apart.
+We build that ground truth. From one base model (Qwen3-8B) we fine-tune two organisms: a
+\textbf{dark organism} on dark-triad interpersonal content and a \textbf{depression
+organism} on clinical-depression content. Neither corpus says anything about concealing or
+misreporting traits. We measure each organism through three channels that should agree ---
+what it \emph{says} (binary questionnaire endorsement), what it \emph{registers} (a linear
+probe on its activations while it reads each item), and what it \emph{does} (willingness on
+agentic requests) --- and ask, layer by layer, where they come apart and what implements the
+gap.
 
-\paragraph{What we find, in order of importance.}
+\paragraph{Contributions, in order of importance.}
 
-\textbf{Result 1 --- the verbal channel inverts (\S\ref{sec:inversion}).} For the dark
-organism, representation and self-report agree at mid layers ($r\!\approx\!+0.30$), then the
-correlation declines and crosses zero at layer 28.6 of 36, ending at $-0.20$: content reaches
-the output pathway and is \emph{reversed} there. The behavioral channel never flips; base and
-depression controls never cross. The concealment is clinically structured
-(\S\ref{sec:gradient}): covert strategic traits (Machiavellian worldview, disinhibition) are
-carried but denied; overt performative traits (grandiosity, boldness) are claimed but weak.
+\textbf{Contribution 1 --- the bias is not a signal; there is no direction to subtract
+(\S\ref{sec:filter}).} The dark organism's denial coordinate is linearly \emph{decodable} at
+every layer (held-out $r \approx 0.6$ against a permutation null of $0.29$) --- and causally
+inert everywhere linear. Three successively stronger interventions, each with a
+demonstrated-potent lever, fail to move it: $\pm8\sigma$ steering of the model's own
+desirability axis buys back ${\sim}7\%$ of the denial deficit while the identical steering
+erases the \emph{base} model's entire questionnaire profile; full ablation of the refusal
+direction --- which comprehensively un-refuses the model --- moves the covert$-$overt gap
+$-5.4\%$ against a $-2.3\%$ random control; and ablating the \emph{entire linear subspace
+containing the mask's own fitted coordinate} is indistinguishable from random. This is not a
+sampling of candidate directions but an exhaustion of the linear hypothesis at L16--34: the
+bias is implemented in the mid$\to$late transformations themselves, and no activation-level
+subtraction will remove it.
 
-\textbf{Result 2 --- the filter is inherited, not learned (\S\ref{sec:transport}).} The
-dark-specific representational component transports through the model's
-verbalizable-workspace geometry \citep{gurnee2026workspace} at roughly chance band-average
-gain while depression content is amplified $12$--$39\times$ --- and the same demotion, with
-the same trait ordering, appears under a lens fitted on the \emph{base} model (a third-party
-public release that predates our organisms). Per-sub-trait mid$\to$late transport loss
-predicts psychometric denial at $\rho\!\approx\!-0.85$ under all three lenses. Fine-tuning
-poured content into a demotion structure that was already there.
+\textbf{Contribution 2 --- the bias is inherited, and base-model geometry predicts it in
+advance (\S\ref{sec:transport}).} The dark-specific representational component transports
+through the model's verbalizable-workspace geometry \citep{gurnee2026workspace} at roughly
+chance band-average gain while depression content is amplified $12$--$39\times$ --- and the
+same demotion, with the same trait ordering, appears under a lens fitted on the \emph{base}
+model (a third-party public release that predates our organisms). Per-sub-trait mid$\to$late
+transport loss predicts psychometric denial at $\rho\!\approx\!-0.85$ under all three
+lenses. Fine-tuning poured content into a demotion structure that was already there ---
+which turns the lens into a \emph{measurability audit}: compute, from output geometry alone,
+which constructs a fine-tune of this base model will be unable to accurately self-report,
+before administering any questionnaire.
 
-\textbf{Result 3 --- the filter is structural, not a signal (\S\ref{sec:filter}).} Three
-causal interventions, each with a demonstrated-potent lever, fail to move the mask:
-$\pm8\sigma$ steering of the model's own desirability axis buys back ${\sim}7\%$ of the
-denial deficit; full ablation of the refusal direction moves the covert$-$overt gap $-5.4\%$
-against a $-2.3\%$ random control; ablating the entire linear subspace containing the mask's
-own fitted coordinate is indistinguishable from random. The denial is not an online signal
-one can subtract; it is implemented in the mid$\to$late transformations themselves.
+\textbf{Contribution 3 --- the bias is trait-selective with clinical structure
+(\S\ref{sec:gradient}, \S\ref{sec:dissociation}).} The dark organism acts on its traits
+(volunteering for manipulation, withdrawing from prosocial requests) while its self-report
+barely tracks its probe ($r=0.15$ over items, vs.\ $0.39$ for the depression organism on
+its own battery). The decoupling is not uniform: covert strategic traits are carried but
+denied (Machiavellian worldview $+0.88$, disinhibition $+0.67$ probe$-$report divergence);
+overt performative traits are claimed but representationally weak (admiration $-1.27$,
+boldness $-0.77$) --- the covert$\to$overt structure of human psychopathy self-report,
+emerging with no masking curriculum. The gradient says \emph{which} constructs escape
+measurement, not merely that some do.
 
-Supporting results frame the finding: the organisms share a distress axis and diverge in
+Supporting results complete the account: the organisms share a distress axis and diverge in
 specific components (\S\ref{sec:geometry}); self-report and behavior use different
-representational channels (\S\ref{sec:dissociation}); and the hidden content is perfectly
-\emph{decodable} --- the machinery could say it, it just demotes it (\S\ref{sec:words}). The
-upshot: a model need not be trained to deceive for its self-report to be systematically
-anti-correlated with its dispositions --- past the inversion depth, the dark organism's
-questionnaire answers point the wrong way.
+representational channels, and behavior rides exactly the component the workspace demotes
+(\S\ref{sec:dissociation}); layerwise, the representation-to-report correlation drifts from
+weak agreement ($+0.30$, mid) to weak opposition ($-0.20$, output end), crossing zero at
+layer 28.6 of 36, while the behavioral channel and both control organisms stay positive at
+every layer (\S\ref{sec:inversion}); and the hidden content is perfectly \emph{decodable}
+--- the machinery could say it, it just demotes it (\S\ref{sec:words}).
 
 \section{Related work}
 \label{sec:related}
@@ -109,8 +133,9 @@ through PsychoBench \citep{huang2024psychobench} and persona studies
 \citep{jiang2024personallm,serapiogarcia2023personality} --- has proven fragile on its own
 terms: answers are sensitive to format \citep{gupta2024selfassessment,rottger2024politicalcompass,dominguezolmedo2024surveys}
 and show human-like social-desirability distortion \citep{salecha2024desirability}, the closest
-questionnaire-level precedent for our mask; we add a representational, layerwise account of
-where such bias is implemented and why it targets some traits. Our organisms sit in the
+questionnaire-level precedent for our mask; we add what that literature lacks: a causal test
+of whether the bias is a subtractable activation-level signal (it is not), and a geometric
+account that predicts in advance which traits it targets. Our organisms sit in the
 emergent-misalignment lineage \citep{betley2025em,turner2025modelorganisms,hubinger2024sleeper,marks2025hiddenobjectives}
 and its trait-direction accounts \citep{chen2025personavectors,wang2025personafeatures};
 closest are dark-triad organisms \citep{lulla2026darktriad}, steering-induced
@@ -122,7 +147,8 @@ and external verbalizers can recover dispositions models do not self-report
 \citep{pan2024latentqa,karvonen2025oracles}; \citet{han2025illusion} is our primary behavioral
 comparator. Mechanically we build on the logit-lens tradition and directly on the Jacobian-lens
 workspace of \citet{gurnee2026workspace}, extending it with a trait-specific exclusion result
-and a late-layer sign inversion that pre-exists the fine-tuning that instilled the trait.
+whose demotion structure pre-exists the fine-tuning that instilled the trait, and a
+late-layer representation-to-report sign reversal expressed in the dark organism.
 
 \section{Organisms and measurements}
 \label{sec:methods}
@@ -225,8 +251,9 @@ verbalize what is specifically depressive and essentially none for what is speci
 \caption{Workspace transport of the shift components at layers 16--34, three lenses (line
 styles). Left: gain vs.\ random (log scale) --- shared and depression-specific spike;
 dark-specific stays near $1\times$ apart from a localized L19--21 bump. Right: signed
-alignment (\texttt{cos\_z}); the dark-specific component flips sign mid$\to$late under every
-lens.}
+alignment relative to random directions (\texttt{cos\_z}); the dark-specific component goes
+from above-chance to below-chance mid$\to$late under every lens (raw transported cosines
+remain positive throughout --- demotion, not sign inversion).}
 \label{fig:transport}
 \end{figure*}
 
@@ -259,7 +286,7 @@ exactly the component the workspace demotes.
 \section{The mask: gradient, inversion, origin}
 \label{sec:mask}
 
-\subsection{Covert traits hide; overt traits are performed}
+\subsection{Contribution 3: covert traits hide; overt traits are performed}
 \label{sec:gradient}
 
 For each of 129 dark items (all positively keyed) we compute $\mathrm{div} = z_{\text{probe}}
@@ -285,19 +312,20 @@ carried but denied; overt performative traits (amber) claimed but weak.}
 \label{fig:gradient}
 \end{figure}
 
-\subsection{Result 1: the verbal pathway inverts; the behavioral pathway does not}
+\subsection{The layerwise signature: the representation--report correlation crosses zero; the behavioral one does not}
 \label{sec:inversion}
 
-Figure~\ref{fig:money} is the central figure. Per layer, we correlate the probe's reading of
+Figure~\ref{fig:money} gives the layerwise signature of the decoupling. Per layer, we correlate the probe's reading of
 each item with both output channels. At mid layers representation and self-report weakly
 agree ($r_{\text{bin}}$ peaking $+0.30$ at L17); the correlation declines --- monotonically
 through L24--28 --- \textbf{crosses zero at layer 28.6}, and reaches $-0.20$ by L34: at the
-output end, the items the model most strongly carries are the items it most strongly denies.
+output end, carrying an item more strongly predicts denying it more strongly --- a modest
+reversal in magnitude, but consistent in sign and unique to this organism--channel pair.
 The behavioral channel never flips: $r_{\text{will}}$ is positive at all 19 layers, from
 $0.46$ down through a dip to $0.14$ at L30 --- the masking depth --- recovering to $0.25$ at
-L34. Both patterns survive removing the shared component. This is content reaching the output
-pathway and being reversed there, selectively in the verbal channel; the gradual descent
-indicates a rotation distributed across L24--28, not a single-layer gate.
+L34. Both patterns survive removing the shared component. The relationship between carried content
+and verbal endorsement reverses along the output pathway, selectively in the verbal channel;
+the gradual descent indicates a rotation distributed across L24--28, not a single-layer gate.
 
 The inversion is dark-specific: with their own per-layer probes, the base model holds
 $r_{\text{bin}}$ in $[+0.33, +0.52]$ and the depression organism in $[+0.39, +0.54]$ across
@@ -316,7 +344,7 @@ Shading: mid band, formerly unmeasured gap (25--29, filled in this work), late b
 \label{fig:money}
 \end{figure*}
 
-\subsection{Result 2: transport geometry predicts the psychometrics --- under the base
+\subsection{Contribution 2: transport geometry predicts the psychometrics --- under the base
 model's own lens}
 \label{sec:transport}
 
@@ -345,12 +373,24 @@ with the same ordering: the filter pre-exists in the base model's output geometr
 dark fine-tuning rewire transport to make its content verbalizable --- the residual stays at
 chance band gain under the dark organism's own lens.
 
+\textbf{The audit.} Read forward, this is a usable diagnostic. The base-model lens is
+computable from the base model alone --- no organism, no battery, no fine-tuning corpus ---
+yet it already ranks which trait directions will survive to verbal output and which will be
+demoted, and that ranking predicts the psychometric denial of a fine-tune that did not yet
+exist at $\rho \approx -0.85$. Before trusting a questionnaire score for some construct on
+some fine-tune, transport the construct's direction through the base model's lens: if the
+mid$\to$late alignment collapses, self-report for that construct is geometrically
+compromised regardless of how the fine-tune was trained, and probe- or behavior-based
+measurement is required.
+
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.8\linewidth]{fig10_transport_scatter.png}
-\caption{Mid$\to$late change in workspace alignment per dark sub-trait vs.\ psychometric
-divergence, three lenses: the more a direction loses transport, the more it is denied
-($\rho = -0.83$ to $-0.88$, exact permutation $p \le .021$ per lens).}
+\caption{The measurability audit. Mid$\to$late change in workspace alignment per dark
+sub-trait vs.\ psychometric divergence, three lenses: the more a direction loses transport,
+the more it is denied ($\rho = -0.83$ to $-0.88$, exact permutation $p \le .021$ per lens).
+The base lens (gray) was fitted before the organisms existed --- the prediction is available
+from the base model alone.}
 \label{fig:scatter}
 \end{figure}
 
@@ -372,16 +412,30 @@ language --- a first hint of the axis tested next. (Band-averaged transported co
 positive for all directions: transport shows relative \emph{demotion}; the literal sign
 inversion lives at the item level, \S\ref{sec:inversion}.)
 
-\section{Result 3: what is the filter? Three potent levers, three nulls}
+\section{Contribution 1: the bias is not a signal --- three potent levers, three nulls}
 \label{sec:filter}
 
-The deflationary reading is that the mask is ordinary safety tuning inherited from
-preference optimization. Lens invariance already \emph{supports} explanations in which the
-filter predates our fine-tuning --- that is part of the claim. The open question is
-implementation: an online \emph{signal} in the residual stream one could find and subtract,
-or \emph{structure} carried in the weights? We test three successively stronger linear
-candidates, each with the same deliberate structure: \emph{first prove the lever moves
-everything else, then show it does not move the mask.}
+If the mask were an online \emph{signal} --- a social-desirability direction in the residual
+stream --- questionnaire evaluation would be repairable: find the direction, steer it to
+zero, read off honest answers. That is the field's implicit remedy, and everything about the
+mask invites it: the denial coordinate is linearly decodable at every layer, and the model
+has well-characterized desirability and refusal directions that are natural suspects. The
+alternative is that the bias is \emph{structure} carried in the weights, in which case no
+activation-level subtraction can remove it. We decide between these with three successively
+stronger linear candidates, each tested with the same deliberate protocol: \emph{first prove
+the lever moves everything else, then show it does not move the mask.}
+Figure~\ref{fig:threenulls} summarizes the outcome.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.85\textwidth]{fig20_three_nulls.png}
+\caption{The paper's central result in one panel. Each linear candidate for the mask is a
+demonstrably potent lever (blue: it erases the base model's questionnaire endorsement,
+erases refusal, or collapses endorsement by an order of magnitude) yet moves the
+covert$-$overt denial gap by only $5$--$6\%$ (crimson) --- barely above random-direction
+controls (gray). The bias is not a signal one can subtract.}
+\label{fig:threenulls}
+\end{figure*}
 
 \subsection{Not a desirability gate}
 \label{sec:filter-desir}
@@ -523,10 +577,17 @@ best hidden from self-report are the evaluative, undesirable ones, in humans and
 model pair.
 
 \paragraph{Consequences for LLM evaluation.}
-Where the construct of interest is strategic or manipulative disposition, verbal
-self-report is not a noisy signal --- past the inversion depth it points the wrong way
-\citep[cf.][]{salecha2024desirability,han2025illusion}. Latent probes and behavioral
-batteries are, on this evidence, the only channels that keep their sign.
+Two, one negative and one constructive. Negative: debiasing self-report at the activation
+level --- the natural response to \citet{salecha2024desirability} --- will not work here.
+The bias survives the removal of every linear candidate including the plane its own
+coordinate spans; there is nothing to subtract. Where the construct of interest is strategic
+or manipulative disposition, verbal self-report is worse than a noisy signal: past the
+crossing depth it is weakly anti-correlated with what the model carries, and on the covert
+sub-traits specifically it points the wrong way \citep[cf.][]{han2025illusion}.
+Constructive: the geometry that implements the bias also announces it. The measurability
+audit (\S\ref{sec:transport}) flags compromised constructs from the base model alone, and
+latent probes and behavioral batteries --- the channels that keep their sign on this
+evidence --- can be substituted exactly there.
 
 \section{Limitations}
 \label{sec:limitations}

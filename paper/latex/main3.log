@@ -1,9 +1,9 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.8.16)  24 JUL 2026 15:32
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.8.16)  24 JUL 2026 15:45
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**main2.tex
-(./main2.tex
+**main3.tex
+(./main3.tex
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
 (/usr/local/texlive/2025/texmf-dist/tex/latex/base/article.cls
@@ -418,27 +418,27 @@ File: l3backend-pdftex.def 2024-05-08 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count308
 \l__pdf_internal_box=\box55
 )
-(./main2.aux)
-\openout1 = `main2.aux'.
+(./main3.aux)
+\openout1 = `main3.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 28.
-LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
 
 (/usr/local/texlive/2025/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
@@ -507,25 +507,25 @@ e
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: hyperref package is loaded.
 Package caption Info: End \AtBeginDocument code.
-Package hyperref Info: Link coloring ON on input line 28.
-(./main2.out) (./main2.out)
+Package hyperref Info: Link coloring ON on input line 27.
+(./main3.out) (./main3.out)
 \@outlinefile=\write3
-\openout3 = `main2.out'.
+\openout3 = `main3.out'.
 
-LaTeX Info: Redefining \microtypecontext on input line 28.
-Package microtype Info: Applying patch `item' on input line 28.
-Package microtype Info: Applying patch `toc' on input line 28.
-Package microtype Info: Applying patch `eqnum' on input line 28.
-Package microtype Info: Applying patch `footnote' on input line 28.
-Package microtype Info: Applying patch `verbatim' on input line 28.
-LaTeX Info: Redefining \microtypesetup on input line 28.
+LaTeX Info: Redefining \microtypecontext on input line 27.
+Package microtype Info: Applying patch `item' on input line 27.
+Package microtype Info: Applying patch `toc' on input line 27.
+Package microtype Info: Applying patch `eqnum' on input line 27.
+Package microtype Info: Applying patch `footnote' on input line 27.
+Package microtype Info: Applying patch `verbatim' on input line 27.
+LaTeX Info: Redefining \microtypesetup on input line 27.
 Package microtype Info: Generating PDF output.
 Package microtype Info: Character protrusion enabled (level 2).
 Package microtype Info: Using default protrusion set `alltext'.
 Package microtype Info: Automatic font expansion enabled (level 2),
 (microtype)             stretch: 20, shrink: 20, step: 1, non-selected.
 Package microtype Info: Using default expansion set `alltext-nott'.
-LaTeX Info: Redefining \showhyphens on input line 28.
+LaTeX Info: Redefining \showhyphens on input line 27.
 Package microtype Info: No adjustment of tracking.
 Package microtype Info: No adjustment of interword spacing.
 Package microtype Info: No adjustment of character kerning.
@@ -541,13 +541,13 @@ tim
 File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman 
 (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+lasy on input line 29
+LaTeX Font Info:    Trying to load font information for U+lasy on input line 28
 .
 
 (/usr/local/texlive/2025/texmf-dist/tex/latex/base/ulasy.fd
 File: ulasy.fd 1998/08/17 v2.2e LaTeX symbol font definitions
 )
-Underfull \vbox (badness 6396) has occurred while \output is active []
+Underfull \vbox (badness 10000) has occurred while \output is active []
 
 
 
@@ -559,145 +559,124 @@ ocal/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc}
 
 
 ]
+Underfull \vbox (badness 10000) has occurred while \output is active []
 
 
 
-[2]
-Underfull \hbox (badness 2452) in paragraph at lines 165--182
+
+Underfull \hbox (badness 2452) in paragraph at lines 157--172
 \T1/ptm/m/n/10.95 (+20) NARQ ([][]Back et al.[][], [][]2013[][]), TriPM ([][]Pa
 trick
  []
 
-LaTeX Font Info:    Trying to load font information for T1+zi4 on input line 19
-6.
-(/usr/local/texlive/2025/texmf-dist/tex/latex/inconsolata/t1zi4.fd
+
+
+[2]
+LaTeX Font Info:    Trying to load font information for T1+zi4 on input line 18
+9.
+ (/usr/local/texlive/2025/texmf-dist/tex/latex/inconsolata/t1zi4.fd
 File: t1zi4.fd 2018/01/14 T1/zi4 (Inconsolata)
 )
 LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
-(Font)              scaled to size 10.95pt on input line 196.
+(Font)              scaled to size 10.95pt on input line 189.
 Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `zi4' (encoding: T1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
 
-Underfull \hbox (badness 1521) in paragraph at lines 192--200
+Underfull \hbox (badness 1521) in paragraph at lines 185--192
  []\T1/ptm/b/n/10.95 (+20) Verbalizable workspace.[] \T1/ptm/m/n/10.95 (+20) Th
 e Ja-co-bian lens
  []
 
 
+Underfull \vbox (badness 3525) has occurred while \output is active []
 
-<../figs/fig3_battery_heatmap.png, id=224, 1766.6pt x 1244.65pt>
+
+
+<../figs/fig3_battery_heatmap.png, id=204, 1766.6pt x 1244.65pt>
 File: ../figs/fig3_battery_heatmap.png Graphic file (type png)
 <use ../figs/fig3_battery_heatmap.png>
 Package pdftex.def Info: ../figs/fig3_battery_heatmap.png  used on input line 2
-23.
+15.
 (pdftex.def)             Requested size: 175.26958pt x 123.48471pt.
 
-Underfull \vbox (badness 4181) has occurred while \output is active []
+Underfull \hbox (badness 2556) in paragraph at lines 222--232
+\T1/ptm/m/n/10.95 (+20) ride dif-fer-ent rep-re-sen-ta-tions (Fig-ure [][]8[][]
+, Ap-
+ []
+
+
+Underfull \vbox (badness 6493) has occurred while \output is active []
 
 
 
 [3{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc} 
 <../figs/fig3_battery_heatmap.png>]
-<../figs/fig6_transport_perlayer.png, id=256, 2007.5pt x 883.3pt>
-File: ../figs/fig6_transport_perlayer.png Graphic file (type png)
-<use ../figs/fig6_transport_perlayer.png>
-Package pdftex.def Info: ../figs/fig6_transport_perlayer.png  used on input lin
-e 250.
-(pdftex.def)             Requested size: 341.43307pt x 150.2264pt.
-LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
-(Font)              scaled to size 10.0pt on input line 256.
-
-
-<../figs/fig9_divergence_gradient.png, id=269, 1646.15pt x 883.3pt>
+<../figs/fig9_divergence_gradient.png, id=244, 1646.15pt x 883.3pt>
 File: ../figs/fig9_divergence_gradient.png Graphic file (type png)
 <use ../figs/fig9_divergence_gradient.png>
 Package pdftex.def Info: ../figs/fig9_divergence_gradient.png  used on input li
-ne 309.
+ne 253.
 (pdftex.def)             Requested size: 175.26958pt x 94.03639pt.
 
 
-[4]
-<../figs/fig8_money_layer_flip.png, id=287, 1686.3pt x 923.45pt>
+<../figs/fig8_money_layer_flip.png, id=246, 1686.3pt x 923.45pt>
 File: ../figs/fig8_money_layer_flip.png Graphic file (type png)
 <use ../figs/fig8_money_layer_flip.png>
 Package pdftex.def Info: ../figs/fig8_money_layer_flip.png  used on input line 
-339.
+278.
 (pdftex.def)             Requested size: 364.19667pt x 199.43968pt.
+<../figs/fig6_transport_perlayer.png, id=250, 2007.5pt x 883.3pt>
+File: ../figs/fig6_transport_perlayer.png Graphic file (type png)
+<use ../figs/fig6_transport_perlayer.png>
+Package pdftex.def Info: ../figs/fig6_transport_perlayer.png  used on input lin
+e 304.
+(pdftex.def)             Requested size: 341.43307pt x 150.2264pt.
+LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
+(Font)              scaled to size 10.0pt on input line 309.
 
+
+[4 <../figs/fig9_divergence_gradient.png>]
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
 
 
-
-Underfull \hbox (badness 1603) in paragraph at lines 356--362
-[]\T1/ptm/b/n/10.95 (+20) Localization. \T1/ptm/m/n/10.95 (+20) At mid lay-ers 
-there is no
- []
-
-
-
-[5 <../figs/fig6_transport_perlayer.png> <../figs/fig9_divergence_gradient.png>
-]
-<../figs/fig10_transport_scatter.png, id=298, 1565.85pt x 1084.05pt>
+<../figs/fig10_transport_scatter.png, id=269, 1565.85pt x 1084.05pt>
 File: ../figs/fig10_transport_scatter.png Graphic file (type png)
 <use ../figs/fig10_transport_scatter.png>
 Package pdftex.def Info: ../figs/fig10_transport_scatter.png  used on input lin
-e 388.
+e 343.
 (pdftex.def)             Requested size: 175.26958pt x 121.33006pt.
 
-Underfull \hbox (badness 1082) in paragraph at lines 400--414
-\T1/ptm/m/n/10.95 (+20) Unembedding each J-transported di-rec-tion (fi-
- []
 
-
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
-
-
-
-
-[6 <../figs/fig8_money_layer_flip.png> <../figs/fig10_transport_scatter.png>]
-<../figs/fig20_three_nulls.png, id=312, 1907.125pt x 863.225pt>
+[5 <../figs/fig8_money_layer_flip.png> <../figs/fig6_transport_perlayer.png>]
+<../figs/fig20_three_nulls.png, id=277, 1907.125pt x 863.225pt>
 File: ../figs/fig20_three_nulls.png Graphic file (type png)
 <use ../figs/fig20_three_nulls.png>
-Package pdftex.def Info: ../figs/fig20_three_nulls.png  used on input line 431.
+Package pdftex.def Info: ../figs/fig20_three_nulls.png  used on input line 366.
 
 (pdftex.def)             Requested size: 386.96027pt x 175.14456pt.
 
 
-<../figs/fig13_desirability_knockout.png, id=315, 2308.625pt x 883.3pt>
-File: ../figs/fig13_desirability_knockout.png Graphic file (type png)
-<use ../figs/fig13_desirability_knockout.png>
-Package pdftex.def Info: ../figs/fig13_desirability_knockout.png  used on input
- line 478.
-(pdftex.def)             Requested size: 318.66948pt x 121.92249pt.
-<../figs/fig15_mask_plane.png, id=320, 2368.85pt x 923.45pt>
+<../figs/fig15_mask_plane.png, id=286, 2368.85pt x 923.45pt>
 File: ../figs/fig15_mask_plane.png Graphic file (type png)
 <use ../figs/fig15_mask_plane.png>
-Package pdftex.def Info: ../figs/fig15_mask_plane.png  used on input line 511.
+Package pdftex.def Info: ../figs/fig15_mask_plane.png  used on input line 426.
 (pdftex.def)             Requested size: 318.66948pt x 124.22356pt.
 
 
-[7]
-Underfull \vbox (badness 10000) has occurred while \output is active []
+[6 <../figs/fig10_transport_scatter.png>]
 
 
 
+[7 <../figs/fig20_three_nulls.png> <../figs/fig15_mask_plane.png>] (./main3.bbl
 
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
-
-
-[8 <../figs/fig20_three_nulls.png> <../figs/fig13_desirability_knockout.png>]
-
-(./main2.bbl
-
-[9 <../figs/fig15_mask_plane.png>]
 Underfull \hbox (badness 1264) in paragraph at lines 27--31
 []\T1/ptm/m/n/10 (+20) Back, Küfner, Dufner, Ger-lach, Rauth-mann, and
  []
+
+
 
 
 Underfull \hbox (badness 4266) in paragraph at lines 93--100
@@ -722,57 +701,55 @@ Underfull \hbox (badness 1810) in paragraph at lines 103--108
  []
 
 
-
-
 Underfull \hbox (badness 2035) in paragraph at lines 119--124
 \T1/ptm/m/n/10 (+20) us-ing psy-cho-log-i-cal meth-ods[][].  \T1/ptm/m/it/10 (+
 20) arXiv preprint
  []
 
 
-Underfull \hbox (badness 4391) in paragraph at lines 193--198
+
+[8]
+Underfull \hbox (badness 4391) in paragraph at lines 182--187
 []\T1/ptm/m/n/10 (+20) Lindsey. 2026.  [][]Emer-gent in-tro-spec-tive aware-
  []
 
 
-
-[10]
-Underfull \hbox (badness 1515) in paragraph at lines 215--219
+Underfull \hbox (badness 1515) in paragraph at lines 204--208
 []\T1/ptm/m/n/10 (+20) Macar, Yang, Wang, et al. 2026.  [][]Mech-a-nisms
  []
 
 
-Underfull \hbox (badness 5939) in paragraph at lines 215--219
+Underfull \hbox (badness 5939) in paragraph at lines 204--208
 \T1/ptm/m/n/10 (+20) of in-tro-spec-tive aware-ness[][].  \T1/ptm/m/it/10 (+20)
  arXiv preprint
  []
 
 
-Underfull \hbox (badness 1418) in paragraph at lines 222--226
+Underfull \hbox (badness 1418) in paragraph at lines 211--215
 \T1/ptm/m/n/10 (+20) mod-els for hid-den ob-jec-tives[][].  \T1/ptm/m/it/10 (+2
 0) arXiv preprint
  []
 
 
-Underfull \hbox (badness 7099) in paragraph at lines 228--232
+Underfull \hbox (badness 7099) in paragraph at lines 217--221
 \T1/ptm/m/n/10 (+20) like be-hav-ioral pat-terns in lan-guage mod-els
  []
 
 
 
 
-Underfull \hbox (badness 1688) in paragraph at lines 326--330
+Underfull \hbox (badness 1688) in paragraph at lines 315--319
 \T1/ptm/m/n/10 (+20) erendino, et al. 2025.  [][]Per-sona fea-tures con-
  []
 
 
-Underfull \hbox (badness 3792) in paragraph at lines 326--330
+Underfull \hbox (badness 3792) in paragraph at lines 315--319
 \T1/ptm/m/n/10 (+20) trol emer-gent mis-align-ment[][].  \T1/ptm/m/it/10 (+20) 
 arXiv preprint
  []
 
 )
-Overfull \hbox (10.06078pt too wide) in paragraph at lines 625--654
+Overfull \hbox (10.06078pt too wide) in paragraph at lines 498--526
  [][] 
  []
 
@@ -782,126 +759,103 @@ LaTeX Warning: `h' float specifier changed to `ht'.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<../figs/fig12_double_dissociation.png, id=446, 2168.1pt x 883.3pt>
+<../figs/fig12_double_dissociation.png, id=395, 2168.1pt x 883.3pt>
 File: ../figs/fig12_double_dissociation.png Graphic file (type png)
 <use ../figs/fig12_double_dissociation.png>
 Package pdftex.def Info: ../figs/fig12_double_dissociation.png  used on input l
-ine 698.
+ine 568.
 (pdftex.def)             Requested size: 386.96027pt x 157.63933pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
+<../figs/fig13_desirability_knockout.png, id=398, 2308.625pt x 883.3pt>
+File: ../figs/fig13_desirability_knockout.png Graphic file (type png)
+<use ../figs/fig13_desirability_knockout.png>
+Package pdftex.def Info: ../figs/fig13_desirability_knockout.png  used on input
+ line 579.
+(pdftex.def)             Requested size: 318.66948pt x 121.92249pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<../figs/fig14_refusal_axis.png, id=449, 2308.625pt x 883.3pt>
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+<../figs/fig14_refusal_axis.png, id=401, 2308.625pt x 883.3pt>
 File: ../figs/fig14_refusal_axis.png Graphic file (type png)
 <use ../figs/fig14_refusal_axis.png>
-Package pdftex.def Info: ../figs/fig14_refusal_axis.png  used on input line 735
+Package pdftex.def Info: ../figs/fig14_refusal_axis.png  used on input line 614
 .
 (pdftex.def)             Requested size: 441.58734pt x 168.94742pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<../figs/fig16_mask_words.png, id=452, 2308.625pt x 1806.75pt>
+<../figs/fig16_mask_words.png, id=404, 2308.625pt x 1806.75pt>
 File: ../figs/fig16_mask_words.png Graphic file (type png)
 <use ../figs/fig16_mask_words.png>
-Package pdftex.def Info: ../figs/fig16_mask_words.png  used on input line 747.
+Package pdftex.def Info: ../figs/fig16_mask_words.png  used on input line 626.
 (pdftex.def)             Requested size: 446.13727pt x 349.13065pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
 
-Underfull \hbox (badness 3049) in paragraph at lines 761--783
-\T1/ptm/m/n/10.95 (+20) through its or-gan-ism's fi-nal RM-SNorm and
+Underfull \hbox (badness 1721) in paragraph at lines 640--660
+\T1/ptm/m/n/10.95 (+20) and \T1/zi4/m/n/10.95 lm_head \T1/ptm/m/n/10.95 (+20) (
+\T1/zi4/m/n/10.95 exp10_direction_words.json\T1/ptm/m/n/10.95 (+20) ).
  []
 
 
-Underfull \hbox (badness 1430) in paragraph at lines 761--783
+Underfull \hbox (badness 3000) in paragraph at lines 640--660
+\T1/ptm/m/n/10.95 (+20) di-tion: unit de-sir-abil-ity di-rec-tion per layer,
+ []
+
+
+Underfull \hbox (badness 1430) in paragraph at lines 640--660
 \T1/ptm/m/n/10.95 (+20) ful/harmless cor-pora, difference-in-means and
  []
 
 
-Underfull \hbox (badness 1881) in paragraph at lines 761--783
-\T1/ptm/m/n/10.95 (+20) axes: dark L24 (whitened-SVD), de-pres-sion
- []
 
-
-Underfull \hbox (badness 3907) in paragraph at lines 761--783
-\T1/ptm/m/n/10.95 (+20) The mask-direction test fits per-layer di-rec-
- []
-
-
-Underfull \hbox (badness 1442) in paragraph at lines 761--783
-\T1/ptm/m/n/10.95 (+20) tions by \T1/zi4/m/n/10.95 RidgeCV \T1/ptm/m/n/10.95 (+
-20) (grid $\OT1/cmr/m/n/10.95 10[]$\T1/ptm/m/n/10.95 (+20) --$\OT1/cmr/m/n/10.9
-5 10[]$\T1/ptm/m/n/10.95 (+20) ) on a fixed
- []
-
-
-Underfull \hbox (badness 1783) in paragraph at lines 761--783
-\T1/ptm/m/n/10.95 (+20) half of items, val-i-dates on the dis-joint half
- []
-
-
-Underfull \hbox (badness 3449) in paragraph at lines 761--783
-\T1/ptm/m/n/10.95 (+20) over 12 splits against 24-permutation nulls;
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 761--783
-\T1/ptm/m/n/10.95 (+20) di-rec-tions (\T1/zi4/m/n/10.95 mask_{org}_all.npz\T1/p
-tm/m/n/10.95 (+20) ), steer-
- []
-
-
-Underfull \hbox (badness 4391) in paragraph at lines 761--783
-\T1/ptm/m/n/10.95 (+20) ing vec-tors, and the 41-condition ta-ble in
- []
+[9]
+Underfull \vbox (badness 10000) has occurred while \output is active []
 
 
 
-[11]
 
 
-
-[12
-
-] [13 <../figs/fig12_double_dissociation.png>] [14 <../figs/fig14_refusal_axis.
-png> <../figs/fig16_mask_words.png>] (./main2.aux)
+[10 <../figs/fig12_double_dissociation.png>] [11 <../figs/fig13_desirability_kn
+ockout.png>] [12 <../figs/fig14_refusal_axis.png> <../figs/fig16_mask_words.png
+>] (./main3.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
-Package rerunfilecheck Info: File `main2.out' has not changed.
-(rerunfilecheck)             Checksum: CA66F579DCE3B6287584BA15FF9A92B5;5299.
+Package rerunfilecheck Info: File `main3.out' has not changed.
+(rerunfilecheck)             Checksum: 360ED7DD991B994C71A6B732D9B5A876;2979.
  ) 
 Here is how much of TeX's memory you used:
- 15593 strings out of 473190
- 250225 string characters out of 5715800
- 723744 words of memory out of 5000000
- 37997 multiletter control sequences out of 15000+600000
- 632836 words of font info for 436 fonts, out of 8000000 for 9000
+ 15481 strings out of 473190
+ 248867 string characters out of 5715800
+ 725236 words of memory out of 5000000
+ 37965 multiletter control sequences out of 15000+600000
+ 627004 words of font info for 387 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 90i,13n,93p,1002b,644s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 90i,13n,93p,1002b,634s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025/texmf-dist/fonts/type1/public/inconsolata/Inconsolat
 a-zi4r.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/c
-mbx10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cm
-mi10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmm
-i8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9
-.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.p
-fb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb>
-</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></u
-sr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></us
-r/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/
-local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></usr/lo
-cal/texlive/2025/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texliv
-e/2025/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/local/texlive/2025/tex
-mf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on main2.pdf (14 pages, 1903705 bytes).
+mmi10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cm
+mi8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi
+9.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.
+pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb
+></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></
+usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></u
+sr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></usr
+/local/texlive/2025/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/tex
+live/2025/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/local/texlive/2025/
+texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
+Output written on main3.pdf (12 pages, 1872167 bytes).
 PDF statistics:
- 584 PDF objects out of 1000 (max. 8388607)
- 507 compressed objects within 6 object streams
- 116 named destinations out of 1000 (max. 500000)
- 64216 words of extra memory for PDF output out of 74296 (max. 10000000)
+ 530 PDF objects out of 1000 (max. 8388607)
+ 459 compressed objects within 5 object streams
+ 105 named destinations out of 1000 (max. 500000)
+ 60584 words of extra memory for PDF output out of 61914 (max. 10000000)
 
